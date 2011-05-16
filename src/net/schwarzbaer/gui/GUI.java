@@ -7,6 +7,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+
+import javax.swing.AbstractButton;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -24,6 +27,11 @@ import javax.swing.KeyStroke;
  * @author Hendrik
  */
 public class GUI {
+
+    public static void addButtonToPanelAndButtonGroup( JPanel buttonPanel, ButtonGroup buttonGroup, AbstractButton btn ) {
+    	buttonPanel.add(btn);
+    	buttonGroup.add(btn);
+    }
 
     public static void addLabelAndField( JPanel labelPanel, JPanel fieldPanel, String label, JComponent field ) {
         labelPanel.add( new JLabel(label) );
