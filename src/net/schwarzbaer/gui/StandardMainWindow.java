@@ -17,10 +17,10 @@ import javax.swing.JFrame;
  *
  * @author Hendrik
  */
-@SuppressWarnings("serial")
 public class StandardMainWindow extends JFrame implements WindowListener {
-
-    private CloseListener closeListener = null;
+	private static final long serialVersionUID = -6515512014217265169L;
+	
+	private CloseListener closeListener = null;
 
     public StandardMainWindow(String title, CloseListener closeListener) throws HeadlessException {
         super(title);

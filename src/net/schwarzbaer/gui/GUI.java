@@ -21,6 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * 
@@ -28,6 +30,14 @@ import javax.swing.KeyStroke;
  */
 public class GUI {
 
+	public static void setSystemLookAndFeel() {
+		try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+		catch (ClassNotFoundException e) {}
+		catch (InstantiationException e) {}
+		catch (IllegalAccessException e) {}
+		catch (UnsupportedLookAndFeelException e) {}
+	}
+	
     public static void addButtonToPanelAndButtonGroup( JPanel buttonPanel, ButtonGroup buttonGroup, AbstractButton btn ) {
     	buttonPanel.add(btn);
     	buttonGroup.add(btn);
@@ -51,7 +61,21 @@ public class GUI {
         menu.setEnabled( enabled );
         return menu;
     }
-
+    
+    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled, String keyStrokeStr ) {
+    	JMenuItem menuItem = createMenuItem(title, commandStr, actionListener, enabled);
+    	menuItem.setAccelerator( KeyStroke.getKeyStroke( keyStrokeStr ) );
+    	return menuItem;
+    }
+    
+    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled ) {
+    	JMenuItem menuItem = new JMenuItem( title );
+        menuItem.addActionListener(actionListener);
+        menuItem.setActionCommand( commandStr );
+        menuItem.setEnabled(enabled);
+        return menuItem;
+    }
+    
     public static JMenuItem createMenuItem(String title, String commandStr, int mnemonic, ActionListener actionListener) {
         JMenuItem menuItem = new JMenuItem( title );
         menuItem.setActionCommand(commandStr);
