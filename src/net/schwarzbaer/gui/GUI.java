@@ -10,6 +10,7 @@ import java.awt.event.FocusListener;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
+import javax.swing.ComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -110,13 +111,20 @@ public class GUI {
         return button;
     }
 
+    public static JComboBox createComboBox( ComboBoxModel comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox( new JComboBox( comboBoxModel ), commandStr, enabled, actionListener);
+    }
+
     public static JComboBox createComboBox( String[] items, String commandStr, boolean enabled, ActionListener actionListener ) {
-        JComboBox cmbBx = new JComboBox( items );
-        cmbBx.setActionCommand(commandStr);
+        return setComboBox( new JComboBox( items ), commandStr, enabled, actionListener);
+    }
+
+	private static JComboBox setComboBox(JComboBox cmbBx, String commandStr, boolean enabled, ActionListener actionListener) {
+		cmbBx.setActionCommand(commandStr);
         cmbBx.addActionListener(actionListener);
         cmbBx.setEnabled(enabled);
         return cmbBx;
-    }
+	}
 
     public static JCheckBox createCheckBox( String title, boolean preselected, String commandStr, int alignment, boolean enabled, ActionListener actionListener ) {
         JCheckBox checkBox = new JCheckBox(title,preselected);
@@ -132,6 +140,23 @@ public class GUI {
         textfield.setEditable(false);
         return textfield;
     }
+    
+    private static class TextFieldFocusListener implements FocusListener {
+    	private JTextField textfield;
+    	private String commandStr;
+    	private ActionListener actionListener;
+    	
+	    public TextFieldFocusListener(JTextField textfield, String commandStr, ActionListener actionListener) {
+	    	this.textfield = textfield;
+			this.commandStr = commandStr;
+			this.actionListener = actionListener;
+		}
+		@Override public void focusGained(FocusEvent e) {}
+		@Override public void focusLost(FocusEvent e) {
+			actionListener.actionPerformed( new ActionEvent( textfield,ActionEvent.ACTION_PERFORMED,commandStr ) );
+		}
+
+	}
 
     public static JTextField createTextField( String commandStr, ActionListener actionListener ) {
         JTextField textfield = new JTextField();
@@ -156,7 +181,10 @@ public class GUI {
         JTextField_HS textfield = new JTextField_HS();
         textfield.addActionListener( actionListener );
         textfield.setActionCommand( commandStr );
-        if (focusListener!=null) textfield.addFocusListener( focusListener );
+        if (focusListener!=null)
+        	textfield.addFocusListener( focusListener );
+        else
+        	textfield.addFocusListener( new TextFieldFocusListener(textfield,commandStr,actionListener) );
         textfield.setEditable(editable);
         return textfield;
     }
