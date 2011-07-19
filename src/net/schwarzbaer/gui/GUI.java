@@ -11,6 +11,7 @@ import java.awt.event.FocusListener;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -104,7 +105,13 @@ public class GUI {
         return button;
     }
 
-    public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener ) {
+    public static JButton createButton( String title, String commandStr, ActionListener actionListener, Icon icon ) {
+        JButton btn = createButton( title, commandStr, actionListener );
+        btn.setIcon(icon);
+        return btn;
+	}
+
+	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener ) {
     	JToggleButton button = new JToggleButton( title );
         button.addActionListener(actionListener);
         button.setActionCommand( commandStr );
@@ -135,7 +142,22 @@ public class GUI {
         return checkBox;
     }
 
-    public static JTextField createOutputTextField() {
+    public static JPanel createRightAlignedPanel(Component comp) {
+		return createAlignedPanel( comp, BorderLayout.EAST);
+	}
+
+	public static JPanel createLeftAlignedPanel(Component comp) {
+		return createAlignedPanel( comp, BorderLayout.WEST);
+	}
+
+	private static JPanel createAlignedPanel(Component comp, String layoutPosition) {
+		JPanel panel = new JPanel( new BorderLayout() );
+		panel.add(new JLabel(), BorderLayout.CENTER);
+		panel.add(comp, layoutPosition);
+		return panel;
+	}
+
+	public static JTextField createOutputTextField() {
         JTextField textfield = new JTextField();
         textfield.setEditable(false);
         return textfield;
