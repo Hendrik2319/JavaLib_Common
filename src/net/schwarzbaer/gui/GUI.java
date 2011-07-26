@@ -3,10 +3,12 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.geom.Rectangle2D;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -280,4 +282,25 @@ public class GUI {
             public boolean isFocusActionAllowedNow();
         }
     }
+    
+	public static final int ALIGNMENT_TOP    = -1;
+	public static final int ALIGNMENT_CENTER =  0;
+	public static final int ALIGNMENT_BOTTOM =  1;
+	public static final int ALIGNMENT_LEFT   = -1;
+	public static final int ALIGNMENT_RIGHT  =  1;
+	
+	public static void drawString(Graphics g, String str, int x, int y, int hAlign, int vAlign) {
+		Rectangle2D b = g.getFontMetrics().getStringBounds(str, g);
+		switch (hAlign) {
+		case ALIGNMENT_LEFT  : x -= (int)Math.round( b.getMinX()               ); break;
+		case ALIGNMENT_CENTER: x -= (int)Math.round((b.getMinX()+b.getMaxX())/2); break;
+		case ALIGNMENT_RIGHT : x -= (int)Math.round(             b.getMaxX()   ); break;
+		}
+		switch (vAlign) {
+		case ALIGNMENT_TOP   : y -= (int)Math.round( b.getMinY()               ); break;
+		case ALIGNMENT_CENTER: y -= (int)Math.round((b.getMinY()+b.getMaxY())/2); break;
+		case ALIGNMENT_BOTTOM: y -= (int)Math.round(             b.getMaxY()   ); break;
+		}
+		g.drawString(str, x, y);
+	}
 }
