@@ -144,6 +144,14 @@ public class GUI {
         return checkBox;
     }
 
+    public static JPanel createTopAlignedPanel(Component comp) {
+		return createAlignedPanel( comp, BorderLayout.NORTH);
+	}
+
+	public static JPanel createBottomAlignedPanel(Component comp) {
+		return createAlignedPanel( comp, BorderLayout.SOUTH);
+	}
+
     public static JPanel createRightAlignedPanel(Component comp) {
 		return createAlignedPanel( comp, BorderLayout.EAST);
 	}
@@ -156,6 +164,14 @@ public class GUI {
 		JPanel panel = new JPanel( new BorderLayout() );
 		panel.add(new JLabel(), BorderLayout.CENTER);
 		panel.add(comp, layoutPosition);
+		return panel;
+	}
+
+	public static JPanel createLeftRightAlignedPanel(Component leftComp, Component rightComp) {
+		JPanel panel = new JPanel( new BorderLayout() );
+		panel.add(leftComp, BorderLayout.WEST);
+		panel.add(new JLabel(), BorderLayout.CENTER);
+		panel.add(rightComp, BorderLayout.EAST);
 		return panel;
 	}
 
