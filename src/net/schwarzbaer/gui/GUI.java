@@ -22,6 +22,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -117,6 +118,16 @@ public class GUI {
     	JToggleButton button = new JToggleButton( title );
         button.addActionListener(actionListener);
         button.setActionCommand( commandStr );
+        return button;
+    }
+
+	public static JRadioButton createRadioButton( String title, String commandStr, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+    	JRadioButton button = new JRadioButton( title );
+        button.addActionListener(actionListener);
+        button.setActionCommand( commandStr );
+        button.setSelected(isSelected);
+        button.setEnabled(isEnabled);
+        buttonGroup.add(button);
         return button;
     }
 

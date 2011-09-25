@@ -9,9 +9,9 @@ import javax.swing.JComponent;
  *
  * @author hscholtz
  */
-@SuppressWarnings("serial")
 public abstract class Canvas extends JComponent {
-    
+	private static final long serialVersionUID = 1936784818314303929L;
+	
 	protected int width;
     protected int height;
     protected int preferredWidth;
