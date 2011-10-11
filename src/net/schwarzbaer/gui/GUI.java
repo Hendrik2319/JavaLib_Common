@@ -95,12 +95,6 @@ public class GUI {
         return menuItem;
     }
 
-    public static JButton createButton( String title, String commandStr, ActionListener actionListener, String toolTipText ) {
-        JButton btn = createButton( title, commandStr, actionListener );
-        btn.setToolTipText( toolTipText );
-        return btn;
-    }
-
     public static JButton createButton( String title, String commandStr, ActionListener actionListener ) {
         JButton button = new JButton( title );
         button.addActionListener(actionListener);
@@ -112,6 +106,18 @@ public class GUI {
         JButton btn = createButton( title, commandStr, actionListener );
         btn.setIcon(icon);
         return btn;
+	}
+
+	public static JButton createButton(String title, String commandStr, ActionListener actionListener, boolean enabled) {
+        JButton btn = createButton( title, commandStr, actionListener );
+        btn.setEnabled(enabled);
+        return btn;
+	}
+
+	public static JButton createButton( String title, String commandStr, ActionListener actionListener, String toolTipText ) {
+	    JButton btn = createButton( title, commandStr, actionListener );
+	    btn.setToolTipText( toolTipText );
+	    return btn;
 	}
 
 	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener ) {
