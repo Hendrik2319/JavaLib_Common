@@ -9,6 +9,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.geom.Rectangle2D;
+import java.io.PrintStream;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Properties;
+import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
@@ -335,5 +341,20 @@ public class GUI {
 		case ALIGNMENT_BOTTOM: y -= (int)Math.round(             b.getMaxY()   ); break;
 		}
 		g.drawString(str, x, y);
+	}
+
+	public static void listSystemPropertiesSorted(PrintStream out) {
+		Properties properties = System.getProperties();
+		Vector<Object> keySet = new Vector<Object>(properties.keySet());
+		Collections.sort(keySet,new Comparator<Object>(){
+			@Override public int compare(Object o1, Object o2) { return o1.toString().compareTo(o2.toString()); }
+		});
+		for (int i=0; i<keySet.size(); i++) {
+			out.println(String.format("%s=%s", toString(keySet.get(i)),toString(properties.get(keySet.get(i)))));
+		}
+	}
+
+	private static String toString(Object object) {
+		return (object==null?"<null>":object.toString());
 	}
 }
