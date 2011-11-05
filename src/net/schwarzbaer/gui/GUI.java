@@ -13,7 +13,6 @@ import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Properties;
-import java.util.Set;
 import java.util.Vector;
 
 import javax.swing.AbstractButton;
