@@ -239,35 +239,28 @@ public class GUI {
         return textfield;
     }
 
-    public static JTextField createTextField( String commandStr, ActionListener actionListener,                                              FocusListener focusListener ) {
+    public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
         JTextField_HS textfield = new JTextField_HS();
         textfield.addActionListener( actionListener );
         textfield.setActionCommand( commandStr );
+        textfield.setEditable(editable);
         if (focusListener!=null) textfield.addFocusListener( focusListener );
         else                     textfield.addFocusListener( new TextFieldFocusListener(textfield,commandStr,actionListener) );
         return textfield;
     }
-    public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
-        textfield.setEditable(editable);
-        return textfield;
-    }
     public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable,              FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
+        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
         textfield.setText(value);
-        textfield.setEditable(editable);
         return textfield;
     }
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable, int columns, FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
+        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
         textfield.setColumns( columns );
-        textfield.setEditable(editable);
         return textfield;
     }
     public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable, int columns, FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
+        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
         textfield.setText(value);
-        textfield.setEditable(editable);
         textfield.setColumns( columns );
         return textfield;
     }
