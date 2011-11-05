@@ -240,40 +240,43 @@ public class GUI {
         return textfield;
     }
 
-    public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
+    public static JTextField createTextField( String commandStr, ActionListener actionListener,                                              FocusListener focusListener ) {
         JTextField_HS textfield = new JTextField_HS();
         textfield.addActionListener( actionListener );
         textfield.setActionCommand( commandStr );
-        if (focusListener!=null)
-        	textfield.addFocusListener( focusListener );
-        else
-        	textfield.addFocusListener( new TextFieldFocusListener(textfield,commandStr,actionListener) );
+        if (focusListener!=null) textfield.addFocusListener( focusListener );
+        else                     textfield.addFocusListener( new TextFieldFocusListener(textfield,commandStr,actionListener) );
+        return textfield;
+    }
+    public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
+        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
         textfield.setEditable(editable);
         return textfield;
     }
-
     public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable,              FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
+        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
         textfield.setText(value);
+        textfield.setEditable(editable);
         return textfield;
     }
-
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable, int columns, FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
+        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
+        textfield.setColumns( columns );
+        textfield.setEditable(editable);
+        return textfield;
+    }
+    public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable, int columns, FocusListener focusListener ) {
+        JTextField textfield = createTextField( commandStr, actionListener, focusListener );
+        textfield.setText(value);
+        textfield.setEditable(editable);
         textfield.setColumns( columns );
         return textfield;
     }
 
-    public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable, int columns, FocusListener focusListener ) {
-        JTextField textfield = createTextField( commandStr, actionListener, editable, columns, focusListener );
-        textfield.setText(value);
-        return textfield;
-    }
-
-    @SuppressWarnings("serial")
 	public static class JTextField_HS extends JTextField {
-
-        private String commandStr;
+		private static final long serialVersionUID = -1107252015179183026L;
+		
+		private String commandStr;
 
         public JTextField_HS() {
             super();
