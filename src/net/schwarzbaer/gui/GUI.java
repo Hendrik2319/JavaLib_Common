@@ -146,8 +146,13 @@ public class GUI {
         return setComboBox( new JComboBox( comboBoxModel ), commandStr, enabled, actionListener);
     }
 
-    public static JComboBox createComboBox( String[] items, String commandStr, boolean enabled, ActionListener actionListener ) {
-        return setComboBox( new JComboBox( items ), commandStr, enabled, actionListener);
+    public static JComboBox createComboBox( String[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox( new JComboBox( items ), selected, commandStr, enabled, actionListener);
+    }
+
+	private static JComboBox setComboBox(JComboBox cmbBx, int selected, String commandStr, boolean enabled, ActionListener actionListener) {
+		cmbBx.setSelectedIndex(selected);
+		return setComboBox( cmbBx, commandStr, enabled, actionListener);
     }
 
 	private static JComboBox setComboBox(JComboBox cmbBx, String commandStr, boolean enabled, ActionListener actionListener) {
