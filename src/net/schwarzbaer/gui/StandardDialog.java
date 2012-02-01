@@ -13,17 +13,17 @@ import java.awt.Window;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 
-/**
- *
- * @author hscholtz
- */
 public class StandardDialog extends JDialog {
 	private static final long serialVersionUID = -2236026007551538954L;
 
 	private Window parent; 
 	
 	public StandardDialog( Window parent, String title ) {
-		super( parent, title, Dialog.ModalityType.APPLICATION_MODAL );
+		this(parent, title, Dialog.ModalityType.APPLICATION_MODAL);
+	}
+	
+	public StandardDialog( Window parent, String title, ModalityType modality ) {
+		super( parent, title, modality );
 		this.parent = parent;
 	}
     
