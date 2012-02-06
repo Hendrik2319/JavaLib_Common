@@ -171,25 +171,22 @@ public class GUI {
         return checkBox;
     }
 
-    public static JPanel createTopAlignedPanel(Component comp) {
-		return createAlignedPanel( comp, BorderLayout.NORTH);
-	}
+    public static JPanel    createTopAlignedPanel(Component comp) { return createAlignedPanel( comp, BorderLayout.NORTH); }
+	public static JPanel createBottomAlignedPanel(Component comp) { return createAlignedPanel( comp, BorderLayout.SOUTH); }
+    public static JPanel  createRightAlignedPanel(Component comp) { return createAlignedPanel( comp, BorderLayout.EAST); }
+	public static JPanel   createLeftAlignedPanel(Component comp) { return createAlignedPanel( comp, BorderLayout.WEST); }
 
-	public static JPanel createBottomAlignedPanel(Component comp) {
-		return createAlignedPanel( comp, BorderLayout.SOUTH);
-	}
-
-    public static JPanel createRightAlignedPanel(Component comp) {
-		return createAlignedPanel( comp, BorderLayout.EAST);
-	}
-
-	public static JPanel createLeftAlignedPanel(Component comp) {
-		return createAlignedPanel( comp, BorderLayout.WEST);
-	}
+    public static JPanel    createTopAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.NORTH); }
+	public static JPanel createBottomAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.SOUTH); }
+    public static JPanel  createRightAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.EAST); }
+	public static JPanel   createLeftAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.WEST); }
 
 	private static JPanel createAlignedPanel(Component comp, String layoutPosition) {
+		return createAlignedPanel(comp,new JLabel(),layoutPosition);
+	}
+	private static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition) {
 		JPanel panel = new JPanel( new BorderLayout() );
-		panel.add(new JLabel(), BorderLayout.CENTER);
+		panel.add(center_comp, BorderLayout.CENTER);
 		panel.add(comp, layoutPosition);
 		return panel;
 	}
