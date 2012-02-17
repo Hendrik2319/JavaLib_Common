@@ -20,14 +20,18 @@ import javax.swing.JFrame;
 public class StandardMainWindow extends JFrame implements WindowListener {
 	private static final long serialVersionUID = -6515512014217265169L;
 	
-	private CloseListener closeListener = null;
+	private final CloseListener closeListener;
+	private final boolean disposeOnClose;
 
-    public StandardMainWindow(String title, CloseListener closeListener) throws HeadlessException {
+    public StandardMainWindow(String title, CloseListener closeListener, boolean disposeOnClose ) throws HeadlessException {
         super(title);
         this.closeListener = closeListener;
+		this.disposeOnClose = disposeOnClose;
     }
-    public StandardMainWindow(String title) throws HeadlessException { super(title); }
-    public StandardMainWindow(            ) throws HeadlessException { super(     ); }
+    public StandardMainWindow(String title, CloseListener closeListener ) throws HeadlessException { this(title,closeListener,false); }
+    public StandardMainWindow(String title, boolean disposeOnClose      ) throws HeadlessException { this(title,null,disposeOnClose); }
+    public StandardMainWindow(String title) throws HeadlessException { this(title,null); }
+    public StandardMainWindow(            ) throws HeadlessException { this("",null); }
 
     public void startGUI( JComponent contentPane ) {
         startGUI( contentPane, null );
@@ -36,8 +40,9 @@ public class StandardMainWindow extends JFrame implements WindowListener {
         startGUI( contentPane, new Dimension( width, height ) );
     }
     public void startGUI( JComponent contentPane, Dimension d ) {
-        if (closeListener==null) setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-        else                     setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
+    	if (closeListener!=null) setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
+        if (disposeOnClose)      setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+        else                     setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
         addWindowListener(this);
         setContentPane( contentPane );
         pack();
