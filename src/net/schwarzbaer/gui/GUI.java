@@ -181,11 +181,19 @@ public class GUI {
     public static JPanel  createRightAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.EAST); }
 	public static JPanel   createLeftAlignedPanel(Component comp, Component other_comp) { return createAlignedPanel( comp, other_comp, BorderLayout.WEST); }
 
+    public static JPanel    createTopAlignedPanel(Component comp, Component other_comp, int spacing) { return createAlignedPanel( comp, other_comp, BorderLayout.NORTH, spacing); }
+	public static JPanel createBottomAlignedPanel(Component comp, Component other_comp, int spacing) { return createAlignedPanel( comp, other_comp, BorderLayout.SOUTH, spacing); }
+    public static JPanel  createRightAlignedPanel(Component comp, Component other_comp, int spacing) { return createAlignedPanel( comp, other_comp, BorderLayout.EAST,  spacing); }
+	public static JPanel   createLeftAlignedPanel(Component comp, Component other_comp, int spacing) { return createAlignedPanel( comp, other_comp, BorderLayout.WEST,  spacing); }
+
 	private static JPanel createAlignedPanel(Component comp, String layoutPosition) {
 		return createAlignedPanel(comp,new JLabel(),layoutPosition);
 	}
 	private static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition) {
-		JPanel panel = new JPanel( new BorderLayout() );
+		return createAlignedPanel(comp,new JLabel(),layoutPosition,0);
+	}
+	private static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition, int spacing) {
+		JPanel panel = new JPanel( new BorderLayout(spacing,spacing) );
 		panel.add(center_comp, BorderLayout.CENTER);
 		panel.add(comp, layoutPosition);
 		return panel;
