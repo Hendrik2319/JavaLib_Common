@@ -4,6 +4,7 @@ package net.schwarzbaer.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Graphics;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -16,6 +17,7 @@ import java.util.Properties;
 import java.util.Vector;
 
 import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
 import javax.swing.Icon;
@@ -204,6 +206,13 @@ public class GUI {
 		panel.add(leftComp, BorderLayout.WEST);
 		panel.add(new JLabel(), BorderLayout.CENTER);
 		panel.add(rightComp, BorderLayout.EAST);
+		return panel;
+	}
+
+	public static JPanel createTitlePanel(String title, Component comp) {
+		JPanel panel = new JPanel( new GridLayout(1,0,3,3) );
+		panel.setBorder(BorderFactory.createTitledBorder(title));
+		panel.add(comp);
 		return panel;
 	}
 
