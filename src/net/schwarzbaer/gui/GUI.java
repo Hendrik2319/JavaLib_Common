@@ -9,6 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
 import java.io.PrintStream;
 import java.util.Collections;
@@ -20,16 +22,21 @@ import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
+import javax.swing.DefaultBoundedRangeModel;
 import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollBar;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -370,5 +377,76 @@ public class GUI {
 
 	private static String toString(Object object) {
 		return (object==null?"<null>":object.toString());
+	}
+
+	public static void makeAutoScroll(JScrollPane scrollPane) {
+		new AutoScrollModel().makeAutoScroll(scrollPane);
+	}
+	
+	private static class AutoScrollModel extends DefaultBoundedRangeModel implements MouseListener, ActionListener {
+		private static final long serialVersionUID = 583924172439445131L;
+		
+		private boolean autoScroll = true;
+		private JPopupMenu contextMenu;
+		private JScrollBar verticalScrollBar;
+
+		public void makeAutoScroll(JScrollPane scrollPane) {
+			JCheckBoxMenuItem item = new JCheckBoxMenuItem("autoscroll",autoScroll);
+			item.addActionListener(this);
+			item.setActionCommand("autoscroll");
+			contextMenu = new JPopupMenu();
+			contextMenu.add(item);
+			
+			this.verticalScrollBar = scrollPane.getVerticalScrollBar();
+			verticalScrollBar.setModel(this);
+			verticalScrollBar.addMouseListener(this);
+			
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if ("autoscroll".equals(e.getActionCommand())) {
+				JCheckBoxMenuItem source = (JCheckBoxMenuItem)e.getSource();
+				setAutoScroll(source.isSelected());
+			}
+		}
+
+		public void setAutoScroll(boolean autoScroll) {
+			this.autoScroll = autoScroll;
+			if (this.autoScroll) checkSetting();
+		}
+
+		@Override
+		public void setRangeProperties( int newValue, int newExtent, int newMin, int newMax, boolean adjusting ) {
+			super.setRangeProperties( newValue, newExtent, newMin, newMax, adjusting );
+//			System.out.println( "min:"+newMin + " val:"+newValue + " val+ext:"+(newValue+newExtent) + " max:"+newMax + " adj:"+adjusting );
+			
+			if (autoScroll && !adjusting) checkSetting();
+		}
+
+		private void checkSetting() {
+			int val = this.getValue();
+			int ext = this.getExtent();
+			int max = this.getMaximum();
+			if (val != max - ext)
+				super.setValue(max - ext);
+		}
+
+		@Override public void mouseClicked(MouseEvent e) {}
+		@Override public void mouseEntered(MouseEvent e) {}
+		@Override public void mouseExited(MouseEvent e) {}
+		@Override public void mousePressed(MouseEvent e) {}
+		@Override public void mouseReleased(MouseEvent e) {
+			if (e.isPopupTrigger()) {
+				contextMenu.show(verticalScrollBar, e.getX(),e.getY());
+			}
+		}
+
+//		@Override
+//		public void setValue(int val) {
+//			super.setValue(val);
+//			System.out.println( "val:"+val );
+//		}
+		
 	}
 }
