@@ -17,13 +17,14 @@ public abstract class Canvas extends JComponent {
     protected int preferredWidth;
     protected int preferredHeight;
 
+    protected Canvas() {}
+    
     public Canvas( int preferredWidth, int preferredHeight ) {
         this.width = -1;
         this.height = -1;
         this.preferredWidth  = preferredWidth;
         this.preferredHeight = preferredHeight;
     }
-
     protected void sizeChanged( int width, int height ) {}
     protected abstract void paintCanvas(Graphics g, int width, int height );
 
@@ -31,8 +32,20 @@ public abstract class Canvas extends JComponent {
         super.paintComponent(g);
         paintCanvas( g, width, height );
     }
+    
+    
+    public void setPreferredSize( int preferredWidth, int preferredHeight ) {
+        this.preferredWidth  = preferredWidth;
+        this.preferredHeight = preferredHeight;
+    }
+    @Override
+	public void setPreferredSize(Dimension prefSize) {
+		super.setPreferredSize(prefSize);
+        this.preferredWidth  = prefSize.width;
+        this.preferredHeight = prefSize.height;
+	}
 
-    @Override public Dimension getPreferredSize() { return new Dimension( preferredWidth, preferredHeight ); }
+	@Override public Dimension getPreferredSize() { return new Dimension( preferredWidth, preferredHeight ); }
     @Override public void setBounds(int x, int y, int width, int height) { super.setBounds( x, y, width, height ); this.width = width; this.height = height; sizeChanged( width, height ); }
     @Override public void setBounds(Rectangle r)         { super.setBounds( r );           this.width = r.width; this.height = r.height; sizeChanged( width, height ); }
     @Override public void setSize(Dimension d)           { super.setSize( d );             this.width = d.width; this.height = d.height; sizeChanged( width, height ); }

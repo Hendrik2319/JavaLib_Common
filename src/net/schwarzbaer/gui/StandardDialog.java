@@ -40,7 +40,11 @@ public class StandardDialog extends JDialog {
     public void createGUI( JComponent contentPane, int position ) {
         setContentPane( contentPane );
         pack();
-        Rectangle p = parent.getBounds();
+        setPosition(position);
+    }
+
+	private void setPosition(int position) {
+		Rectangle p = parent.getBounds();
         Dimension d = getSize();
         int dist = 3;
         switch (position) {
@@ -67,11 +71,16 @@ public class StandardDialog extends JDialog {
                     (p.height-d.height)/2+p.y
                 );
         }
-    }
+	}
 
     public void setSizeAsMinSize() {
         Dimension d = getSize();
         setMinimumSize(d);
+    }
+
+    public void showDialog(int position) {
+    	setPosition(position);
+        setVisible( true );
     }
 
     public void showDialog() {
