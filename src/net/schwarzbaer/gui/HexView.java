@@ -48,7 +48,7 @@ public class HexView implements ActionListener{
 		
 		hexArea = new JTextArea();
 		hexArea.setEditable(false);
-		fillTextArea(hexArea,content,rowLength);
+		hexArea.setText(makeHex(content,rowLength));
 		
 		ButtonGroup formatSelectorButtonGroup = new ButtonGroup();
 		JPanel formatSelector = new JPanel( new GridLayout(1,0,3,3) );
@@ -72,24 +72,24 @@ public class HexView implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if ("hex8" .equals(e.getActionCommand())) fillTextArea(hexArea,content,8);
-		if ("hex16".equals(e.getActionCommand())) fillTextArea(hexArea,content,16);
-		if ("hex24".equals(e.getActionCommand())) fillTextArea(hexArea,content,24);
-		if ("hex32".equals(e.getActionCommand())) fillTextArea(hexArea,content,32);
+		if ("hex8" .equals(e.getActionCommand())) hexArea.setText(makeHex(content, 8));
+		if ("hex16".equals(e.getActionCommand())) hexArea.setText(makeHex(content,16));
+		if ("hex24".equals(e.getActionCommand())) hexArea.setText(makeHex(content,24));
+		if ("hex32".equals(e.getActionCommand())) hexArea.setText(makeHex(content,32));
 		if ("ascii".equals(e.getActionCommand())) hexArea.setText(content);
 		
 	}
 
-	private static void fillTextArea(JTextArea hexArea, String content, int rowLength) {
-		hexArea.setText("");
+	public static String makeHex(String content, int rowLength) {
+		StringBuilder sb = new StringBuilder();
 		long nol = Math.round(Math.ceil(content.length()/(double)(rowLength)));
 		long rowNumberLength = Math.max( 4, Math.round(Math.ceil(Math.log(content.length())/Math.log(16))) );
 		String rowNumberFormat = "%0"+rowNumberLength+"X";
 		for (int i=0; i<nol; i++) {
 			String lineContent = content.substring(i*rowLength,Math.min((i+1)*rowLength,content.length()) );
-			hexArea.append(String.format(rowNumberFormat+":  %s  |  %s\r\n", i*rowLength, str2hex(lineContent,rowLength), str2output(lineContent,rowLength) ));
+			sb.append(String.format(rowNumberFormat+":  %s  |  %s\r\n", i*rowLength, str2hex(lineContent,rowLength), str2output(lineContent,rowLength) ));
 		}
-		
+		return sb.toString();
 	}
 
 	private static String str2output(String str, int length) {
