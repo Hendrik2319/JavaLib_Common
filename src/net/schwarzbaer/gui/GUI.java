@@ -155,7 +155,7 @@ public class GUI {
         return setComboBox( new JComboBox( comboBoxModel ), commandStr, enabled, actionListener);
     }
 
-    public static JComboBox createComboBox( String[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+    public static JComboBox createComboBox( Object[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox( new JComboBox( items ), selected, commandStr, enabled, actionListener);
     }
 
