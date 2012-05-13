@@ -40,16 +40,25 @@ public class StandardMainWindow extends JFrame implements WindowListener {
         startGUI( contentPane, new Dimension( width, height ) );
     }
     public void startGUI( JComponent contentPane, Dimension size ) {
-    	if (closeListener!=null) setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
-        if (disposeOnClose)      setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-        else                     setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-        addWindowListener(this);
-        setContentPane( contentPane );
-        pack();
+    	prepareGUI(contentPane);
+        finishGUI(size);
+    }
+    public void prepareGUI(JComponent contentPane) {
+		if (closeListener!=null) setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
+	    if (disposeOnClose)      setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+	    else                     setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+	    addWindowListener(this);
+	    setContentPane( contentPane );
+	}
+    public void finishGUI() {
+		finishGUI(null);
+    }
+    public void finishGUI(Dimension size) {
+		pack();
         if (size!=null) setSize(size); else size = getSize();
         setLocationToScreenCenter(size, getGraphicsConfiguration().getBounds());
         setVisible( true );
-    }
+	}
 	private void setLocationToScreenCenter(Dimension size, Rectangle screen) {
 		setLocation(
             (screen.width -size.width )/2+screen.x,
