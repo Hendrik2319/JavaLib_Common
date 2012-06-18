@@ -15,12 +15,6 @@ import javax.swing.JDialog;
 
 public class StandardDialog extends JDialog {
 	private static final long serialVersionUID = -2236026007551538954L;
-
-	public static final int PARENT_CENTER   = 0;
-	public static final int LEFT_OF_PARENT  = 1;
-	public static final int ABOVE_PARENT    = 2;
-	public static final int RIGHT_OF_PARENT = 3;
-	public static final int BELOW_PARENT    = 4;
 	
 	private Window parent; 
 	
@@ -34,16 +28,16 @@ public class StandardDialog extends JDialog {
 	}
     
     public void createGUI( JComponent contentPane ) {
-    	createGUI( contentPane, PARENT_CENTER );
+    	createGUI( contentPane, Position.PARENT_CENTER );
 	}
     
-    public void createGUI( JComponent contentPane, int position ) {
+    public void createGUI( JComponent contentPane, Position position ) {
         setContentPane( contentPane );
         pack();
         setPosition(position);
     }
 
-	private void setPosition(int position) {
+	private void setPosition(Position position) {
 		Rectangle p = parent.getBounds();
         Dimension d = getSize();
         int dist = 3;
@@ -78,7 +72,7 @@ public class StandardDialog extends JDialog {
         setMinimumSize(d);
     }
 
-    public void showDialog(int position) {
+    public void showDialog(Position position) {
     	setPosition(position);
         setVisible( true );
     }
@@ -90,4 +84,13 @@ public class StandardDialog extends JDialog {
     public void closeDialog() {
         setVisible( false );
     }
+
+	public static enum Position {
+		PARENT_CENTER,
+		LEFT_OF_PARENT,
+		ABOVE_PARENT,
+		RIGHT_OF_PARENT,
+		BELOW_PARENT
+	}
+    
 }

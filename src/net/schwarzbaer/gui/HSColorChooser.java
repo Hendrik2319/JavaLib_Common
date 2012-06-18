@@ -24,13 +24,13 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
  * @author hscholtz
  */
 	
-	public static final int PARENT_CENTER   = StandardDialog.PARENT_CENTER;
-	public static final int LEFT_OF_PARENT  = StandardDialog.LEFT_OF_PARENT;
-	public static final int ABOVE_PARENT    = StandardDialog.ABOVE_PARENT;
-	public static final int RIGHT_OF_PARENT = StandardDialog.RIGHT_OF_PARENT;
-	public static final int BELOW_PARENT    = StandardDialog.BELOW_PARENT;
+	public static final StandardDialog.Position PARENT_CENTER   = StandardDialog.Position.PARENT_CENTER;
+	public static final StandardDialog.Position LEFT_OF_PARENT  = StandardDialog.Position.LEFT_OF_PARENT;
+	public static final StandardDialog.Position ABOVE_PARENT    = StandardDialog.Position.ABOVE_PARENT;
+	public static final StandardDialog.Position RIGHT_OF_PARENT = StandardDialog.Position.RIGHT_OF_PARENT;
+	public static final StandardDialog.Position BELOW_PARENT    = StandardDialog.Position.BELOW_PARENT;
 	
-	public static Color showDialog(Window parent, String title, Color color, int position) {
+	public static Color showDialog(Window parent, String title, Color color, StandardDialog.Position position) {
 		HSColorChooser dialog = new HSColorChooser();
 		dialog.createGUI(parent,title);
 		return dialog.showDialog(color, position);
@@ -49,7 +49,7 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	private Color oldColor;
 	private Color newColor;
 
-	private Color showDialog(Color color, int position) {
+	private Color showDialog(Color color, StandardDialog.Position position) {
 		setColor(color);
 		this.oldColor = color;
 		oldColorField.setBackground(this.oldColor);
@@ -169,7 +169,5 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	public void colorChanged(Color color) {
 		setColor(color);
 	}
-	
-	
 
 }
