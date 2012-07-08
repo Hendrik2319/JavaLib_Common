@@ -151,19 +151,23 @@ public class GUI {
         return button;
     }
 
-    public static JComboBox createComboBox( ComboBoxModel comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static JComboBox createComboBox( ComboBoxModel comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox( new JComboBox( comboBoxModel ), commandStr, enabled, actionListener);
     }
 
-    public static JComboBox createComboBox( Object[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+	public static JComboBox createComboBox( Object[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox( new JComboBox( items ), selected, commandStr, enabled, actionListener);
     }
 
+	@SuppressWarnings("rawtypes")
 	private static JComboBox setComboBox(JComboBox cmbBx, int selected, String commandStr, boolean enabled, ActionListener actionListener) {
 		cmbBx.setSelectedIndex(selected);
 		return setComboBox( cmbBx, commandStr, enabled, actionListener);
     }
 
+	@SuppressWarnings("rawtypes")
 	private static JComboBox setComboBox(JComboBox cmbBx, String commandStr, boolean enabled, ActionListener actionListener) {
 		cmbBx.setActionCommand(commandStr);
         cmbBx.addActionListener(actionListener);
