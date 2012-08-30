@@ -150,6 +150,26 @@ public class GUI {
         buttonGroup.add(button);
         return button;
     }
+	
+	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), commandStr, enabled, actionListener);
+    }
+
+	public static <E> JComboBox<E> createComboBox_Gen( E[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
+    }
+	
+	private static <E> JComboBox<E> setComboBox_Gen(JComboBox<E> cmbBx, int selected, String commandStr, boolean enabled, ActionListener actionListener) {
+		cmbBx.setSelectedIndex(selected);
+		return setComboBox_Gen( cmbBx, commandStr, enabled, actionListener);
+    }
+
+	private static <E> JComboBox<E> setComboBox_Gen(JComboBox<E> cmbBx, String commandStr, boolean enabled, ActionListener actionListener) {
+		cmbBx.setActionCommand(commandStr);
+        cmbBx.addActionListener(actionListener);
+        cmbBx.setEnabled(enabled);
+        return cmbBx;
+	}
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	public static JComboBox createComboBox( ComboBoxModel comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
