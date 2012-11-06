@@ -3,6 +3,7 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -37,6 +38,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
@@ -405,6 +407,26 @@ public class GUI {
 
 	public static void makeAutoScroll(JScrollPane scrollPane) {
 		new AutoScrollModel().makeAutoScroll(scrollPane);
+	}
+	
+	public static JScrollPane createAutoScrollPanel(JTextArea output, boolean editable, int width, int height) {
+		JScrollPane scrollPanel = createAutoScrollPanel(output,editable);
+		scrollPanel.getViewport().setPreferredSize(new Dimension(width,height));
+		return scrollPanel;
+	}
+	
+	public static JScrollPane createAutoScrollPanel(JTextArea output, boolean editable) {
+		output.setEditable(editable);
+		return createAutoScrollPanel(output);
+	}
+	
+	public static JScrollPane createAutoScrollPanel(JTextArea output) {
+		
+		JScrollPane scrollPane = new JScrollPane( output );
+		scrollPane.setBorder(BorderFactory.createLoweredBevelBorder());
+		makeAutoScroll(scrollPane);
+		
+		return scrollPane; 
 	}
 	
 	private static class AutoScrollModel extends DefaultBoundedRangeModel implements MouseListener, ActionListener {
