@@ -13,6 +13,7 @@ import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,6 +45,7 @@ import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileSystemView;
 
 /**
  * 
@@ -494,5 +496,9 @@ public class GUI {
 //			System.out.println( "val:"+val );
 //		}
 		
+	}
+
+	public static Icon getFileIcon(File file) {
+		return FileSystemView.getFileSystemView().getSystemIcon( file );
 	}
 }
