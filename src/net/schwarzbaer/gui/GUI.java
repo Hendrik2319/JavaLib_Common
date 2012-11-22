@@ -357,8 +357,8 @@ public class GUI {
             this.focusActionFlag = focusActionFlag;
         }
 
-        public void focusGained(FocusEvent e) {}
-        public void focusLost(FocusEvent e) {
+        @Override public void focusGained(FocusEvent e) {}
+        @Override public void focusLost(FocusEvent e) {
             if ( (focusActionFlag!=null) && !focusActionFlag.isFocusActionAllowedNow()) return;
             if ( e.getComponent() instanceof JTextField_HS ) {
                 JTextField_HS txtf = (JTextField_HS)e.getComponent();
