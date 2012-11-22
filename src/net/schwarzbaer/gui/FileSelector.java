@@ -33,6 +33,11 @@ public class FileSelector implements ActionListener {
 		fileChooser.setCurrentDirectory(new File(dir));
 	}
 
+	public void setEnabled(boolean b) {
+		button.setEnabled(b);
+		field .setEnabled(b);
+	}
+
 	public Component getInputField() {
 		if (field==null) field = GUI.createTextField("select field", this, true, null);
 		return field;
