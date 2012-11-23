@@ -257,19 +257,32 @@ public class GUI {
         return textfield;
     }
     
-    private static class TextFieldFocusListener implements FocusListener {
+    private static class TextFieldFocusActionListener implements FocusListener, ActionListener {
     	private JTextField textfield;
     	private String commandStr;
     	private ActionListener actionListener;
+		private boolean fireActionPerformed;
     	
-	    public TextFieldFocusListener(JTextField textfield, String commandStr, ActionListener actionListener) {
+	    public TextFieldFocusActionListener(JTextField textfield, String commandStr, ActionListener actionListener) {
 	    	this.textfield = textfield;
 			this.commandStr = commandStr;
 			this.actionListener = actionListener;
+			fireActionPerformed = false;
 		}
-		@Override public void focusGained(FocusEvent e) {}
-		@Override public void focusLost(FocusEvent e) {
-			actionListener.actionPerformed( new ActionEvent( textfield,ActionEvent.ACTION_PERFORMED,commandStr ) );
+		@Override public synchronized void focusGained(FocusEvent e) {
+			fireActionPerformed = true;
+		}
+		@Override public synchronized void focusLost(FocusEvent e) {
+			if (fireActionPerformed) {
+				fireActionPerformed = false;
+				actionListener.actionPerformed( new ActionEvent( textfield,ActionEvent.ACTION_PERFORMED,commandStr ) );
+			}
+		}
+		@Override public synchronized void actionPerformed(ActionEvent e) {
+			if (fireActionPerformed) {
+				fireActionPerformed = false;
+				actionListener.actionPerformed(e);
+			}
 		}
 
 	}
@@ -294,12 +307,16 @@ public class GUI {
     }
 
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
-        JTextField_HS textfield = new JTextField_HS();
+        JTextField textfield = new JTextField();
+        if (focusListener==null) {
+            TextFieldFocusActionListener listener = new TextFieldFocusActionListener(textfield,commandStr,actionListener);
+        	focusListener  = listener;
+        	actionListener = listener;
+        }
+        textfield.addFocusListener ( focusListener  );
         textfield.addActionListener( actionListener );
         textfield.setActionCommand( commandStr );
         textfield.setEditable(editable);
-        if (focusListener!=null) textfield.addFocusListener( focusListener );
-        else                     textfield.addFocusListener( new TextFieldFocusListener(textfield,commandStr,actionListener) );
         return textfield;
     }
     public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable,              FocusListener focusListener ) {
@@ -319,57 +336,57 @@ public class GUI {
         return textfield;
     }
 
-	public static class JTextField_HS extends JTextField {
-		private static final long serialVersionUID = -1107252015179183026L;
-		
-		private String commandStr;
+//	public static class JTextField_HS extends JTextField {
+//		private static final long serialVersionUID = -1107252015179183026L;
+//		
+//		private String commandStr;
+//
+//        public JTextField_HS() {
+//            super();
+//        }
+//
+//        public JTextField_HS( String str ) {
+//            super(str);
+//        }
+//
+//        @Override
+//        public void setActionCommand(String commandStr) {
+//            super.setActionCommand(commandStr);
+//            this.commandStr = commandStr;
+//        }
+//
+//        public String getActionCommand() {
+//            return commandStr;
+//        }
+//    }
 
-        public JTextField_HS() {
-            super();
-        }
-
-        public JTextField_HS( String str ) {
-            super(str);
-        }
-
-        @Override
-        public void setActionCommand(String commandStr) {
-            super.setActionCommand(commandStr);
-            this.commandStr = commandStr;
-        }
-
-        public String getActionCommand() {
-            return commandStr;
-        }
-    }
-
-    public static class JTextField_HS_FocusListener implements FocusListener {
-
-        private ActionListener actionListener;
-        private FocusActionFlag focusActionFlag;
-
-        public JTextField_HS_FocusListener( ActionListener actionListener ) {
-            this( actionListener, null );
-        }
-
-        public JTextField_HS_FocusListener( ActionListener actionListener, FocusActionFlag focusActionFlag ) {
-            this.actionListener = actionListener;
-            this.focusActionFlag = focusActionFlag;
-        }
-
-        @Override public void focusGained(FocusEvent e) {}
-        @Override public void focusLost(FocusEvent e) {
-            if ( (focusActionFlag!=null) && !focusActionFlag.isFocusActionAllowedNow()) return;
-            if ( e.getComponent() instanceof JTextField_HS ) {
-                JTextField_HS txtf = (JTextField_HS)e.getComponent();
-                actionListener.actionPerformed( new ActionEvent( txtf, ActionEvent.ACTION_PERFORMED, txtf.getActionCommand() ) );
-            }
-        }
-
-        public static interface FocusActionFlag {
-            public boolean isFocusActionAllowedNow();
-        }
-    }
+//    public static class JTextField_HS_FocusListener implements FocusListener {
+//
+//        private ActionListener actionListener;
+//        private FocusActionFlag focusActionFlag;
+//
+//        public JTextField_HS_FocusListener( ActionListener actionListener ) {
+//            this( actionListener, null );
+//        }
+//
+//        public JTextField_HS_FocusListener( ActionListener actionListener, FocusActionFlag focusActionFlag ) {
+//            this.actionListener = actionListener;
+//            this.focusActionFlag = focusActionFlag;
+//        }
+//
+//        @Override public void focusGained(FocusEvent e) {}
+//        @Override public void focusLost(FocusEvent e) {
+//            if ( (focusActionFlag!=null) && !focusActionFlag.isFocusActionAllowedNow()) return;
+//            if ( e.getComponent() instanceof JTextField_HS ) {
+//                JTextField_HS txtf = (JTextField_HS)e.getComponent();
+//                actionListener.actionPerformed( new ActionEvent( txtf, ActionEvent.ACTION_PERFORMED, txtf.getActionCommand() ) );
+//            }
+//        }
+//
+//        public static interface FocusActionFlag {
+//            public boolean isFocusActionAllowedNow();
+//        }
+//    }
     
 	public static final int ALIGNMENT_TOP    = -1;
 	public static final int ALIGNMENT_CENTER =  0;
