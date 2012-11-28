@@ -49,13 +49,22 @@ public class FileSelector implements ActionListener {
 			comboBox.setEditable(true);
 			defaultFieldBackground = comboBox.getBackground();
 			break;
-		case WITHOUT_ALTERNATIVES: defaultFieldBackground = new JTextField().getBackground(); break;
+		case WITHOUT_ALTERNATIVES:
+			defaultFieldBackground = new JTextField().getBackground();
+			break;
 		}
 		
 	}
 	
 	public void setCurrentDirectory(String dir) {
-		fileChooser.setCurrentDirectory(new File(dir));
+		File file = new File(dir);
+		System.out.println("old CurrentDirectory = \""+fileChooser.getCurrentDirectory()+"\"");
+		System.out.println("new CurrentDirectory = \""+file+"\"");
+		
+		try { fileChooser.setCurrentDirectory(file); }
+		catch (Exception e) {
+			System.out.println("Can't change current directory of filechooser to \""+file+"\".");
+		}
 	}
 
 	public void addAlternative(String dir) {
@@ -209,27 +218,27 @@ public class FileSelector implements ActionListener {
 		}
 
 		@Override
-		public void addElement(String arg0) {
-			// TODO Auto-generated method stub
-			
+		public void addElement(String item) {
+			System.out.printf("addElement(\"%s\")\r\n",item);
+			items.add(item);
 		}
 
 		@Override
-		public void insertElementAt(String arg0, int arg1) {
-			// TODO Auto-generated method stub
-			
+		public void insertElementAt(String item, int i) {
+			System.out.printf("insertElementAt(\"%s\",%d)\r\n",item,i);
+			items.insertElementAt(item,i);
 		}
 
 		@Override
-		public void removeElement(Object arg0) {
-			// TODO Auto-generated method stub
-			
+		public void removeElement(Object item) {
+			System.out.printf("removeElement(\"%s\")\r\n",item);
+			items.remove(item);
 		}
 
 		@Override
-		public void removeElementAt(int arg0) {
-			// TODO Auto-generated method stub
-			
+		public void removeElementAt(int i) {
+			System.out.printf("removeElementAt(%d)\r\n",i);
+			items.removeElementAt(i);
 		}
 	
 	}
