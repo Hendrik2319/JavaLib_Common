@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Iterator;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -31,6 +32,16 @@ public class FileSelector implements ActionListener {
 	
 	public void setCurrentDirectory(String dir) {
 		fileChooser.setCurrentDirectory(new File(dir));
+	}
+
+	public void addAlternative(String dir) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public Iterator<String> getAlternatives() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	public void setEnabled(boolean b) {
@@ -73,7 +84,7 @@ public class FileSelector implements ActionListener {
 		}
 		if (e.getActionCommand().equals("select field")) {
 			File selectedFile = new File(field.getText());
-			if (checkDir(selectedFile) && listener.isFileANewChoise(id, selectedFile)) {
+			if (checkDir(selectedFile) && listener.isFileANewChoice(id, selectedFile)) {
 				listener.fileSelectionChanged(id, selectedFile);
 				fileChooser.setSelectedFile(selectedFile);
 			}
@@ -95,6 +106,6 @@ public class FileSelector implements ActionListener {
 	public interface FileSelectorListener {
 		public void    fileSelectionChanged(String id, File file);
 		public boolean isFileOK            (String id, File file);
-		public boolean isFileANewChoise    (String id, File file);
+		public boolean isFileANewChoice    (String id, File file);
 	}
 }

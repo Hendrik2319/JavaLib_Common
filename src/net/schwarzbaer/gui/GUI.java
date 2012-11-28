@@ -416,8 +416,14 @@ public class GUI {
 			@Override public int compare(Object o1, Object o2) { return o1.toString().compareTo(o2.toString()); }
 		});
 		for (int i=0; i<keySet.size(); i++) {
-			out.println(String.format("%s=%s", toString(keySet.get(i)),toString(properties.get(keySet.get(i)))));
+			out.println(String.format("%s=%s", toString(keySet.get(i)),replace(toString(properties.get(keySet.get(i))))));
 		}
+	}
+
+	private static String replace(String string) {
+		for (int i=0; i<32; i++)
+			string = string.replace(""+(char)i, String.format("%%%02X", i));
+		return string;
 	}
 
 	private static String toString(Object object) {
