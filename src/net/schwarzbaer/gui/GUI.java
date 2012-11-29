@@ -14,11 +14,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
-import java.io.PrintStream;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Properties;
-import java.util.Vector;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -51,7 +46,7 @@ import javax.swing.filechooser.FileSystemView;
  * 
  * @author Hendrik
  */
-public class GUI {
+public final class GUI {
 
 	public static void setSystemLookAndFeel() {
 		try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
@@ -61,7 +56,11 @@ public class GUI {
 		catch (UnsupportedLookAndFeelException e) {}
 	}
 	
-    public static void addButtonToPanelAndButtonGroup( JPanel buttonPanel, ButtonGroup buttonGroup, AbstractButton btn ) {
+    public static Icon getFileIcon(File file) {
+		return FileSystemView.getFileSystemView().getSystemIcon( file );
+	}
+
+	public static void addButtonToPanelAndButtonGroup( JPanel buttonPanel, ButtonGroup buttonGroup, AbstractButton btn ) {
     	buttonPanel.add(btn);
     	buttonGroup.add(btn);
     }
@@ -409,27 +408,6 @@ public class GUI {
 		g.drawString(str, x, y);
 	}
 
-	public static void listSystemPropertiesSorted(PrintStream out) {
-		Properties properties = System.getProperties();
-		Vector<Object> keySet = new Vector<Object>(properties.keySet());
-		Collections.sort(keySet,new Comparator<Object>(){
-			@Override public int compare(Object o1, Object o2) { return o1.toString().compareTo(o2.toString()); }
-		});
-		for (int i=0; i<keySet.size(); i++) {
-			out.println(String.format("%s=%s", toString(keySet.get(i)),replace(toString(properties.get(keySet.get(i))))));
-		}
-	}
-
-	private static String replace(String string) {
-		for (int i=0; i<32; i++)
-			string = string.replace(""+(char)i, String.format("%%%02X", i));
-		return string;
-	}
-
-	private static String toString(Object object) {
-		return (object==null?"<null>":object.toString());
-	}
-
 	public static void makeAutoScroll(JScrollPane scrollPane) {
 		new AutoScrollModel().makeAutoScroll(scrollPane);
 	}
@@ -519,9 +497,5 @@ public class GUI {
 //			System.out.println( "val:"+val );
 //		}
 		
-	}
-
-	public static Icon getFileIcon(File file) {
-		return FileSystemView.getFileSystemView().getSystemIcon( file );
 	}
 }

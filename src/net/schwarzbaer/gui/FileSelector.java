@@ -6,19 +6,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.util.Iterator;
-import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JTextField;
-import javax.swing.MutableComboBoxModel;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
 
 
 public class FileSelector implements ActionListener {
 
+	private static final boolean DEBUG = false;
+	
 	private final Component parent;
 	private final String id;
 	private final Type type;
@@ -27,8 +25,10 @@ public class FileSelector implements ActionListener {
 	private JButton button;
 	private JTextField field;
 	private JComboBox<String> cmbbx;
+	private ComboBoxModelWithoutRedundancy<String> cmbbxContent;
 	private Color defaultFieldBackground;
-
+	private String lastSetFileStr;
+	
 	public FileSelector(Component parent, String id, FileSelectorListener listener) {
 		this(parent, id, Type.WITHOUT_ALTERNATIVES, listener);
 	}
@@ -41,25 +41,30 @@ public class FileSelector implements ActionListener {
 		fileChooser = new JFileChooser(".");
 		fileChooser.setMultiSelectionEnabled(false);
 		button = null;
-		field = null;
 		cmbbx = null;
+		cmbbxContent = null;
+		field = null;
 		switch(type) {
 		case WITH_ALTERNATIVES   :
-			JComboBox<String> comboBox = new JComboBox<String>();
-			comboBox.setEditable(true);
-			defaultFieldBackground = comboBox.getBackground();
+			cmbbxContent = new ComboBoxModelWithoutRedundancy<String>();
+			cmbbx = new JComboBox<String>(cmbbxContent);
+			cmbbx.setActionCommand("select field");
+			cmbbx.addActionListener(this);
+			cmbbx.setEditable(true);
+			defaultFieldBackground = cmbbx.getBackground();
 			break;
 		case WITHOUT_ALTERNATIVES:
-			defaultFieldBackground = new JTextField().getBackground();
+			field = GUI.createTextField("select field", this, true, null);
+			defaultFieldBackground = field.getBackground();
 			break;
 		}
-		
+		lastSetFileStr = null;
 	}
 	
-	public void setCurrentDirectory(String dir) {
+	public void setFileChooserDirectory(String dir) {
 		File file = new File(dir);
-		System.out.println("old CurrentDirectory = \""+fileChooser.getCurrentDirectory()+"\"");
-		System.out.println("new CurrentDirectory = \""+file+"\"");
+		if (DEBUG) System.out.printf("FileSelector.setFileChooserDirectory(\"%s\")  old CurrentDirectory = \"%s\"",dir,fileChooser.getCurrentDirectory());
+		if (DEBUG) System.out.printf("FileSelector.setFileChooserDirectory(\"%s\")  new CurrentDirectory = \"%s\"",dir,file);
 		
 		try { fileChooser.setCurrentDirectory(file); }
 		catch (Exception e) {
@@ -68,16 +73,23 @@ public class FileSelector implements ActionListener {
 	}
 
 	public void addAlternative(String dir) {
-		System.out.printf("addAlternative(\"%s\")\r\n",dir);
-		if (type==Type.WITHOUT_ALTERNATIVES) return;
+		if (DEBUG) System.out.printf("FileSelector.addAlternative(\"%s\")\r\n",dir);
+		if (type!=Type.WITH_ALTERNATIVES) return;
 		cmbbx.addItem(dir);
-		
 	}
 
+	public void addAlternatives(Iterator<String> iterator) {
+		if (DEBUG) System.out.printf("FileSelector.addAlternatives([%s])\r\n",iterator);
+		if (type!=Type.WITH_ALTERNATIVES) return;
+		cmbbx.removeAllItems();
+		if (iterator!=null)
+			while(iterator.hasNext())
+				cmbbx.addItem(iterator.next());
+		}
+
 	public Iterator<String> getAlternatives() {
-		if (type==Type.WITHOUT_ALTERNATIVES) return null;
-		// TODO Auto-generated method stub
-		return null;
+		if (type!=Type.WITH_ALTERNATIVES) return null;
+		return cmbbxContent.getItemIterator();
 	}
 
 	public void setEnabled(boolean b) {
@@ -90,17 +102,8 @@ public class FileSelector implements ActionListener {
 
 	public Component getInputField() {
 		switch(type) {
-		case WITH_ALTERNATIVES:
-			if (cmbbx==null) {
-				cmbbx = new JComboBox<String>(new AlternativeModel());
-				cmbbx.setActionCommand("select field");
-				cmbbx.addActionListener(this);
-				cmbbx.setEditable(true);
-			}
-			return cmbbx;
-		case WITHOUT_ALTERNATIVES:
-			if (field==null) field = GUI.createTextField("select field", this, true, null);
-			return field;
+		case WITH_ALTERNATIVES   : return cmbbx;
+		case WITHOUT_ALTERNATIVES: return field;
 		}
 		return null;
 	}
@@ -119,16 +122,25 @@ public class FileSelector implements ActionListener {
 		if (e.getActionCommand().equals("select button")) {
 			if (fileChooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
 				File selectedFile = fileChooser.getSelectedFile();
-				setFieldText(selectedFile.toString());
+				if (DEBUG) System.out.printf("FileSelector.actionPerformed(\"%s\") selectedFile:\"%s\"\r\n",e.getActionCommand(),selectedFile);
+				lastSetFileStr = selectedFile.toString();
+				setFieldText(lastSetFileStr);
 				if (checkDir(selectedFile))
-					listener.fileSelectionChanged(id, selectedFile);
+					listener.fileSelectionChanged(this, id, selectedFile);
 			}
 			return;
 		}
 		if (e.getActionCommand().equals("select field")) {
-			File selectedFile = new File(getFieldText());
-			if (checkDir(selectedFile) && listener.isFileANewChoice(id, selectedFile)) {
-				listener.fileSelectionChanged(id, selectedFile);
+			String newFileStr = getFieldText();
+			if (newFileStr.equals(lastSetFileStr)) {
+				lastSetFileStr = null;
+				return;
+			}
+			lastSetFileStr = null;
+			File selectedFile = new File(newFileStr);
+			if (DEBUG) System.out.printf("FileSelector.actionPerformed(\"%s\") selectedFile:\"%s\"\r\n",e.getActionCommand(),selectedFile);
+			if (checkDir(selectedFile) && listener.isFileANewChoice(this, id, selectedFile)) {
+				listener.fileSelectionChanged(this, id, selectedFile);
 				fileChooser.setSelectedFile(selectedFile);
 			}
 			return;
@@ -152,7 +164,7 @@ public class FileSelector implements ActionListener {
 	
 	private boolean checkDir(File selectedFile) {
 		
-		if (!listener.isFileOK(id, selectedFile)) {
+		if (!listener.isFileOK(this, id, selectedFile)) {
 			switch(type) {
 			case WITH_ALTERNATIVES   : cmbbx.setBackground(Color.RED); break;
 			case WITHOUT_ALTERNATIVES: field.setBackground(Color.RED); break;
@@ -172,80 +184,9 @@ public class FileSelector implements ActionListener {
 		WITHOUT_ALTERNATIVES
 	}
 	
-	public class AlternativeModel implements MutableComboBoxModel<String> {
-		
-		private final Vector<ListDataListener> listeners;
-		private final Vector<String> items;
-		private String selectedItem;
-
-		public AlternativeModel() {
-			listeners = new Vector<ListDataListener>();
-			items = new Vector<String>();
-		}
-		
-		@Override public void    addListDataListener(ListDataListener ldl) { listeners.   add(ldl); }
-		@Override public void removeListDataListener(ListDataListener ldl) { listeners.remove(ldl); }
-		
-		private void fireContentsChanged(ListDataEvent e) {
-			Iterator<ListDataListener> it = listeners.iterator();
-			while(it.hasNext()) it.next().contentsChanged(e);
-		}
-		private void fireIntervalAdded(ListDataEvent e) {
-			Iterator<ListDataListener> it = listeners.iterator();
-			while(it.hasNext()) it.next().intervalAdded(e);
-		}
-		private void fireIntervalRemoved(ListDataEvent e) {
-			Iterator<ListDataListener> it = listeners.iterator();
-			while(it.hasNext()) it.next().intervalRemoved(e);
-		}
-
-		@Override public int getSize() { return items.size(); }
-		@Override public String getElementAt(int i) {
-			System.out.printf("getElementAt(%d) [=\"%s\"]\r\n",i,items.get(i));
-			return items.get(i);
-		}
-
-		@Override
-		public Object getSelectedItem() {
-			System.out.printf("getSelectedItem() [=\"%s\"]\r\n",this.selectedItem);
-			return this.selectedItem;
-		}
-	
-		@Override
-		public void setSelectedItem(Object selectedItem) {
-			this.selectedItem = (selectedItem==null?null:selectedItem.toString());
-			System.out.printf("setSelectedItem(\"%s\")\r\n",selectedItem);
-		}
-
-		@Override
-		public void addElement(String item) {
-			System.out.printf("addElement(\"%s\")\r\n",item);
-			items.add(item);
-		}
-
-		@Override
-		public void insertElementAt(String item, int i) {
-			System.out.printf("insertElementAt(\"%s\",%d)\r\n",item,i);
-			items.insertElementAt(item,i);
-		}
-
-		@Override
-		public void removeElement(Object item) {
-			System.out.printf("removeElement(\"%s\")\r\n",item);
-			items.remove(item);
-		}
-
-		@Override
-		public void removeElementAt(int i) {
-			System.out.printf("removeElementAt(%d)\r\n",i);
-			items.removeElementAt(i);
-		}
-	
-	}
-
-	public interface FileSelectorListener {
-		public void    fileSelectionChanged(String id, File file);
-		public boolean isFileOK            (String id, File file);
-		public boolean isFileANewChoice    (String id, File file);
+	public static interface FileSelectorListener {
+		public void    fileSelectionChanged(FileSelector source, String id, File file);
+		public boolean isFileOK            (FileSelector source, String id, File file);
+		public boolean isFileANewChoice    (FileSelector source, String id, File file);
 	}
 }
