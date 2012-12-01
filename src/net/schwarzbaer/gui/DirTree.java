@@ -41,18 +41,18 @@ public class DirTree {
 	public DirTree(UserTreeNode rootUserTreeNode) {
 		rootNode = DirTreeNode.createEmptyRootNode( rootUserTreeNode );
 		treeModel = new DefaultTreeModel( rootNode );
-        tree = new JTree( treeModel );
+		tree = new JTree( treeModel );
 		tree.setCellRenderer( renderer = new DirTreeCellEditorRenderer() );
 		tree.setCellEditor  ( editor   = new DirTreeCellEditorRenderer() );
-        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        tree.setRowHeight(20);
-        tree.setEditable( true );
+		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		tree.setRowHeight(20);
+		tree.setEditable( true );
 	}
 
 	public void enableCheckBoxForFiles      (boolean b) { renderer.enableCheckBoxForFiles      (b); editor.enableCheckBoxForFiles      (b); }
 	public void enableCheckBoxForDirectories(boolean b) { renderer.enableCheckBoxForDirectories(b); editor.enableCheckBoxForDirectories(b); }
 	public void setRowHeight(int rh) {
-        tree.setRowHeight(rh);
+		tree.setRowHeight(rh);
 		renderer.setRowHeight(rh);
 		editor.setRowHeight(rh);
 	}
@@ -71,230 +71,230 @@ public class DirTree {
 
 	public void prepareChildren() {
 		rootNode.prepareChildren_recursive();
-		
+
 	}
-	
-    public static interface UserTreeNode {
 
-    	public void setDirTreeNode(DirTreeNode dirTreeNode);
-    	public UserTreeNode createChildNode();
-    	public void analyseChildren();
-    	public Color getTreeItemBGColorForCheckBox();
-    	public Color getTreeItemBGColorForLabel();
-    	
-    }
-    public static class DirTreeNode implements TreeNode, Comparable<DirTreeNode> {
+	public static interface UserTreeNode {
 
-        public final File file;
-        public final DirTreeNode parent;
-        public final UserTreeNode userTreeNode;
-        public DirTreeNode[] children;
-        private Icon icon;
-        private boolean isSelected;
-        
-        public static DirTreeNode createEmptyRootNode(UserTreeNode userTreeNode) {
-            DirTreeNode dummyRootNode = new DirTreeNode( null, null, userTreeNode );
-            dummyRootNode.children = new DirTreeNode[0];
-            return dummyRootNode;
-        }
+		public void setDirTreeNode(DirTreeNode dirTreeNode);
+		public UserTreeNode createChildNode();
+		public void analyseChildren();
+		public Color getTreeItemBGColorForCheckBox();
+		public Color getTreeItemBGColorForLabel();
 
-        public DirTreeNode(File file, UserTreeNode userTreeNode) {
-            this( file, null, userTreeNode );
-        }
+	}
+	public static class DirTreeNode implements TreeNode, Comparable<DirTreeNode> {
 
-        private DirTreeNode(File file1, DirTreeNode parent, UserTreeNode userTreeNode) {
-            this.file = file1;
-            this.parent = parent;
-    		this.userTreeNode = userTreeNode;
-            this.children = null;
-            this.icon = null;
-            if (file != null) this.icon = FileSystemView.getFileSystemView().getSystemIcon( file );
-            userTreeNode.setDirTreeNode(this);
-            isSelected = false;
-        }
+		public final File file;
+		public final DirTreeNode parent;
+		public final UserTreeNode userTreeNode;
+		public DirTreeNode[] children;
+		private Icon icon;
+		private boolean isSelected;
 
-        public void prepareChildren_recursive() {
-            prepareChildren( "collector" );
-            for (int i=0; i<children.length; i++ ) {
-                children[i].prepareChildren_recursive();
-            }
-        }
+		public static DirTreeNode createEmptyRootNode(UserTreeNode userTreeNode) {
+			DirTreeNode dummyRootNode = new DirTreeNode( null, null, userTreeNode );
+			dummyRootNode.children = new DirTreeNode[0];
+			return dummyRootNode;
+		}
 
-        public void prepareChildren() {
-            prepareChildren( "node" );
-        }
+		public DirTreeNode(File file, UserTreeNode userTreeNode) {
+			this( file, null, userTreeNode );
+		}
 
-        private synchronized void prepareChildren( String callerStr ) {
-            if (children!=null) return;
-//            System.out.println( callerStr+" prepareChildren: "+file );
-//            System.out.println( "DirTreeNode.prepareChildren: "+file );
-            if ( (file == null) || file.isFile() ) {
-                children = new DirTreeNode[0];
-            	return;
-            }
-            File[] files = file.listFiles();
-            if (files==null) {
-                children = new DirTreeNode[0];
-            	return;
-            }
-            children = new DirTreeNode[files.length];
-            for (int i=0; i<files.length; i++ ) {
-//                System.out.println( "   create child: "+files[i] );
-                children[i] = new DirTreeNode( files[i], this, userTreeNode.createChildNode() );
-            }
-            
-            userTreeNode.analyseChildren();
-        }
+		private DirTreeNode(File file1, DirTreeNode parent, UserTreeNode userTreeNode) {
+			this.file = file1;
+			this.parent = parent;
+			this.userTreeNode = userTreeNode;
+			this.children = null;
+			this.icon = null;
+			if (file != null) this.icon = FileSystemView.getFileSystemView().getSystemIcon( file );
+			userTreeNode.setDirTreeNode(this);
+			isSelected = false;
+		}
 
-        public File getFileObj() {
-            return file;
-        }
+		public void prepareChildren_recursive() {
+			prepareChildren( "collector" );
+			for (int i=0; i<children.length; i++ ) {
+				children[i].prepareChildren_recursive();
+			}
+		}
 
-        public Icon getIcon() {
-            return icon;
-//            if (file != null) return FileSystemView.getFileSystemView().getSystemIcon( file );
-//            return null;
-        }
+		public void prepareChildren() {
+			prepareChildren( "node" );
+		}
 
-        @Override
-    	public TreeNode getChildAt(int childIndex) {
-            prepareChildren();
-            return children[childIndex];
-        }
+		private synchronized void prepareChildren( String callerStr ) {
+			if (children!=null) return;
+			//            System.out.println( callerStr+" prepareChildren: "+file );
+			//            System.out.println( "DirTreeNode.prepareChildren: "+file );
+			if ( (file == null) || file.isFile() ) {
+				children = new DirTreeNode[0];
+				return;
+			}
+			File[] files = file.listFiles();
+			if (files==null) {
+				children = new DirTreeNode[0];
+				return;
+			}
+			children = new DirTreeNode[files.length];
+			for (int i=0; i<files.length; i++ ) {
+				//                System.out.println( "   create child: "+files[i] );
+				children[i] = new DirTreeNode( files[i], this, userTreeNode.createChildNode() );
+			}
 
-        @Override
-    	public int getChildCount() {
-            prepareChildren();
-            return children.length;
-        }
-        @Override
-    	public TreeNode getParent() {
-            return parent;
-        }
+			userTreeNode.analyseChildren();
+		}
 
-        @Override
-    	public int getIndex(TreeNode node) {
-            prepareChildren();
-            for ( int i=0; i<children.length; i++)
-                if (children[i].equals(node)) return i;
-            return -1;
-        }
+		public File getFileObj() {
+			return file;
+		}
 
-        public void setSelected( boolean isSelected ) {
-            this.isSelected = isSelected;
-        }
+		public Icon getIcon() {
+			return icon;
+			//            if (file != null) return FileSystemView.getFileSystemView().getSystemIcon( file );
+			//            return null;
+		}
 
-        public boolean isSelected() {
-            return isSelected;
-        }
+		@Override
+		public TreeNode getChildAt(int childIndex) {
+			prepareChildren();
+			return children[childIndex];
+		}
 
-        public boolean isDirectory() {
-            if (file==null) return false;
-            return file.isDirectory();
-        }
+		@Override
+		public int getChildCount() {
+			prepareChildren();
+			return children.length;
+		}
+		@Override
+		public TreeNode getParent() {
+			return parent;
+		}
 
-        public boolean isFile() {
-            if (file==null) return false;
-            return file.isFile();
-        }
+		@Override
+		public int getIndex(TreeNode node) {
+			prepareChildren();
+			for ( int i=0; i<children.length; i++)
+				if (children[i].equals(node)) return i;
+			return -1;
+		}
 
-        @Override
-    	public boolean getAllowsChildren() {
-            return isDirectory();
-        }
-        @Override
-    	public boolean isLeaf() {
-            prepareChildren();
-            return children.length==0;
-        }
+		public void setSelected( boolean isSelected ) {
+			this.isSelected = isSelected;
+		}
 
-        @Override
-    	public Enumeration<?> children() {
-            prepareChildren();
-            return new TreeNodeEnumeration(children);
-        }
+		public boolean isSelected() {
+			return isSelected;
+		}
 
-        @Override
-        public String toString() {
-            if (file==null) return "<empty>";
-            if (parent==null) return file.getPath();
-            return file.getName();
-        }
+		public boolean isDirectory() {
+			if (file==null) return false;
+			return file.isDirectory();
+		}
 
-        @Override
-    	public int compareTo(DirTreeNode other) {
-        	if ( (this.file==null) && (other.file==null) ) return 0;
-        	if (this.file==null) return +1;
-        	if (other.file==null) return -1;
-            return this.file.getName().compareToIgnoreCase( other.file.getName() );
-    	}
-        
-        private static class TreeNodeEnumeration implements Enumeration<DirTreeNode> {
-            
-            private DirTreeNode[] treeNodes;
-            private int index;
+		public boolean isFile() {
+			if (file==null) return false;
+			return file.isFile();
+		}
 
-            public TreeNodeEnumeration(DirTreeNode[] treeNodes) {
-                this.treeNodes = treeNodes;
-                this.index = 0;
-            }
+		@Override
+		public boolean getAllowsChildren() {
+			return isDirectory();
+		}
+		@Override
+		public boolean isLeaf() {
+			prepareChildren();
+			return children.length==0;
+		}
 
-            @Override public boolean hasMoreElements() { return (treeNodes!=null) && (index<treeNodes.length); }
-            @Override public DirTreeNode nextElement() { index++; return treeNodes[index-1]; }
+		@Override
+		public Enumeration<DirTreeNode> children() {
+			prepareChildren();
+			return new TreeNodeEnumeration(children);
+		}
 
-        }
-    }
-    
-    public static class DirTreeCellEditorRenderer implements TreeCellRenderer, TreeCellEditor, ActionListener {
+		@Override
+		public String toString() {
+			if (file==null) return "<empty>";
+			if (parent==null) return file.getPath();
+			return file.getName();
+		}
 
-        private final Color Const_FocussedCellRendererColor = new Color( 0.6f, 0.8f, 1.0f );
+		@Override
+		public int compareTo(DirTreeNode other) {
+			if ( (this.file==null) && (other.file==null) ) return 0;
+			if (this.file==null) return +1;
+			if (other.file==null) return -1;
+			return this.file.getName().compareToIgnoreCase( other.file.getName() );
+		}
+
+		private static class TreeNodeEnumeration implements Enumeration<DirTreeNode> {
+
+			private DirTreeNode[] treeNodes;
+			private int index;
+
+			public TreeNodeEnumeration(DirTreeNode[] treeNodes) {
+				this.treeNodes = treeNodes;
+				this.index = 0;
+			}
+
+			@Override public boolean hasMoreElements() { return (treeNodes!=null) && (index<treeNodes.length); }
+			@Override public DirTreeNode nextElement() { index++; return treeNodes[index-1]; }
+
+		}
+	}
+
+	public static class DirTreeCellEditorRenderer implements TreeCellRenderer, TreeCellEditor, ActionListener {
+
+		private final Color Const_FocussedCellRendererColor = new Color( 0.6f, 0.8f, 1.0f );
 		private final Color Const_CellEditorColor           = new Color( 0.6f, 0.8f, 0.8f );
 		private JPanel compChkBx_Panel;
-        private JLabel compChkBx_Label;
-        private JCheckBox compChkBx_CheckBox;
-        private JPanel compLabel_Panel;
-        private JLabel compLabel_Label;
-        private Vector<CellEditorListener> CellEditorListeners;
-        private DirTreeNode currentEditorValue;
-        private int rowHeight;
+		private JLabel compChkBx_Label;
+		private JCheckBox compChkBx_CheckBox;
+		private JPanel compLabel_Panel;
+		private JLabel compLabel_Label;
+		private Vector<CellEditorListener> CellEditorListeners;
+		private DirTreeNode currentEditorValue;
+		private int rowHeight;
 		private boolean useCheckBoxForDirectories;
 		private boolean useCheckBoxForFiles;
 
-        public DirTreeCellEditorRenderer() {
+		public DirTreeCellEditorRenderer() {
 			rowHeight = 20;
 			useCheckBoxForDirectories = false;
 			useCheckBoxForFiles = false;
-        	
-            compChkBx_CheckBox = new JCheckBox();
-            compChkBx_CheckBox.setActionCommand("checkbox");
-            compChkBx_CheckBox.addActionListener(this);
-            
-            compChkBx_Panel = new JPanel( new BorderLayout() );
-            compChkBx_Panel.add( compChkBx_CheckBox, BorderLayout.WEST );
-            compChkBx_Panel.add( compChkBx_Label = new JLabel(), BorderLayout.CENTER );
 
-            compLabel_Panel = new JPanel( new BorderLayout() );
-            compLabel_Panel.add( compLabel_Label = new JLabel(), BorderLayout.CENTER );
-            
-            compChkBx_Panel.setBorder( BorderFactory.createEmptyBorder( 2,0,2,0 ) );
-            compLabel_Panel.setBorder( BorderFactory.createEmptyBorder( 2,0,2,0 ) );
+			compChkBx_CheckBox = new JCheckBox();
+			compChkBx_CheckBox.setActionCommand("checkbox");
+			compChkBx_CheckBox.addActionListener(this);
 
-            compChkBx_Label.setFont( new JTextField().getFont() );
-            compLabel_Label.setFont( new JTextField().getFont() );
-            
-            compChkBx_Panel   .setOpaque( false );
-            compChkBx_CheckBox.setOpaque( false );
-            compChkBx_Label   .setOpaque( false );
-            
-            compLabel_Panel   .setOpaque( false );
-            compLabel_Label   .setOpaque( false );
+			compChkBx_Panel = new JPanel( new BorderLayout() );
+			compChkBx_Panel.add( compChkBx_CheckBox, BorderLayout.WEST );
+			compChkBx_Panel.add( compChkBx_Label = new JLabel(), BorderLayout.CENTER );
 
-            CellEditorListeners = new Vector<CellEditorListener>();
-            currentEditorValue = null;
-        }
+			compLabel_Panel = new JPanel( new BorderLayout() );
+			compLabel_Panel.add( compLabel_Label = new JLabel(), BorderLayout.CENTER );
 
-        public void setRowHeight(int rowHeight) {
-        	this.rowHeight = rowHeight;
+			compChkBx_Panel.setBorder( BorderFactory.createEmptyBorder( 2,0,2,0 ) );
+			compLabel_Panel.setBorder( BorderFactory.createEmptyBorder( 2,0,2,0 ) );
+
+			compChkBx_Label.setFont( new JTextField().getFont() );
+			compLabel_Label.setFont( new JTextField().getFont() );
+
+			compChkBx_Panel   .setOpaque( false );
+			compChkBx_CheckBox.setOpaque( false );
+			compChkBx_Label   .setOpaque( false );
+
+			compLabel_Panel   .setOpaque( false );
+			compLabel_Label   .setOpaque( false );
+
+			CellEditorListeners = new Vector<CellEditorListener>();
+			currentEditorValue = null;
+		}
+
+		public void setRowHeight(int rowHeight) {
+			this.rowHeight = rowHeight;
 		}
 
 		public void enableCheckBoxForDirectories(boolean b) {
@@ -307,122 +307,149 @@ public class DirTree {
 
 		private JComponent getTreeCellEditorRendererComponent(JTree tree, DirTreeNode dtn, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 
-            compChkBx_Panel   .setOpaque( false );
-            compChkBx_CheckBox.setOpaque( false );
-            compChkBx_Label   .setOpaque( false );
-            
-            compLabel_Panel   .setOpaque( false );
-            compLabel_Label   .setOpaque( false );
-            
-            JComponent panel = compLabel_Panel;
-            JLabel     label = compLabel_Label;
-            
-            String text = "???";
-            
-            if (dtn!=null) {
-            	text = dtn.toString();
-            	
-                if ( (dtn.isDirectory() && useCheckBoxForDirectories) || (dtn.isFile() && useCheckBoxForFiles) ) {
-                    panel = compChkBx_Panel;
-                    label = compChkBx_Label;
-                    
-                    Color chkBxBGColor = dtn.userTreeNode.getTreeItemBGColorForCheckBox();
-                    if (chkBxBGColor!=null) {
-                        compChkBx_CheckBox.setOpaque( true );
-                        compChkBx_CheckBox.setBackground( chkBxBGColor );
-                    }
-                    
-                    compChkBx_CheckBox.setSelected( dtn.isSelected() );
-                }
-                
-                Color labelBGColor = dtn.userTreeNode.getTreeItemBGColorForLabel();
-                if (labelBGColor!=null) {
-                    label.setOpaque( true );
-                    label.setBackground( labelBGColor );
-                }
-                
-                label.setIcon( dtn.getIcon() );
-            } else {
-                label.setIcon( null );
-            }
+			compChkBx_Panel   .setOpaque( false );
+			compChkBx_CheckBox.setOpaque( false );
+			compChkBx_Label   .setOpaque( false );
 
-            if (hasFocus) {
-                panel.setOpaque( true );
-                panel.setBackground( this.Const_FocussedCellRendererColor );
-            }
+			compLabel_Panel   .setOpaque( false );
+			compLabel_Label   .setOpaque( false );
 
-            label.setText( text );
+			JComponent panel = compLabel_Panel;
+			JLabel     label = compLabel_Label;
 
-            Dimension d = new Dimension(20,rowHeight);
-//            Dimension d = cellRendererLabelComponent.getPreferredSize();
-            d.width = label.getFontMetrics( label.getFont() ).stringWidth(text);
-            d.width = d.width + d.width/20 + 30;
-            label.setPreferredSize( d );
-            
-            return panel;
-        }
+			String text = "???";
 
-        @Override
-    	public Component getTreeCellRendererComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-            DirTreeNode dtn = null;
-            if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
-//            System.out.println("getTreeCellRendererComponent: "+dtn);
-            return getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, hasFocus);
-        }
+			if (dtn!=null) {
+				text = dtn.toString();
 
-        @Override
-    	public Component getTreeCellEditorComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row) {
-            DirTreeNode dtn = null;
-            if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
-//            System.out.println("getTreeCellEditorComponent: "+dtn);
-            JComponent cellEditorComponent = getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, true );
-            if ( value instanceof DirTreeNode ) currentEditorValue = (DirTreeNode)value;
-            else                                currentEditorValue = null;
-            cellEditorComponent.setOpaque( true );
-            cellEditorComponent.setBackground( this.Const_CellEditorColor );
-            return cellEditorComponent;
-        }
+				if ( (dtn.isDirectory() && useCheckBoxForDirectories) || (dtn.isFile() && useCheckBoxForFiles) ) {
+					panel = compChkBx_Panel;
+					label = compChkBx_Label;
 
-        @Override
-    	public Object  getCellEditorValue()                  {
-            return currentEditorValue;
-        }
-        @Override
-    	public boolean isCellEditable(EventObject anEvent) {
-//			System.out.println("isCellEditable: ");
-//			TreeSelectionModel model = tree.getSelectionModel();
-//			System.out.println("isCellEditable: "+(model==null?"??":model.getSelectionCount()) );
-            return true;
-        }
-        @Override
-    	public boolean shouldSelectCell(EventObject anEvent) { return false; }
+					Color chkBxBGColor = dtn.userTreeNode.getTreeItemBGColorForCheckBox();
+					if (chkBxBGColor!=null) {
+						compChkBx_CheckBox.setOpaque( true );
+						compChkBx_CheckBox.setBackground( chkBxBGColor );
+					}
 
-        @Override
-    	public boolean stopCellEditing() {
-            currentEditorValue = null;
-            Iterator<CellEditorListener> it = CellEditorListeners.iterator();
-            while (it.hasNext()) it.next().editingStopped( new ChangeEvent(this) );
-            return true;
-        }
+					compChkBx_CheckBox.setSelected( dtn.isSelected() );
+				}
 
-        @Override
-    	public void cancelCellEditing() {
-            currentEditorValue = null;
-            Iterator<CellEditorListener> it = CellEditorListeners.iterator();
-            while (it.hasNext()) it.next().editingCanceled( new ChangeEvent(this) );
-        }
+				Color labelBGColor = dtn.userTreeNode.getTreeItemBGColorForLabel();
+				if (labelBGColor!=null) {
+					label.setOpaque( true );
+					label.setBackground( labelBGColor );
+				}
 
-        @Override public void addCellEditorListener   (CellEditorListener l) { CellEditorListeners.add(l); }
-        @Override public void removeCellEditorListener(CellEditorListener l) { CellEditorListeners.remove(l); }
+				label.setIcon( dtn.getIcon() );
+			} else {
+				label.setIcon( null );
+			}
 
-        @Override
-    	public void actionPerformed(ActionEvent e) {
-            if ("checkbox".equals(e.getActionCommand())) {
-                if (currentEditorValue != null) {
-                    currentEditorValue.setSelected( compChkBx_CheckBox.isSelected() );
-                }
-                return;
-            }
-        }
-    }
+			if (hasFocus) {
+				panel.setOpaque( true );
+				panel.setBackground( this.Const_FocussedCellRendererColor );
+			}
+
+			label.setText( text );
+
+			Dimension d = new Dimension(20,rowHeight);
+			//            Dimension d = cellRendererLabelComponent.getPreferredSize();
+			d.width = label.getFontMetrics( label.getFont() ).stringWidth(text);
+			d.width = d.width + d.width/20 + 30;
+			label.setPreferredSize( d );
+
+			return panel;
+		}
+
+		@Override
+		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+			DirTreeNode dtn = null;
+			if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
+			//            System.out.println("getTreeCellRendererComponent: "+dtn);
+			return getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, hasFocus);
+		}
+
+		@Override
+		public Component getTreeCellEditorComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row) {
+			DirTreeNode dtn = null;
+			if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
+			//            System.out.println("getTreeCellEditorComponent: "+dtn);
+			JComponent cellEditorComponent = getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, true );
+			if ( value instanceof DirTreeNode ) currentEditorValue = (DirTreeNode)value;
+			else                                currentEditorValue = null;
+			cellEditorComponent.setOpaque( true );
+			cellEditorComponent.setBackground( this.Const_CellEditorColor );
+			return cellEditorComponent;
+		}
+
+		@Override
+		public Object  getCellEditorValue()                  {
+			return currentEditorValue;
+		}
+		@Override
+		public boolean isCellEditable(EventObject anEvent) {
+			//			System.out.println("isCellEditable: ");
+			//			TreeSelectionModel model = tree.getSelectionModel();
+			//			System.out.println("isCellEditable: "+(model==null?"??":model.getSelectionCount()) );
+			return true;
+		}
+		@Override
+		public boolean shouldSelectCell(EventObject anEvent) { return false; }
+
+		@Override
+		public boolean stopCellEditing() {
+			currentEditorValue = null;
+			Iterator<CellEditorListener> it = CellEditorListeners.iterator();
+			while (it.hasNext()) it.next().editingStopped( new ChangeEvent(this) );
+			return true;
+		}
+
+		@Override
+		public void cancelCellEditing() {
+			currentEditorValue = null;
+			Iterator<CellEditorListener> it = CellEditorListeners.iterator();
+			while (it.hasNext()) it.next().editingCanceled( new ChangeEvent(this) );
+		}
+
+		@Override public void addCellEditorListener   (CellEditorListener l) { CellEditorListeners.add(l); }
+		@Override public void removeCellEditorListener(CellEditorListener l) { CellEditorListeners.remove(l); }
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if ("checkbox".equals(e.getActionCommand())) {
+				if (currentEditorValue != null) {
+					currentEditorValue.setSelected( compChkBx_CheckBox.isSelected() );
+				}
+				return;
+			}
+		}
+	}
+	public abstract static class TreeDataCollector implements Runnable {
+
+		private final DirTree dirTree;
+		private final boolean withDebugOutput;
+
+		public TreeDataCollector(DirTree dirTree, boolean withDebugOutput) {
+			this.dirTree = dirTree;
+			this.withDebugOutput = withDebugOutput;
+		}
+
+		public void start() {
+			new Thread(this).start();
+		}
+
+		protected abstract void disableDirChange( boolean disable );
+
+		@Override
+		public void run() {
+			disableDirChange(true);
+			if (withDebugOutput) System.out.println( "DirTree.prepareChildren: "+dirTree.getRoot() );
+			dirTree.prepareChildren();
+			dirTree.getTree().treeDidChange();
+			if (withDebugOutput) System.out.println( "DirTree.prepareChildren: "+dirTree.getRoot()+" --> treeDidChange" );
+			disableDirChange(false);
+		}
+
+	}
 }
