@@ -113,6 +113,10 @@ public class FileSelector implements ActionListener {
 		return button;
 	}
 
+	public Component getCombinedPanel(String buttonLabel) {
+		return GUI.createLeftAlignedPanel(getSelectButton(buttonLabel), getInputField());
+	}
+
 	public void setDirSelectionOnly   () { fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); }
 	public void setFileSelectionOnly  () { fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY); }
 	public void setFileAndDirSelection() { fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES); }
