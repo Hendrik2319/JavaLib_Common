@@ -32,7 +32,7 @@ public final class SystemTools {
 		return (object==null?"<null>":object.toString());
 	}
 
-	public static void listClassInfo(Class<?> cl) {
+	public static void listClassInfo(Class<?> cl, boolean withSuperClasses, boolean withInterfaces, boolean withConstructors, boolean withFields, boolean withMethods) {
 		System.out.printf("info of class [%s]\r\n",cl);
 		if (cl==null) return;
 		System.out.printf("\tName: [%s]\r\n",cl.getName());
@@ -41,11 +41,11 @@ public final class SystemTools {
 		System.out.printf("\tPackage: [%s]\r\n",cl.getPackage());
 		System.out.printf("\tAnnotations: %s\r\n",arrayToString("\t\t", cl.getAnnotations()));
 		System.out.printf("\tSigners: %s\r\n",arrayToString("\t\t", cl.getSigners()));
-		System.out.printf("\tConstructors: %s\r\n",arrayToString("\t\t", cl.getConstructors()));
-		System.out.printf("\tInterfaces: %s\r\n",arrayToString("\t\t", cl.getInterfaces()));
-		System.out.printf("\tFields: %s\r\n",arrayToString("\t\t", cl.getFields()));
-		System.out.printf("\tMethods: %s\r\n",arrayToString("\t\t", cl.getMethods()));
-		printAsSuperclass("\t",cl.getSuperclass());
+		if (withSuperClasses) printAsSuperclass("\t",cl.getSuperclass());
+		if (withInterfaces  ) System.out.printf("\tInterfaces: %s\r\n",arrayToString("\t\t", cl.getInterfaces()));
+		if (withConstructors) System.out.printf("\tConstructors: %s\r\n",arrayToString("\t\t", cl.getConstructors()));
+		if (withFields      ) System.out.printf("\tFields: %s\r\n",arrayToString("\t\t", cl.getFields()));
+		if (withMethods     ) System.out.printf("\tMethods: %s\r\n",arrayToString("\t\t", cl.getMethods()));
 	}
 
 	private static void printAsSuperclass(String indention, Class<?> superclass) {
