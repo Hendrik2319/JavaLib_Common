@@ -8,6 +8,7 @@ public class TaskQueue implements Runnable {
 	private final ConcurrentLinkedQueue<SingleTask> queue;
 	private Thread thread;
 	private int taskCounter;
+	
 	public TaskQueue(int maxConcurrentTasks) {
 		this.maxConcurrentTasks = maxConcurrentTasks;
 		queue = new ConcurrentLinkedQueue<SingleTask>();
@@ -15,7 +16,7 @@ public class TaskQueue implements Runnable {
 		taskCounter = 0;
 	}
 
-	public void initialize() {
+	private void initialize() {
 		if (thread==null) {
 			thread = new Thread(this);
 			thread.start();
@@ -23,6 +24,7 @@ public class TaskQueue implements Runnable {
 	}
 
 	public void add(Runnable atomicTask) {
+		initialize();
 		queue.add(new SingleTask(atomicTask));
 		synchronized (this) { notify(); }
 	}

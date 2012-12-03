@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.EventObject;
 import java.util.Iterator;
@@ -38,6 +39,7 @@ public class DirTree {
 	private DirTreeNode rootNode;
 	private final DirTreeCellEditorRenderer renderer;
 	private final DirTreeCellEditorRenderer editor;
+	private boolean sortDirs;
 
 	public DirTree(UserTreeNode rootUserTreeNode) {
 		rootNode = DirTreeNode.createEmptyRootNode( rootUserTreeNode );
@@ -48,6 +50,7 @@ public class DirTree {
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		tree.setRowHeight(20);
 		tree.setEditable( true );
+		sortDirs = false;
 	}
 
 	public void addTreeSelectionListener(TreeSelectionListener tsl) {
@@ -56,6 +59,11 @@ public class DirTree {
 
 	public void enableCheckBoxForFiles      (boolean b) { renderer.enableCheckBoxForFiles      (b); editor.enableCheckBoxForFiles      (b); }
 	public void enableCheckBoxForDirectories(boolean b) { renderer.enableCheckBoxForDirectories(b); editor.enableCheckBoxForDirectories(b); }
+	
+	public void setDirSorting(boolean sortDirs) {
+		this.sortDirs = sortDirs;
+	}
+
 	public void setRowHeight(int rh) {
 		tree.setRowHeight(rh);
 		renderer.setRowHeight(rh);
@@ -63,7 +71,7 @@ public class DirTree {
 	}
 
 	public void setRoot(File newDir, UserTreeNode userTreeNode) {
-		treeModel.setRoot( rootNode = new DirTreeNode( newDir, userTreeNode ) );
+		treeModel.setRoot( rootNode = new DirTreeNode( newDir, userTreeNode, sortDirs ) );
 	}
 
 	public DirTreeNode getRoot() {
@@ -75,8 +83,7 @@ public class DirTree {
 	public JScrollPane getTreeInScrollPane() { return new JScrollPane( tree ); }
 
 	public void prepareChildren() {
-		rootNode.prepareChildren_recursive();
-
+		rootNode.prepareChildren_recursive(sortDirs);
 	}
 
 	public static interface UserTreeNode {
@@ -96,21 +103,23 @@ public class DirTree {
 		public DirTreeNode[] children;
 		private Icon icon;
 		private boolean isSelected;
+		private final boolean sortDirs;
 
 		public static DirTreeNode createEmptyRootNode(UserTreeNode userTreeNode) {
-			DirTreeNode dummyRootNode = new DirTreeNode( null, null, userTreeNode );
+			DirTreeNode dummyRootNode = new DirTreeNode( null, null, userTreeNode, false );
 			dummyRootNode.children = new DirTreeNode[0];
 			return dummyRootNode;
 		}
 
-		public DirTreeNode(File file, UserTreeNode userTreeNode) {
-			this( file, null, userTreeNode );
+		public DirTreeNode(File file, UserTreeNode userTreeNode, boolean sortDirs) {
+			this( file, null, userTreeNode, sortDirs );
 		}
 
-		private DirTreeNode(File file1, DirTreeNode parent, UserTreeNode userTreeNode) {
-			this.file = file1;
+		private DirTreeNode(File file, DirTreeNode parent, UserTreeNode userTreeNode, boolean sortDirs) {
+			this.file = file;
 			this.parent = parent;
 			this.userTreeNode = userTreeNode;
+			this.sortDirs = sortDirs;
 			this.children = null;
 			this.icon = null;
 			if (file != null) this.icon = FileSystemView.getFileSystemView().getSystemIcon( file );
@@ -118,10 +127,10 @@ public class DirTree {
 			isSelected = false;
 		}
 
-		public void prepareChildren_recursive() {
+		public void prepareChildren_recursive(boolean sortDirs) {
 			prepareChildren( "collector" );
 			for (int i=0; i<children.length; i++ ) {
-				children[i].prepareChildren_recursive();
+				children[i].prepareChildren_recursive(sortDirs);
 			}
 		}
 
@@ -131,8 +140,8 @@ public class DirTree {
 
 		private synchronized void prepareChildren( String callerStr ) {
 			if (children!=null) return;
-			//            System.out.println( callerStr+" prepareChildren: "+file );
-			//            System.out.println( "DirTreeNode.prepareChildren: "+file );
+//			System.out.printf( "DirTreeNode.prepareChildren(\"%s\"): %s\r\n",callerStr,file );
+            
 			if ( (file == null) || file.isFile() ) {
 				children = new DirTreeNode[0];
 				return;
@@ -142,10 +151,13 @@ public class DirTree {
 				children = new DirTreeNode[0];
 				return;
 			}
+			if (sortDirs) {
+				Arrays.sort(files);
+			}
 			children = new DirTreeNode[files.length];
 			for (int i=0; i<files.length; i++ ) {
 				//                System.out.println( "   create child: "+files[i] );
-				children[i] = new DirTreeNode( files[i], this, userTreeNode.createChildNode() );
+				children[i] = new DirTreeNode( files[i], this, userTreeNode.createChildNode(), sortDirs );
 			}
 
 			userTreeNode.analyseChildren();
@@ -456,8 +468,8 @@ public class DirTree {
 			disableDirChange(true);
 			if (withDebugOutput) System.out.println( "DirTree.prepareChildren: "+dirTree.getRoot() );
 			dirTree.prepareChildren();
-			dirTree.getTree().treeDidChange();
 			if (withDebugOutput) System.out.println( "DirTree.prepareChildren: "+dirTree.getRoot()+" --> treeDidChange" );
+			dirTree.getTree().treeDidChange();
 			disableDirChange(false);
 		}
 
