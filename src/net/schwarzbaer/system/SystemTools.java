@@ -1,8 +1,6 @@
 package net.schwarzbaer.system;
 
 import java.io.PrintStream;
-import java.lang.annotation.Annotation;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Properties;

@@ -23,6 +23,7 @@ import javax.swing.JTextField;
 import javax.swing.JTree;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellEditor;
@@ -47,6 +48,10 @@ public class DirTree {
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		tree.setRowHeight(20);
 		tree.setEditable( true );
+	}
+
+	public void addTreeSelectionListener(TreeSelectionListener tsl) {
+		tree.addTreeSelectionListener(tsl);
 	}
 
 	public void enableCheckBoxForFiles      (boolean b) { renderer.enableCheckBoxForFiles      (b); editor.enableCheckBoxForFiles      (b); }
@@ -247,8 +252,9 @@ public class DirTree {
 
 	public static class DirTreeCellEditorRenderer implements TreeCellRenderer, TreeCellEditor, ActionListener {
 
-		private final Color Const_FocussedCellRendererColor = new Color( 0.6f, 0.8f, 1.0f );
-		private final Color Const_CellEditorColor           = new Color( 0.6f, 0.8f, 0.8f );
+		private static final Color Const_SelectedCellRendererColor = new Color( 0.6f, 0.8f, 1.0f );
+		private static final Color Const_FocussedCellRendererColor = new Color( 0.6f, 1.0f, 0.8f );
+		private static final Color Const_CellEditorColor           = new Color( 0.6f, 0.8f, 0.8f );
 		private JPanel compChkBx_Panel;
 		private JLabel compChkBx_Label;
 		private JCheckBox compChkBx_CheckBox;
@@ -348,7 +354,11 @@ public class DirTree {
 
 			if (hasFocus) {
 				panel.setOpaque( true );
-				panel.setBackground( this.Const_FocussedCellRendererColor );
+				panel.setBackground( Const_FocussedCellRendererColor );
+			} else
+			if (selected) {
+				panel.setOpaque( true );
+				panel.setBackground( Const_SelectedCellRendererColor );
 			}
 
 			label.setText( text );
@@ -379,7 +389,7 @@ public class DirTree {
 			if ( value instanceof DirTreeNode ) currentEditorValue = (DirTreeNode)value;
 			else                                currentEditorValue = null;
 			cellEditorComponent.setOpaque( true );
-			cellEditorComponent.setBackground( this.Const_CellEditorColor );
+			cellEditorComponent.setBackground( Const_CellEditorColor );
 			return cellEditorComponent;
 		}
 
