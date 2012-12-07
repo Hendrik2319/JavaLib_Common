@@ -4,14 +4,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskQueue implements Runnable {
 	
+	private final boolean withDebugOutput;
 	private final int maxConcurrentTasks;
 	private final ConcurrentLinkedQueue<SingleTask> queue;
 	private Thread thread;
 	private int taskCounter;
 	
 	public TaskQueue(int maxConcurrentTasks) {
+		this(maxConcurrentTasks,false);
+	}
+	public TaskQueue(int maxConcurrentTasks, boolean withDebugOutput) {
 		this.maxConcurrentTasks = maxConcurrentTasks;
-		queue = new ConcurrentLinkedQueue<SingleTask>();
+		this.withDebugOutput = withDebugOutput;
+		this.queue = new ConcurrentLinkedQueue<SingleTask>();
 		thread = null;
 		taskCounter = 0;
 	}
@@ -52,10 +57,12 @@ public class TaskQueue implements Runnable {
 	}
 
 	private synchronized void incTaskCounter() {
+		if (withDebugOutput) System.out.printf("TaskQueue.SingleTask started (%d->%d)\r\n",taskCounter,taskCounter+1);
 		taskCounter++;
 	}
 
 	private synchronized void decTaskCounter() {
+		if (withDebugOutput) System.out.printf("TaskQueue.SingleTask stopped (%d->%d)\r\n",taskCounter,taskCounter-1);
 		taskCounter--;
 		notify(); 
 	}
