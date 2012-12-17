@@ -28,13 +28,24 @@ public class StandardDialog extends JDialog {
 	}
     
     public void createGUI( JComponent contentPane ) {
-    	createGUI( contentPane, Position.PARENT_CENTER );
+    	createGUI( contentPane, null, null );
 	}
     
     public void createGUI( JComponent contentPane, Position position ) {
+    	createGUI( contentPane, position, null );
+    }
+    
+    public void createGUI( JComponent contentPane, Dimension preferredSize ) {
+    	createGUI( contentPane, null, preferredSize );
+    }
+    
+    public void createGUI( JComponent contentPane, Position position, Dimension preferredSize ) {
         setContentPane( contentPane );
+        if (preferredSize!=null) setPreferredSize(preferredSize);
         pack();
-        setPosition(position);
+        if (position==null) setPosition(Position.PARENT_CENTER);
+        else                setPosition(position);
+        
     }
 
 	private void setPosition(Position position) {
