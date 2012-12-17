@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -30,6 +31,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeCellEditor;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 public class DirTree {
@@ -56,12 +58,13 @@ public class DirTree {
 	public void addTreeSelectionListener(TreeSelectionListener tsl) {
 		tree.addTreeSelectionListener(tsl);
 	}
-
-	public void enableCheckBoxForFiles      (boolean b) { renderer.enableCheckBoxForFiles      (b); editor.enableCheckBoxForFiles      (b); }
-	public void enableCheckBoxForDirectories(boolean b) { renderer.enableCheckBoxForDirectories(b); editor.enableCheckBoxForDirectories(b); }
 	
 	public void setDirSorting(boolean sortDirs) {
 		this.sortDirs = sortDirs;
+	}
+
+	public void setCellEditingEnable(boolean isCellEditingEnabled) {
+		editor.setCellEditingEnable(isCellEditingEnabled);
 	}
 
 	public void setRowHeight(int rh) {
@@ -93,6 +96,7 @@ public class DirTree {
 		public void analyseChildren();
 		public Color getTreeItemBGColorForCheckBox();
 		public Color getTreeItemBGColorForLabel();
+		public boolean isSelectable();
 
 	}
 	public static class DirTreeNode implements TreeNode, Comparable<DirTreeNode> {
@@ -260,13 +264,18 @@ public class DirTree {
 			@Override public DirTreeNode nextElement() { index++; return treeNodes[index-1]; }
 
 		}
+
+		public boolean isSelectable() {
+			if (userTreeNode==null) return false;
+			return userTreeNode.isSelectable();
+		}
 	}
 
 	public static class DirTreeCellEditorRenderer implements TreeCellRenderer, TreeCellEditor, ActionListener {
 
 		private static final Color Const_SelectedCellRendererColor = new Color( 0.6f, 0.8f, 1.0f );
 		private static final Color Const_FocussedCellRendererColor = new Color( 0.6f, 1.0f, 0.8f );
-		private static final Color Const_CellEditorColor           = new Color( 0.6f, 0.8f, 0.8f );
+		private static final Color Const_CellEditorColor           = new Color( 0.6f, 0.6f, 0.8f );
 		private JPanel compChkBx_Panel;
 		private JLabel compChkBx_Label;
 		private JCheckBox compChkBx_CheckBox;
@@ -275,13 +284,11 @@ public class DirTree {
 		private Vector<CellEditorListener> CellEditorListeners;
 		private DirTreeNode currentEditorValue;
 		private int rowHeight;
-		private boolean useCheckBoxForDirectories;
-		private boolean useCheckBoxForFiles;
+		private boolean isCellEditingEnabled;
 
 		public DirTreeCellEditorRenderer() {
 			rowHeight = 20;
-			useCheckBoxForDirectories = false;
-			useCheckBoxForFiles = false;
+			isCellEditingEnabled = false;
 
 			compChkBx_CheckBox = new JCheckBox();
 			compChkBx_CheckBox.setActionCommand("checkbox");
@@ -311,16 +318,12 @@ public class DirTree {
 			currentEditorValue = null;
 		}
 
+		public void setCellEditingEnable(boolean isCellEditingEnabled) {
+			this.isCellEditingEnabled = isCellEditingEnabled;
+		}
+
 		public void setRowHeight(int rowHeight) {
 			this.rowHeight = rowHeight;
-		}
-
-		public void enableCheckBoxForDirectories(boolean b) {
-			useCheckBoxForDirectories = b;
-		}
-
-		public void enableCheckBoxForFiles(boolean b) {
-			useCheckBoxForFiles = b;
 		}
 
 		private JComponent getTreeCellEditorRendererComponent(JTree tree, DirTreeNode dtn, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
@@ -340,7 +343,7 @@ public class DirTree {
 			if (dtn!=null) {
 				text = dtn.toString();
 
-				if ( (dtn.isDirectory() && useCheckBoxForDirectories) || (dtn.isFile() && useCheckBoxForFiles) ) {
+				if ( dtn.isSelectable() ) {
 					panel = compChkBx_Panel;
 					label = compChkBx_Label;
 
@@ -388,7 +391,7 @@ public class DirTree {
 		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 			DirTreeNode dtn = null;
 			if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
-			//            System.out.println("getTreeCellRendererComponent: "+dtn);
+//			System.out.println("getTreeCellRendererComponent: "+dtn);
 			return getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, hasFocus);
 		}
 
@@ -396,7 +399,7 @@ public class DirTree {
 		public Component getTreeCellEditorComponent(JTree tree, Object value, boolean isSelected, boolean expanded, boolean leaf, int row) {
 			DirTreeNode dtn = null;
 			if ( value instanceof DirTreeNode ) dtn = (DirTreeNode)value;
-			//            System.out.println("getTreeCellEditorComponent: "+dtn);
+//			System.out.println("getTreeCellEditorComponent: "+dtn);
 			JComponent cellEditorComponent = getTreeCellEditorRendererComponent( tree, dtn, isSelected, expanded, leaf, row, true );
 			if ( value instanceof DirTreeNode ) currentEditorValue = (DirTreeNode)value;
 			else                                currentEditorValue = null;
@@ -411,16 +414,35 @@ public class DirTree {
 		}
 		@Override
 		public boolean isCellEditable(EventObject anEvent) {
-			//			System.out.println("isCellEditable: ");
-			//			TreeSelectionModel model = tree.getSelectionModel();
-			//			System.out.println("isCellEditable: "+(model==null?"??":model.getSelectionCount()) );
-			return true;
+			if (!isCellEditingEnabled) return false;
+			
+//			System.out.println("isCellEditable: anEvent:"+anEvent);
+			if (anEvent==null) return false;
+			if (!(anEvent instanceof MouseEvent)) return false;
+			MouseEvent mouseEvent = (MouseEvent)anEvent;  
+			
+//			System.out.println("isCellEditable: source:"+mouseEvent.getSource());
+			if (mouseEvent.getSource()==null) return false;
+			if (!(mouseEvent.getSource() instanceof JTree)) return false;
+			JTree tree = (JTree)mouseEvent.getSource();
+			
+			TreePath path = tree.getPathForLocation(mouseEvent.getX(), mouseEvent.getY());  
+//			System.out.println("isCellEditable: selected path:"+path);
+			if (path==null) return false;
+			Object lastPathComponent = path.getLastPathComponent();
+			if (lastPathComponent==null) return false;
+			if (!(lastPathComponent instanceof DirTreeNode)) return false;
+			DirTreeNode selectedDirTreeNode = (DirTreeNode)lastPathComponent;
+			
+//			System.out.println("isCellEditable: selected DirTreeNode:"+selectedDirTreeNode);
+			return selectedDirTreeNode.isSelectable();
 		}
 		@Override
-		public boolean shouldSelectCell(EventObject anEvent) { return false; }
+		public boolean shouldSelectCell(EventObject anEvent) { return true; }
 
 		@Override
 		public boolean stopCellEditing() {
+//			System.out.println("stopCellEditing");
 			currentEditorValue = null;
 			Iterator<CellEditorListener> it = CellEditorListeners.iterator();
 			while (it.hasNext()) it.next().editingStopped( new ChangeEvent(this) );
@@ -429,6 +451,7 @@ public class DirTree {
 
 		@Override
 		public void cancelCellEditing() {
+//			System.out.println("cancelCellEditing");
 			currentEditorValue = null;
 			Iterator<CellEditorListener> it = CellEditorListeners.iterator();
 			while (it.hasNext()) it.next().editingCanceled( new ChangeEvent(this) );
