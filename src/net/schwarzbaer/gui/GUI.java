@@ -10,8 +10,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 
@@ -41,6 +43,8 @@ import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileSystemView;
+
+import net.schwarzbaer.system.Delayer;
 
 /**
  * 
@@ -409,7 +413,11 @@ public final class GUI {
 	}
 
 	public static void makeAutoScroll(JScrollPane scrollPane) {
-		new AutoScrollModel().makeAutoScroll(scrollPane);
+		makeAutoScroll(scrollPane,1000);
+	}
+
+	public static void makeAutoScroll(JScrollPane scrollPane, long delay) {
+		new AutoScrollModel(delay).makeAutoScroll(scrollPane);
 	}
 	
 	public static JScrollPane createAutoScrollPanel(JTextArea output, boolean editable, int width, int height) {
@@ -433,12 +441,18 @@ public final class GUI {
 	}
 	
 	private static class AutoScrollModel extends DefaultBoundedRangeModel implements MouseListener, ActionListener {
+
 		private static final long serialVersionUID = 583924172439445131L;
 		
 		private boolean autoScroll = true;
 		private JPopupMenu contextMenu;
 		private JScrollBar verticalScrollBar;
-
+		private final long delay;
+		
+		public AutoScrollModel(long delay) {
+			this.delay = delay;
+		}
+		
 		public void makeAutoScroll(JScrollPane scrollPane) {
 			JCheckBoxMenuItem item = new JCheckBoxMenuItem("autoscroll",autoScroll);
 			item.addActionListener(this);
@@ -449,6 +463,34 @@ public final class GUI {
 			this.verticalScrollBar = scrollPane.getVerticalScrollBar();
 			verticalScrollBar.setModel(this);
 			verticalScrollBar.addMouseListener(this);
+			
+			final Delayer mDelayer = new Delayer(new Runnable() {
+				@Override public void run() {
+					setAutoScroll(true);
+					System.out.println("delay ended -> setAutoScroll(true)");
+				}
+			});
+			MouseAdapter mouseAdapter = new MouseAdapter() {
+
+				@Override
+				public void mousePressed(MouseEvent e) {
+					System.out.println("mousePressed -> setAutoScroll(false)");
+					setAutoScroll(false); 
+					mDelayer.delayTask(delay);
+				}
+
+				@Override
+				public void mouseWheelMoved(MouseWheelEvent e) {
+					System.out.println("mouseWheelMoved -> setAutoScroll(false)");
+					setAutoScroll(false); 
+					mDelayer.delayTask(delay);
+				}
+				
+			};
+			verticalScrollBar.addMouseListener(mouseAdapter);
+			verticalScrollBar.addMouseWheelListener(mouseAdapter);
+			scrollPane.addMouseListener(mouseAdapter);
+			scrollPane.addMouseWheelListener(mouseAdapter);
 			
 		}
 
