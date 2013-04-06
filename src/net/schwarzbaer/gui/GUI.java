@@ -14,6 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 
@@ -440,7 +441,7 @@ public final class GUI {
 		return scrollPane; 
 	}
 	
-	private static class AutoScrollModel extends DefaultBoundedRangeModel implements MouseListener, ActionListener {
+	private static class AutoScrollModel extends DefaultBoundedRangeModel implements MouseListener, MouseWheelListener, ActionListener {
 
 		private static final long serialVersionUID = 583924172439445131L;
 		
@@ -448,6 +449,7 @@ public final class GUI {
 		private JPopupMenu contextMenu;
 		private JScrollBar verticalScrollBar;
 		private final long delay;
+		private Delayer delayer;
 		
 		public AutoScrollModel(long delay) {
 			this.delay = delay;
@@ -460,37 +462,18 @@ public final class GUI {
 			contextMenu = new JPopupMenu();
 			contextMenu.add(item);
 			
+			delayer = new Delayer(new Runnable() {
+				@Override public void run() {
+					setAutoScroll(true);
+				}
+			});
+			
 			this.verticalScrollBar = scrollPane.getVerticalScrollBar();
 			verticalScrollBar.setModel(this);
 			verticalScrollBar.addMouseListener(this);
-			
-			final Delayer mDelayer = new Delayer(new Runnable() {
-				@Override public void run() {
-					setAutoScroll(true);
-					System.out.println("delay ended -> setAutoScroll(true)");
-				}
-			});
-			MouseAdapter mouseAdapter = new MouseAdapter() {
-
-				@Override
-				public void mousePressed(MouseEvent e) {
-					System.out.println("mousePressed -> setAutoScroll(false)");
-					setAutoScroll(false); 
-					mDelayer.delayTask(delay);
-				}
-
-				@Override
-				public void mouseWheelMoved(MouseWheelEvent e) {
-					System.out.println("mouseWheelMoved -> setAutoScroll(false)");
-					setAutoScroll(false); 
-					mDelayer.delayTask(delay);
-				}
-				
-			};
-			verticalScrollBar.addMouseListener(mouseAdapter);
-			verticalScrollBar.addMouseWheelListener(mouseAdapter);
-			scrollPane.addMouseListener(mouseAdapter);
-			scrollPane.addMouseWheelListener(mouseAdapter);
+			verticalScrollBar.addMouseWheelListener(this);
+			scrollPane.addMouseListener(this);
+			scrollPane.addMouseWheelListener(this);
 			
 		}
 
@@ -526,11 +509,19 @@ public final class GUI {
 		@Override public void mouseClicked(MouseEvent e) {}
 		@Override public void mouseEntered(MouseEvent e) {}
 		@Override public void mouseExited(MouseEvent e) {}
-		@Override public void mousePressed(MouseEvent e) {}
 		@Override public void mouseReleased(MouseEvent e) {
-			if (e.isPopupTrigger()) {
+			if ((e.getSource()==verticalScrollBar) && e.isPopupTrigger()) {
 				contextMenu.show(verticalScrollBar, e.getX(),e.getY());
 			}
+		}
+
+		@Override public void mousePressed(MouseEvent e) {
+			setAutoScroll(false); 
+			delayer.delayTask(delay);
+		}
+		@Override public void mouseWheelMoved(MouseWheelEvent e) {
+			setAutoScroll(false); 
+			delayer.delayTask(delay);
 		}
 
 //		@Override

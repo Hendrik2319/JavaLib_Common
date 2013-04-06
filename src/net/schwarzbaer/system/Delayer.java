@@ -13,14 +13,14 @@ public class Delayer implements Runnable {
 	}
 	
 	public void delayTask( long ms ) {
-		System.out.println("Delayer (re)set to "+ms+" miliseconds");
+		//System.out.println("Delayer (re)set to "+ms+" miliseconds");
 		taskTime = System.currentTimeMillis()+ms;
 		if (!running) new Thread(this).start();
 	}
 	
 	@Override
 	public void run() {
-		System.out.println("Delayer started");
+		//System.out.println("Delayer started");
 		running = true;
 		synchronized (this) {
 			while (true) {
@@ -34,7 +34,7 @@ public class Delayer implements Runnable {
 			}
 		}
 		running = false;
-		System.out.println("Delayer ended");
+		//System.out.println("Delayer ended");
 	}
 
 }
