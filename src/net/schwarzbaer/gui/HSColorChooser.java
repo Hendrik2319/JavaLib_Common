@@ -15,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.schwarzbaer.gui.ColorSlider.ColorChangeListener;
+import net.schwarzbaer.gui.ColorSlider.SliderType;
 
 
 public final class HSColorChooser implements ActionListener, ColorChangeListener {
@@ -39,13 +40,13 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	private StandardDialog dlgFenster;
 	private JLabel newColorField;
 	private JLabel oldColorField;
-	private ColorSlider sliderR;
-	private ColorSlider sliderG;
-	private ColorSlider sliderB;
-	private ColorSlider sliderH;
-	private ColorSlider sliderS;
-	private ColorSlider sliderV;
-	private ColorSlider sliderDual;
+	private ColorCompSlider sliderR;
+	private ColorCompSlider sliderG;
+	private ColorCompSlider sliderB;
+	private ColorCompSlider sliderH;
+	private ColorCompSlider sliderS;
+	private ColorCompSlider sliderV;
+	private ColorCompSlider sliderDual;
 	private Color oldColor;
 	private Color newColor;
 
@@ -82,15 +83,15 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 		
 		JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
 		rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
-		rgbPanel.add(createSliderPanel( "R",sliderR = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_RED,this) ));
-		rgbPanel.add(createSliderPanel( "G",sliderG = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_GRN,this) ));
-		rgbPanel.add(createSliderPanel( "B",sliderB = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_BLU,this) ));
+		rgbPanel.add(createSliderPanel( "R",sliderR = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_RED,this) ));
+		rgbPanel.add(createSliderPanel( "G",sliderG = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_GRN,this) ));
+		rgbPanel.add(createSliderPanel( "B",sliderB = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BLU,this) ));
 		
 		JPanel hsvPanel = new JPanel(new GridLayout(1,0,3,3));
 		hsvPanel.setBorder(BorderFactory.createTitledBorder(""));
-		hsvPanel.add(createSliderPanel( "H",sliderH = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_HUE,this) ));
-		hsvPanel.add(createSliderPanel( "S",sliderS = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_SAT,this) ));
-		hsvPanel.add(createSliderPanel( "B",sliderV = new ColorSlider(ColorSlider.VERTICAL,Color.YELLOW,ColorSlider.COMP_BRT,this) ));
+		hsvPanel.add(createSliderPanel( "H",sliderH = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_HUE,this) ));
+		hsvPanel.add(createSliderPanel( "S",sliderS = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_SAT,this) ));
+		hsvPanel.add(createSliderPanel( "B",sliderV = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BRT,this) ));
 		
 		JPanel singleSliderPanel = new JPanel(new GridLayout(1,0,3,3));
 		singleSliderPanel.add(rgbPanel);
@@ -107,7 +108,7 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 		
 		JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
 //		dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
-		dualSliderPanel.add(GUI.createTitlePanel("", sliderDual = new ColorSlider(ColorSlider.DUAL,Color.YELLOW,ColorSlider.COMP_RED,ColorSlider.COMP_GRN,this)), BorderLayout.CENTER);
+		dualSliderPanel.add(GUI.createTitlePanel("", sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this)), BorderLayout.CENTER);
 		dualSliderPanel.add(dualTypePanel, BorderLayout.SOUTH);
 		
 		JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
@@ -129,7 +130,7 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 		dlgFenster.createGUI(contentPane);
 	}
 
-	private JPanel createSliderPanel(String title, ColorSlider colorSlider) {
+	private JPanel createSliderPanel(String title, ColorCompSlider colorSlider) {
 //		JPanel panel = new JPanel(new BorderLayout(3,3));
 //		panel.add(new JLabel("+",JLabel.CENTER),BorderLayout.NORTH);
 //		panel.add(new JLabel("-",JLabel.CENTER),BorderLayout.SOUTH);
@@ -154,12 +155,12 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 			return;
 		}
 		if (e.getActionCommand().startsWith("dual")) {
-			if ("dualRG".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_RED,ColorSlider.COMP_GRN); else
-			if ("dualGB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_GRN,ColorSlider.COMP_BLU); else
-			if ("dualRB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_RED,ColorSlider.COMP_BLU); else
-			if ("dualHS".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_HUE,ColorSlider.COMP_SAT); else
-			if ("dualSB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_SAT,ColorSlider.COMP_BRT); else
-			if ("dualHB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorSlider.COMP_HUE,ColorSlider.COMP_BRT);
+			if ("dualRG".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN); else
+			if ("dualGB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_GRN,ColorCompSlider.COMP_BLU); else
+			if ("dualRB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_BLU); else
+			if ("dualHS".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_SAT); else
+			if ("dualSB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_SAT,ColorCompSlider.COMP_BRT); else
+			if ("dualHB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_BRT);
 			sliderDual.repaint(); 
 			return;
 		}
