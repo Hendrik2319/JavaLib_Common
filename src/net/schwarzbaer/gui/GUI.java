@@ -116,15 +116,28 @@ public final class GUI {
         return menuItem;
     }
 
+    public static JButton createButton( String commandStr, ActionListener actionListener ) {
+        JButton btn = new JButton();
+        btn.addActionListener(actionListener);
+        btn.setActionCommand( commandStr );
+        return btn;
+    }
+
     public static JButton createButton( String title, String commandStr, ActionListener actionListener ) {
-        JButton button = new JButton( title );
-        button.addActionListener(actionListener);
-        button.setActionCommand( commandStr );
-        return button;
+        JButton btn = createButton( commandStr, actionListener );
+        btn.setText(title);
+        return btn;
     }
 
     public static JButton createButton( String title, String commandStr, ActionListener actionListener, Icon icon ) {
-        JButton btn = createButton( title, commandStr, actionListener );
+        JButton btn = createButton( commandStr, actionListener );
+        btn.setText(title);
+        btn.setIcon(icon);
+        return btn;
+	}
+
+    public static JButton createButton( Icon icon, String commandStr, ActionListener actionListener ) {
+        JButton btn = createButton( commandStr, actionListener );
         btn.setIcon(icon);
         return btn;
 	}

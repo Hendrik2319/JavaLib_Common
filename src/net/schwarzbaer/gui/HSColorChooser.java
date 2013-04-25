@@ -167,7 +167,12 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	}
 
 	@Override
-	public void colorChanged(Color color) {
+	public void colorChanged(Color color, float f) {
+		setColor(color);
+	}
+
+	@Override
+	public void colorChanged(Color color, float fH, float fV) {
 		setColor(color);
 	}
 

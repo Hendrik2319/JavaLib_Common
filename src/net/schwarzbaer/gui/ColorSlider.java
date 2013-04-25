@@ -30,7 +30,7 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
 	}
-
+	
 	@Override
 	protected void paintCanvas(Graphics g, int width, int height) {
 		switch (type) {
@@ -44,33 +44,45 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	}
 
 	private void paintV(Graphics g, int width, int height) {
-		for (int y=0; y<height; y++) {
-			g.setColor(model.calcColor(calcFraction(height-1,y,0)));
-			g.drawLine(3,y,width-4,y);
-		}
+		if (!isEnabled()) {
+			g.setColor(Color.GRAY);
+			g.fillRect(0, 0, width, height);
+		} else
+			for (int y=0; y<height; y++) {
+				g.setColor(model.calcColor(calcFraction(height-1,y,0)));
+				g.drawLine(3,y,width-4,y);
+			}
 		int y = Math.round((1-model.getValue())*(height-1));
 		g.setColor(Color.BLACK);
 		g.drawLine(0,y,width-1,y);
 	}
 
 	private void paintH(Graphics g, int width, int height) {
-		for (int x=0; x<width; x++) {
-			g.setColor(model.calcColor(calcFraction(0,x,width-1)));
-			g.drawLine(x,3,x,height-4);
-		}
+		if (!isEnabled()) {
+			g.setColor(Color.GRAY);
+			g.fillRect(0, 0, width, height);
+		} else
+			for (int x=0; x<width; x++) {
+				g.setColor(model.calcColor(calcFraction(0,x,width-1)));
+				g.drawLine(x,3,x,height-4);
+			}
 		int x = Math.round(model.getValue()*(width-1));
 		g.setColor(Color.BLACK);
 		g.drawLine(x,0,x,height-1);
 	}
 
 	private void paintD(Graphics g, int width, int height) {
-		for (int x=3; x<width-3; x++) {
-			model.prepareColorH(calcFraction(3,x,width-4));
-			for (int y=3; y<height-3; y++) {
-				g.setColor(model.calcColorVFromPreparedColor(calcFraction(height-4,y,3)));
-				g.drawLine(x,y,x,y);
+		if (!isEnabled()) {
+			g.setColor(Color.GRAY);
+			g.fillRect(3, 3, width-6, height-6);
+		} else
+			for (int x=3; x<width-3; x++) {
+				model.prepareColorH(calcFraction(3,x,width-4));
+				for (int y=3; y<height-3; y++) {
+					g.setColor(model.calcColorVFromPreparedColor(calcFraction(height-4,y,3)));
+					g.drawLine(x,y,x,y);
+				}
 			}
-		}
 		int x = Math.round(   model.getValueH() *(width -7))+3;
 		int y = Math.round((1-model.getValueV())*(height-7))+3;
 		g.setColor(Color.BLACK);
@@ -82,27 +94,30 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	}
 	
 	private void userChangedValue(int x, int y) {
+		float f; float fH; float fV;
 		switch (type) {
 		case HORIZONTAL:
 			if (x<0) x=0;
 			if (width<=x) x=width-1;
-			model.setValue( calcFraction(0,x,width-1) );
+			model.setValue( f = calcFraction(0,x,width-1) );
+			colorChangeListener.colorChanged( model.getColor(), f );
 			break;
 		case VERTICAL:
 			if (y<0) y=0;
 			if (height<=y) y=height-1;
-			model.setValue( calcFraction(height-1,y,0) );
+			model.setValue( f = calcFraction(height-1,y,0) );
+			colorChangeListener.colorChanged( model.getColor(), f );
 			break;
 		case DUAL:
 			if (x<3) x=3;
 			if (y<3) y=3;
 			if (width -3<=x) x=width -4;
 			if (height-3<=y) y=height-4;
-			model.setValue( calcFraction(3,x,width-4), calcFraction(height-4,y,3) );
+			model.setValue( fH = calcFraction(3,x,width-4), fV = calcFraction(height-4,y,3) );
+			colorChangeListener.colorChanged( model.getColor(), fH, fV );
 			break;
 		}
 		repaint();
-		colorChangeListener.colorChanged( model.getColor() );
 	}
 	
 	@Override public void mouseDragged (MouseEvent e) { userChangedValue(e.getX(),e.getY()); }
@@ -115,11 +130,11 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 
 
 	public static interface ColorChangeListener {
-		public void colorChanged( Color color );
+		public void colorChanged( Color color, float f );
+		public void colorChanged( Color color, float fH, float fV );
 	}
 	
 	public static interface ColorSliderModel {
-
 		public Color getColor();
 		public Color calcColor(float f);
 		public void prepareColorH(float f);
