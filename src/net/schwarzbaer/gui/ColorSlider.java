@@ -31,6 +31,9 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 		this.addMouseMotionListener(this);
 	}
 	
+	public void setValue( float f ) { model.setValue(f); repaint(); }
+	public void setValue( float fH, float fV ) { model.setValue(fH, fV); repaint(); }
+	
 	@Override
 	protected void paintCanvas(Graphics g, int width, int height) {
 		switch (type) {
