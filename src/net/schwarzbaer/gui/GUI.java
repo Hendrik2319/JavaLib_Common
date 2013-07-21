@@ -404,6 +404,8 @@ public final class GUI {
 //        }
 //    }
     
+    public static enum VerticalAlignment { Top,Center,Bottom }
+    public static enum HorizontalAlignment { Left,Center,Right }
 	public static final int ALIGNMENT_TOP    = -1;
 	public static final int ALIGNMENT_CENTER =  0;
 	public static final int ALIGNMENT_BOTTOM =  1;
@@ -411,16 +413,31 @@ public final class GUI {
 	public static final int ALIGNMENT_RIGHT  =  1;
 	
 	public static void drawString(Graphics g, String str, int x, int y, int hAlign, int vAlign) {
-		Rectangle2D b = g.getFontMetrics().getStringBounds(str, g);
+		HorizontalAlignment enumHAlign = null; 
+		VerticalAlignment   enumVAlign = null; 
 		switch (hAlign) {
-		case ALIGNMENT_LEFT  : x -= (int)Math.round( b.getMinX()               ); break;
-		case ALIGNMENT_CENTER: x -= (int)Math.round((b.getMinX()+b.getMaxX())/2); break;
-		case ALIGNMENT_RIGHT : x -= (int)Math.round(             b.getMaxX()   ); break;
+		case ALIGNMENT_LEFT  : enumHAlign = HorizontalAlignment.Left; break;
+		case ALIGNMENT_CENTER: enumHAlign = HorizontalAlignment.Center; break;
+		case ALIGNMENT_RIGHT : enumHAlign = HorizontalAlignment.Right; break;
 		}
 		switch (vAlign) {
-		case ALIGNMENT_TOP   : y -= (int)Math.round( b.getMinY()               ); break;
-		case ALIGNMENT_CENTER: y -= (int)Math.round((b.getMinY()+b.getMaxY())/2); break;
-		case ALIGNMENT_BOTTOM: y -= (int)Math.round(             b.getMaxY()   ); break;
+		case ALIGNMENT_TOP   : enumVAlign = VerticalAlignment.Top; break;
+		case ALIGNMENT_CENTER: enumVAlign = VerticalAlignment.Center; break;
+		case ALIGNMENT_BOTTOM: enumVAlign = VerticalAlignment.Bottom; break;
+		}
+		drawString(g,str,x,y,enumHAlign,enumVAlign);
+	}
+	public static void drawString(Graphics g, String str, int x, int y, HorizontalAlignment hAlign, VerticalAlignment vAlign) {
+		Rectangle2D b = g.getFontMetrics().getStringBounds(str, g);
+		switch (hAlign) {
+		case Left  : x -= (int)Math.round( b.getMinX()               ); break;
+		case Center: x -= (int)Math.round((b.getMinX()+b.getMaxX())/2); break;
+		case Right : x -= (int)Math.round(             b.getMaxX()   ); break;
+		}
+		switch (vAlign) {
+		case Top   : y -= (int)Math.round( b.getMinY()               ); break;
+		case Center: y -= (int)Math.round((b.getMinY()+b.getMaxY())/2); break;
+		case Bottom: y -= (int)Math.round(             b.getMaxY()   ); break;
 		}
 		g.drawString(str, x, y);
 	}
