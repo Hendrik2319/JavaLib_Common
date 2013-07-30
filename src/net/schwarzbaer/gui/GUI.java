@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.GridLayout;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -28,6 +29,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -58,6 +60,15 @@ public final class GUI {
 		catch (InstantiationException e) {}
 		catch (IllegalAccessException e) {}
 		catch (UnsupportedLookAndFeelException e) {}
+	}
+	
+    public static void moveToScreenCenter(JFrame window) {
+    	Dimension size = window.getSize();
+    	Rectangle screen = window.getGraphicsConfiguration().getBounds();
+    	window.setLocation(
+	            (screen.width -size.width )/2+screen.x,
+	            (screen.height-size.height)/2+screen.y
+	        );
 	}
 	
     public static Icon getFileIcon(File file) {
