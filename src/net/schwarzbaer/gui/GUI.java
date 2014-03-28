@@ -80,12 +80,16 @@ public final class GUI {
     	buttonGroup.add(btn);
     }
 
-    public static void addLabelAndField( JPanel labelPanel, JPanel fieldPanel, String label, JComponent field ) {
-        labelPanel.add( new JLabel(label) );
-        fieldPanel.add( field );
+    public static void addLabelAndField(JPanel labelPanel, JPanel fieldPanel, String label, JComponent field) {
+    	addLabelAndField(labelPanel, fieldPanel, new JLabel(label), field);
     }
     
-    public static JPanel createLabelAndFieldPanel( String labelStr, Component comp ) {
+    public static void addLabelAndField(JPanel labelPanel, JPanel fieldPanel, JComponent labelObj, JComponent field) {
+        labelPanel.add( labelObj );
+        fieldPanel.add( field );
+	}
+
+	public static JPanel createLabelAndFieldPanel( String labelStr, Component comp ) {
         JPanel panel = new JPanel( new BorderLayout( 3,3 ) );
         panel.add( new JLabel( labelStr ), BorderLayout.WEST );
         panel.add( comp, BorderLayout.CENTER );
