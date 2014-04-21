@@ -306,7 +306,8 @@ public final class GUI {
 		@Override public synchronized void focusLost(FocusEvent e) {
 			if (fireActionPerformed) {
 				fireActionPerformed = false;
-				actionListener.actionPerformed( new ActionEvent( textfield,ActionEvent.ACTION_PERFORMED,commandStr ) );
+				if (textfield.isEditable())
+					actionListener.actionPerformed( new ActionEvent( textfield,ActionEvent.ACTION_PERFORMED,commandStr ) );
 			}
 		}
 		@Override public synchronized void actionPerformed(ActionEvent e) {
@@ -355,6 +356,12 @@ public final class GUI {
         textfield.setText(value);
         return textfield;
     }
+    public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable, boolean enabled, FocusListener focusListener ) {
+        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
+        textfield.setText(value);
+        textfield.setEnabled(enabled);
+        return textfield;
+    }
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable, int columns, FocusListener focusListener ) {
         JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
         textfield.setColumns( columns );
@@ -364,6 +371,13 @@ public final class GUI {
         JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
         textfield.setText(value);
         textfield.setColumns( columns );
+        return textfield;
+    }
+    public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean editable, boolean enabled, int columns, FocusListener focusListener ) {
+        JTextField textfield = createTextField( commandStr, actionListener, editable, focusListener );
+        textfield.setText(value);
+        textfield.setColumns( columns );
+        textfield.setEnabled(enabled);
         return textfield;
     }
 
