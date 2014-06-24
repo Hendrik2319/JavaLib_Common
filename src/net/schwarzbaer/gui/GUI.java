@@ -289,6 +289,12 @@ public final class GUI {
 		return panel;
 	}
 
+	public static JTextField createOutputTextField(int columns) {
+        JTextField createOutputTextField = createOutputTextField("");
+        createOutputTextField.setColumns(columns);
+		return createOutputTextField;
+    }
+
 	public static JTextField createOutputTextField() {
         return createOutputTextField("");
     }
