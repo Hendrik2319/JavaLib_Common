@@ -36,6 +36,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JRadioButton;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -103,18 +104,23 @@ public final class GUI {
         return menu;
     }
     
-    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled, String keyStrokeStr ) {
-    	JMenuItem menuItem = createMenuItem(title, commandStr, actionListener, enabled);
-    	menuItem.setAccelerator( KeyStroke.getKeyStroke( keyStrokeStr ) );
-    	return menuItem;
-    }
-    
-    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled ) {
+    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener ) {
     	JMenuItem menuItem = new JMenuItem( title );
         menuItem.addActionListener(actionListener);
         menuItem.setActionCommand( commandStr );
-        menuItem.setEnabled(enabled);
         return menuItem;
+    }
+    
+    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled ) {
+		JMenuItem menuItem = createMenuItem( title,commandStr,actionListener );
+	    menuItem.setEnabled(enabled);
+	    return menuItem;
+	}
+
+	public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean enabled, String keyStrokeStr ) {
+    	JMenuItem menuItem = createMenuItem(title, commandStr, actionListener, enabled);
+    	menuItem.setAccelerator( KeyStroke.getKeyStroke( keyStrokeStr ) );
+    	return menuItem;
     }
     
     public static JMenuItem createMenuItem(String title, String commandStr, int mnemonic, ActionListener actionListener) {
@@ -131,7 +137,26 @@ public final class GUI {
         return menuItem;
     }
 
-    public static JButton createButton( String commandStr, ActionListener actionListener ) {
+    public static JCheckBoxMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, boolean isSelected, boolean isEnabled ) {
+    	JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem( title );
+        menuItem.addActionListener(actionListener);
+        menuItem.setActionCommand( commandStr );
+        menuItem.setSelected(isSelected);
+        menuItem.setEnabled(isEnabled);
+        return menuItem;
+    }
+
+    public static JRadioButtonMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+    	JRadioButtonMenuItem menuItem = new JRadioButtonMenuItem( title );
+        menuItem.addActionListener(actionListener);
+        menuItem.setActionCommand( commandStr );
+        menuItem.setSelected(isSelected);
+        menuItem.setEnabled(isEnabled);
+        buttonGroup.add(menuItem);
+        return menuItem;
+	}
+
+	public static JButton createButton( String commandStr, ActionListener actionListener ) {
         JButton btn = new JButton();
         btn.addActionListener(actionListener);
         btn.setActionCommand( commandStr );
