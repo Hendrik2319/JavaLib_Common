@@ -381,6 +381,16 @@ public final class GUI {
         return textfield;
     }
 
+    public static JTextField createTextField( String commandStr, ActionListener actionListener, boolean observeFocusEvents ) {
+    	if (observeFocusEvents) return createTextField(commandStr, actionListener, true, null);
+    	else                    return createTextField(commandStr, actionListener);
+    }
+
+    public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean observeFocusEvents ) {
+    	if (observeFocusEvents) return createTextField(commandStr, actionListener, value, true, null);
+    	else                    return createTextField(commandStr, actionListener, value);
+    }
+
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
         JTextField textfield = new JTextField();
         if (focusListener==null) {
