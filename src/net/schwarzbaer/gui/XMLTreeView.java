@@ -126,7 +126,7 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		if (nodeValue!=null) return nodeValue;
 		return getValueOfSingleTextChild(node);
 	}
-	private static String getValueOfSingleTextChild(Node node) {
+	public static String getValueOfSingleTextChild(Node node) {
 		NodeList childNodes = node.getChildNodes();
 		if (childNodes.getLength()==1) {
 			Node item = childNodes.item(0);
