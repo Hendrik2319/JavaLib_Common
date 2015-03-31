@@ -2,6 +2,8 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.io.File;
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
 
@@ -16,23 +18,27 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class XMLTreeView extends JTree implements TreeSelectionListener {
 	private static final long serialVersionUID = -691121546633787401L;
 	
-	public static JScrollPane createScrollableTreeView(Document document, int prefWidth, int prefHeight) {
+	public static ScrollPane createScrollableTreeView(Document document, int prefWidth, int prefHeight) {
 		return createScrollableTreeView(document,prefWidth,prefHeight,null);
 	}
 	
-	private static JScrollPane createScrollableTreeView(Document document, int prefWidth, int prefHeight, JTextArea outputArea) {
+	private static ScrollPane createScrollableTreeView(Document document, int prefWidth, int prefHeight, JTextArea outputArea) {
 		XMLTreeView treeView = new XMLTreeView(document);
 		treeView.setOuput(outputArea);
-		JScrollPane scrollPane = new JScrollPane(treeView);
+		ScrollPane scrollPane = treeView.createScrollPane();
 		scrollPane.getViewport().setPreferredSize(new Dimension(prefWidth, prefHeight));
 		return scrollPane;
 	}
@@ -61,20 +67,60 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		window.startGUI(contentPane);
 	}
 	
+	public static void createTreeViewWindow(String windowTitle, File file, int prefWidth, int prefHeight, boolean exitOnClose, boolean withOutputField) {
+		Document document = parseXML(file);
+		createTreeViewWindow(windowTitle, document, prefWidth, prefHeight, exitOnClose, withOutputField);
+	}
+	
+	private static Document parseXML(File file) {
+		long timeMillis = System.currentTimeMillis();
+		
+		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+		
+		DocumentBuilder db;
+		try { db = factory.newDocumentBuilder(); }
+		catch (ParserConfigurationException e) { e.printStackTrace(); return null; }
+		
+		Document document;
+		try { document = db.parse(file); }
+		catch (SAXException e) { e.printStackTrace(); return null; }
+		catch (IOException e) { e.printStackTrace(); return null; }
+		document.getDocumentElement().normalize();
+		
+		System.out.printf("File \"%s\" parsed (%d byte)\r\n",file.getName(),file.length());
+		System.out.printf("  %d ms elapsed\r\n",System.currentTimeMillis()-timeMillis);
+		return document;
+	}
+
 	private JTextArea outputArea;
+	private boolean removeWhitespaceTextNodes;
 
 	public XMLTreeView() {
+		this(true);
+	}
+	public XMLTreeView(boolean removeWhitespaceTextNodes) {
 		super();
-		outputArea = null;
+		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
+		this.outputArea = null;
 		addTreeSelectionListener(this);
 	}
 	public XMLTreeView(Document document) {
-		super(new XMLTreeNode(document,null,0));
-		outputArea = null;
-		addTreeSelectionListener(this);
+		this();
+		setDocument(document);
+	}
+	public XMLTreeView(Document document, boolean removeWhitespaceTextNodes) {
+		this(document);
+		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
+	}
+	private ScrollPane createScrollPane() {
+		return new ScrollPane(this);
 	}
 	private void setOuput(JTextArea outputArea) {
 		this.outputArea = outputArea;
+	}
+	public void setDocument(Document document, boolean removeWhitespaceTextNodes) {
+		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
+		setDocument(document);
 	}
 	public void setDocument(Document document) {
 		setModel(new DefaultTreeModel(new XMLTreeNode(document,null,0)));
@@ -83,8 +129,8 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 	@Override
 	public void valueChanged(TreeSelectionEvent e) {
 		Object object = e.getPath().getLastPathComponent();
-		if (object instanceof XMLTreeView.XMLTreeNode) {
-			((XMLTreeView.XMLTreeNode)object).showValue(outputArea);
+		if (object instanceof XMLTreeNode) {
+			((XMLTreeNode)object).showValue(outputArea);
 		}
 	}
 
@@ -141,51 +187,60 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		return nodeValue.trim().isEmpty();
 	}
 
-	public static class XMLTreeNode implements TreeNode {
-		
-			private XMLTreeView.XMLTreeNode parent;
-			private Node node;
-			private Vector<XMLTreeView.XMLTreeNode> children;
-			private int index;
-			private String path;
-			private String value;
-			
-			public XMLTreeNode(Node node, XMLTreeView.XMLTreeNode parent, int index) {
-				this.node = node;
-				this.parent = parent;
-				this.index = index;
-				this.children = null;
-				if (parent==null) this.path = this.toSimpleLabel();
-				else this.path = parent.path+"/"+this.toSimpleLabel();
-				this.value = getValueOfSingleTextChild(node);
-				if (value!=null) children = new Vector<XMLTreeView.XMLTreeNode>(); 
-			}
-			
-			public void showValue(JTextArea outputArea) { showNode(node,outputArea); }
+	private class XMLTreeNode implements TreeNode {
 	
-			private void createChildList() {
-				if (children==null) {
-	//				System.out.println("create "+path);
-					children = new Vector<XMLTreeView.XMLTreeNode>();
-					NodeList nodeList = node.getChildNodes();
-					for (int i=0; i<nodeList.getLength(); i++) {
-						Node item = nodeList.item(i);
-						if (!isEmptyTextNode(item))
-							children.add(new XMLTreeNode(item, this, i));
-					}
+		private XMLTreeView.XMLTreeNode parent;
+		private Node node;
+		private Vector<XMLTreeView.XMLTreeNode> children;
+		private int index;
+		private String path;
+		private String value;
+		
+		public XMLTreeNode(Node node, XMLTreeView.XMLTreeNode parent, int index) {
+			this.node = node;
+			this.parent = parent;
+			this.index = index;
+			this.children = null;
+			if (parent==null) this.path = this.toSimpleLabel();
+			else this.path = parent.path+"/"+this.toSimpleLabel();
+			this.value = getValueOfSingleTextChild(node);
+			if (value!=null) children = new Vector<XMLTreeView.XMLTreeNode>(); 
+		}
+		
+		public void showValue(JTextArea outputArea) { showNode(node,outputArea); }
+
+		private void createChildList() {
+			if (children==null) {
+//				System.out.println("create "+path);
+				children = new Vector<XMLTreeView.XMLTreeNode>();
+				NodeList nodeList = node.getChildNodes();
+				for (int i=0; i<nodeList.getLength(); i++) {
+					Node item = nodeList.item(i);
+					if (!isEmptyTextNode(item) || !removeWhitespaceTextNodes)
+						children.add(new XMLTreeNode(item, this, i));
 				}
 			}
-			public String toSimpleLabel() { return "["+index+"]"+node.getNodeName(); }
-			@Override public String toString() { return toSimpleLabel()+(value==null?"":": \""+value+"\""); }
-			@Override public TreeNode    getParent() { return parent; }
-			
-			@Override public TreeNode    getChildAt(int childIndex)   { createChildList(); return children.get(childIndex); }
-			@Override public int         getChildCount()              { createChildList(); return children.size(); }
-			@Override public int         getIndex(TreeNode childNode) { createChildList(); return children.indexOf(childNode); }
-			@Override public boolean     isLeaf()                     { createChildList(); return children.isEmpty(); }
-			@SuppressWarnings("rawtypes")
-			@Override public Enumeration children()                   { createChildList(); return children.elements(); }
-			@Override public boolean     getAllowsChildren()          { return !isLeaf(); }
 		}
+		public String toSimpleLabel() { return "["+index+"]"+node.getNodeName(); }
+		@Override public String toString() { return toSimpleLabel()+(value==null?"":": \""+value+"\""); }
+		@Override public TreeNode    getParent() { return parent; }
+		
+		@Override public TreeNode    getChildAt(int childIndex)   { createChildList(); return children.get(childIndex); }
+		@Override public int         getChildCount()              { createChildList(); return children.size(); }
+		@Override public int         getIndex(TreeNode childNode) { createChildList(); return children.indexOf(childNode); }
+		@Override public boolean     isLeaf()                     { createChildList(); return children.isEmpty(); }
+		@SuppressWarnings("rawtypes")
+		@Override public Enumeration children()                   { createChildList(); return children.elements(); }
+		@Override public boolean     getAllowsChildren()          { return !isLeaf(); }
+	}
 	
+	public class ScrollPane extends JScrollPane {
+		private static final long serialVersionUID = 3462311693659603894L;
+		public ScrollPane(JComponent comp) {
+			super(comp);
+		}
+		public void setDocument(Document document) {
+			XMLTreeView.this.setDocument(document);
+		}
+	}
 }
