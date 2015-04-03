@@ -2,6 +2,10 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -10,6 +14,7 @@ import java.util.Vector;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
@@ -18,6 +23,7 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -94,6 +100,7 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 
 	private JTextArea outputArea;
 	private boolean removeWhitespaceTextNodes;
+	private NodeContextMenu contextMenu;
 
 	public XMLTreeView() {
 		this(true);
@@ -103,6 +110,16 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
 		this.outputArea = null;
 		addTreeSelectionListener(this);
+		addMouseListener(new MouseListener() {
+			@Override public void mouseReleased(MouseEvent e) {}
+			@Override public void mousePressed(MouseEvent e) {}
+			@Override public void mouseExited(MouseEvent e) {}
+			@Override public void mouseEntered(MouseEvent e) {}
+			@Override public void mouseClicked(MouseEvent e) {
+				if (e.getButton()==MouseEvent.BUTTON3) XMLTreeView.this.openContextMenu(e.getX(),e.getY());
+			}
+		});
+		this.contextMenu = new NodeContextMenu();
 	}
 	public XMLTreeView(Document document) {
 		this();
@@ -112,6 +129,15 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		this(document);
 		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
 	}
+	private void openContextMenu(int x, int y) {
+		TreePath path = getPathForLocation(x,y);
+		if (path==null) return;
+		Object object = path.getLastPathComponent();
+		if (!(object instanceof XMLTreeNode)) return;
+		XMLTreeNode selectedTreenode = (XMLTreeNode)object;
+		contextMenu.openMenu(selectedTreenode,x,y);
+	}
+
 	private ScrollPane createScrollPane() {
 		return new ScrollPane(this);
 	}
@@ -189,12 +215,12 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 
 	private class XMLTreeNode implements TreeNode {
 	
-		private XMLTreeView.XMLTreeNode parent;
-		private Node node;
-		private Vector<XMLTreeView.XMLTreeNode> children;
-		private int index;
-		private String path;
+		private final XMLTreeView.XMLTreeNode parent;
+		private final Node node;
+		private final int index;
+		private final String path;
 		private String value;
+		private Vector<XMLTreeView.XMLTreeNode> children;
 		
 		public XMLTreeNode(Node node, XMLTreeView.XMLTreeNode parent, int index) {
 			this.node = node;
@@ -206,7 +232,7 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 			this.value = getValueOfSingleTextChild(node);
 			if (value!=null) children = new Vector<XMLTreeView.XMLTreeNode>(); 
 		}
-		
+
 		public void showValue(JTextArea outputArea) { showNode(node,outputArea); }
 
 		private void createChildList() {
@@ -234,6 +260,33 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		@Override public boolean     getAllowsChildren()          { return !isLeaf(); }
 	}
 	
+	public class NodeContextMenu implements ActionListener {
+		
+		private JPopupMenu menu;
+		private XMLTreeNode selectedTreenode;
+
+		public NodeContextMenu() {
+			menu = new JPopupMenu();
+			menu.add(GUI.createMenuItem("show path", "show path", this));
+			selectedTreenode = null;
+		}
+		
+		public void openMenu(XMLTreeNode selectedTreenode, int x, int y) {
+			this.selectedTreenode = selectedTreenode;
+			menu.show(XMLTreeView.this, x, y);
+		}
+
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			//System.out.println(e.getActionCommand());
+			if (e.getActionCommand().equals("show path")) {
+				System.out.println("Path: "+selectedTreenode.path);
+				return;
+			}
+		}
+	
+	}
+
 	public class ScrollPane extends JScrollPane {
 		private static final long serialVersionUID = 3462311693659603894L;
 		public ScrollPane(JComponent comp) {
