@@ -108,13 +108,17 @@ public class FileSelector implements ActionListener {
 		return null;
 	}
 
-	public Component getSelectButton(String title) {
-		if (button==null) button = GUI.createButton(title, "select button", this, GUI.getFileIcon(new File(".")));
+	public Component getSelectButton() {
 		return button;
 	}
 
-	public Component getCombinedPanel(String buttonLabel) {
-		return GUI.createLeftAlignedPanel(getSelectButton(buttonLabel), getInputField());
+	public Component createSelectButton(String title) {
+		button = GUI.createButton(title, "select button", this, GUI.getFileIcon(new File(".")));
+		return button;
+	}
+
+	public Component createCombinedPanel(String buttonLabel) {
+		return GUI.createLeftAlignedPanel(createSelectButton(buttonLabel), getInputField());
 	}
 
 	public void setDirSelectionOnly   () { fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); }
