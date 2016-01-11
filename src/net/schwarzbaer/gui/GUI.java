@@ -307,6 +307,12 @@ public final class GUI {
 		return panel;
 	}
 
+	public static JScrollPane createScrollPanel(Component comp, int width, int height) {
+		JScrollPane scrollPanel = new JScrollPane(comp);
+		scrollPanel.getViewport().setPreferredSize(new Dimension(width, height));
+		return scrollPanel;
+	}
+
 	public static JPanel createGridPanel(int rows, int cols, int hgap, int vgap, JComponent[] components) {
 		JPanel panel = new JPanel( new GridLayout(rows,cols,hgap,vgap) );
 		if (components!=null)
