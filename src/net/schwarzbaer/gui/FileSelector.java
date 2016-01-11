@@ -72,10 +72,10 @@ public class FileSelector implements ActionListener {
 		}
 	}
 
-	public void addAlternative(String dir) {
-		if (DEBUG) System.out.printf("FileSelector.addAlternative(\"%s\")\r\n",dir);
+	public void addAlternative(File file) {
+		if (DEBUG) System.out.printf("FileSelector.addAlternative(\"%s\")\r\n",file);
 		if (type!=Type.WITH_ALTERNATIVES) return;
-		cmbbx.addItem(dir);
+		cmbbx.addItem(file.toString());
 	}
 
 	public void addAlternatives(Iterator<String> iterator) {
