@@ -17,6 +17,10 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -61,6 +65,51 @@ public final class GUI {
 		catch (InstantiationException e) {}
 		catch (IllegalAccessException e) {}
 		catch (UnsupportedLookAndFeelException e) {}
+	}
+	
+    public static void listUIDefaults() {
+    	listUIDefaults(null,null);
+	}
+	
+    public static void listUIDefaults(Class<?> classObj, String keyPrefix) {
+		List<String> keys = new ArrayList<String>();
+		int maxKeyLength = 0;
+		
+		for (Map.Entry<Object, Object> entry : UIManager.getDefaults().entrySet()) {
+			if ( (classObj==null) || classObj.isAssignableFrom( entry.getValue().getClass() ) ) {
+				String key = entry.getKey().toString();
+				if ( (keyPrefix==null) || key.startsWith(keyPrefix) ) {
+					maxKeyLength = Math.max( maxKeyLength, key.length() );
+					keys.add(key);
+				}
+			}
+		}
+		Collections.sort(keys);
+		
+		if (classObj==null) System.out.printf("Current UIDefaults have following values:\r\n");
+		else                System.out.printf("Current UIDefaults have following \"%s\" values:\r\n",classObj.getName());
+		
+		for (String name : keys) System.out.printf("   %-"+maxKeyLength+"s: %s\r\n",name,UIManager.getDefaults().get(name));
+	}
+	
+    public static void listKeysOfUIDefaults() {
+    	listKeysOfUIDefaults(null);
+	}
+	
+    public static void listKeysOfUIDefaults(Class<?> classObj) {
+		List<String> keys = new ArrayList<String>();
+		
+		for (Map.Entry<Object, Object> entry : UIManager.getDefaults().entrySet()) {
+			if ( (classObj==null) || classObj.isAssignableFrom( entry.getValue().getClass() ) ) {
+				keys.add(entry.getKey().toString());
+			}
+		}
+		Collections.sort(keys);
+		
+		if (classObj==null) System.out.printf("Current UIDefaults have following keys:\r\n");
+		else                System.out.printf("Current UIDefaults have following keys for \"%s\":\r\n",classObj);
+		
+		for (String name : keys) System.out.printf("   %s\r\n",name);
 	}
 	
     public static void moveToScreenCenter(JFrame window) {
@@ -308,7 +357,19 @@ public final class GUI {
 	}
 
 	public static JScrollPane createScrollPanel(Component comp, int width, int height) {
+		return createScrollPanel(comp, width, height, 3);
+	}
+
+	public static JScrollPane createScrollPanel(Component comp, int width, int height, int innerBorder) {
 		JScrollPane scrollPanel = new JScrollPane(comp);
+		if (innerBorder>0) {
+			scrollPanel.setBorder(
+					BorderFactory.createCompoundBorder(
+							BorderFactory.createEmptyBorder(innerBorder, innerBorder, innerBorder, innerBorder),
+							BorderFactory.createEtchedBorder()
+					)
+			);
+		}
 		scrollPanel.getViewport().setPreferredSize(new Dimension(width, height));
 		return scrollPanel;
 	}
