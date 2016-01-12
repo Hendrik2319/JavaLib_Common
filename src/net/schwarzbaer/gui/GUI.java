@@ -709,4 +709,9 @@ public final class GUI {
 //		}
 		
 	}
+
+	public static Component addEmptyBorder(int width, JComponent comp) {
+		comp.setBorder(BorderFactory.createEmptyBorder(width, width, width, width));
+		return comp;
+	}
 }
