@@ -33,7 +33,6 @@ public class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBox
 	@Override public void    addListDataListener(ListDataListener ldl) { listeners.   add(ldl); }
 	@Override public void removeListDataListener(ListDataListener ldl) { listeners.remove(ldl); }
 
-	@SuppressWarnings("unused")
 	private void fireContentsChanged(int i1, int i2) {
 		ListDataEvent e = new ListDataEvent(this,ListDataEvent.CONTENTS_CHANGED, i1, i2); 
 		for (ListDataListener l:listeners) l.contentsChanged(e);
