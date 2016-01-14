@@ -131,10 +131,11 @@ public class FileSelector implements ActionListener {
 			if (fileChooser.showOpenDialog(parent) == JFileChooser.APPROVE_OPTION) {
 				File selectedFile = fileChooser.getSelectedFile();
 				if (DEBUG) System.out.printf("FileSelector.actionPerformed(\"%s\") selectedFile:\"%s\"\r\n",e.getActionCommand(),selectedFile);
-				lastSetFileStr = selectedFile.toString();
-				setFieldText(lastSetFileStr);
-				if (checkDir(selectedFile))
+				if (checkDir(selectedFile)) {
 					listener.fileSelectionChanged(this, id, selectedFile);
+					lastSetFileStr = selectedFile.toString();
+					setFieldText(lastSetFileStr);
+				}
 			}
 			return;
 		}
@@ -165,7 +166,7 @@ public class FileSelector implements ActionListener {
 	
 	private void setFieldText(String txt) {
 		switch(type) {
-		case WITH_ALTERNATIVES   : cmbbx.setSelectedItem(txt); break;
+		case WITH_ALTERNATIVES   : cmbbx.setSelectedIndex(cmbbxContent.getIndex(txt)); break;
 		case WITHOUT_ALTERNATIVES: field.setText(txt); break;
 		}
 	}

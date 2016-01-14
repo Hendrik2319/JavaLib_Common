@@ -63,6 +63,10 @@ class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<I
 		return items.get(i);
 	}
 
+	public int getIndex(ItemType item) {
+		return items.indexOf(item);
+	}
+
 	@Override
 	public void addElement(ItemType item) {
 		if (items.contains(item)) {
