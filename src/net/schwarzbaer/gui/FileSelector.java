@@ -166,7 +166,7 @@ public class FileSelector implements ActionListener {
 	
 	private void setFieldText(String txt) {
 		switch(type) {
-		case WITH_ALTERNATIVES   : cmbbx.setSelectedIndex(cmbbxContent.getIndex(txt)); break;
+		case WITH_ALTERNATIVES   : cmbbx.setSelectedItem(txt); break;
 		case WITHOUT_ALTERNATIVES: field.setText(txt); break;
 		}
 	}

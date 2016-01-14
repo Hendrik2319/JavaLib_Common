@@ -7,7 +7,7 @@ import javax.swing.MutableComboBoxModel;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 
-class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<ItemType> {
+public class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<ItemType> {
 	
 	private static final boolean DEBUG = false;
 	
@@ -16,32 +16,35 @@ class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<I
 	private String selectedItem;
 
 	public ComboBoxModelWithoutRedundancy() {
-		listeners = new Vector<ListDataListener>();
-		items = new Vector<ItemType>();
+		this.listeners = new Vector<ListDataListener>();
+		this.items = new Vector<ItemType>();
 	}
 	
+	public ComboBoxModelWithoutRedundancy(ItemType[] items) {
+		this.listeners = new Vector<ListDataListener>();
+		this.items = new Vector<ItemType>();
+		for(ItemType item:items) this.items.add(item);
+	}
+
 	public Iterator<ItemType> getItemIterator() {
 		return items.iterator();
 	}
 
 	@Override public void    addListDataListener(ListDataListener ldl) { listeners.   add(ldl); }
 	@Override public void removeListDataListener(ListDataListener ldl) { listeners.remove(ldl); }
-	
+
 	@SuppressWarnings("unused")
 	private void fireContentsChanged(int i1, int i2) {
 		ListDataEvent e = new ListDataEvent(this,ListDataEvent.CONTENTS_CHANGED, i1, i2); 
-		Iterator<ListDataListener> it = listeners.iterator();
-		while(it.hasNext()) it.next().contentsChanged(e);
+		for (ListDataListener l:listeners) l.contentsChanged(e);
 	}
 	private void fireIntervalAdded(int i1, int i2) {
-		ListDataEvent e = new ListDataEvent(this,ListDataEvent.INTERVAL_ADDED, i1, i2); 
-		Iterator<ListDataListener> it = listeners.iterator();
-		while(it.hasNext()) it.next().intervalAdded(e);
+		ListDataEvent e = new ListDataEvent(this,ListDataEvent.INTERVAL_ADDED, i1, i2);
+		for (ListDataListener l:listeners) l.intervalAdded(e);
 	}
 	private void fireIntervalRemoved(int i1, int i2) {
 		ListDataEvent e = new ListDataEvent(this,ListDataEvent.INTERVAL_REMOVED, i1, i2); 
-		Iterator<ListDataListener> it = listeners.iterator();
-		while(it.hasNext()) it.next().intervalRemoved(e);
+		for (ListDataListener l:listeners) l.intervalRemoved(e);
 	}
 
 	@Override
@@ -53,6 +56,7 @@ class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<I
 	@Override
 	public void setSelectedItem(Object selectedItem) {
 		this.selectedItem = (selectedItem==null?null:selectedItem.toString());
+		fireContentsChanged(-1, -1);
 		if (DEBUG) System.out.printf("ComboBoxModelWithoutRedundancy.setSelectedItem(\"%s\")\r\n",selectedItem);
 	}
 
@@ -105,5 +109,4 @@ class ComboBoxModelWithoutRedundancy<ItemType> implements MutableComboBoxModel<I
 		items.removeElementAt(index);
 		fireIntervalRemoved(index, index);
 	}
-
 }
