@@ -4,6 +4,7 @@ package net.schwarzbaer.gui;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
@@ -67,18 +68,58 @@ public final class GUI {
 		catch (UnsupportedLookAndFeelException e) {}
 	}
 	
-    public static void listUIDefaults() {
-    	listUIDefaults(null,null);
+	public static void fixTextAreaFont(JTextArea textArea) {
+		String keyLabelFont = "Label.font";
+//		String keyTextAreaFont = "TextArea.font";
+		
+		Font    labelFont = UIManager.getDefaults().getFont(keyLabelFont);
+//		Font textAreaFont = UIManager.getDefaults().getFont(keyTextAreaFont);
+		Font textAreaFont = textArea.getFont();
+		
+		if (   labelFont==null) return;
+		if (textAreaFont==null) return;
+		if (labelFont.getSize()==textAreaFont.getSize()) return;
+		
+		System.out.printf("Change font size of TextArea from %d to %d.\r\n",textAreaFont.getSize(),labelFont.getSize());
+		Font newTextAreaFont = textAreaFont.deriveFont( (float)labelFont.getSize() );
+		
+		textArea.setFont(newTextAreaFont);
 	}
 	
-    public static void listUIDefaults(Class<?> classObj, String keyPrefix) {
+    public static void listUIDefaults() {
+    	listUIDefaults(null,(KeyAcceptor)null);
+	}
+	
+    public static void listUIDefaults(String keyPrefix) {
+    	listUIDefaults(null,keyPrefix);
+	}
+	
+    public static void listUIDefaults(KeyAcceptor keyAcceptor) {
+    	listUIDefaults(null,keyAcceptor);
+	}
+	
+    public static void listUIDefaults(Class<?> classObj, final String keyPrefix) {
+    	listUIDefaults(classObj, new KeyAcceptor(){
+			@Override public boolean accept(String key) {
+				if (key==null) return false;
+				if (keyPrefix==null) return false;
+				return key.startsWith(keyPrefix);
+			}
+		} );
+	}
+	
+    public static interface KeyAcceptor {
+    	public boolean accept( String key );
+    }
+    
+    public static void listUIDefaults(Class<?> classObj, KeyAcceptor keyAcceptor ) {
 		List<String> keys = new ArrayList<String>();
 		int maxKeyLength = 0;
 		
 		for (Map.Entry<Object, Object> entry : UIManager.getDefaults().entrySet()) {
 			if ( (classObj==null) || classObj.isAssignableFrom( entry.getValue().getClass() ) ) {
 				String key = entry.getKey().toString();
-				if ( (keyPrefix==null) || key.startsWith(keyPrefix) ) {
+				if ( (keyAcceptor==null) || keyAcceptor.accept(key) ) {
 					maxKeyLength = Math.max( maxKeyLength, key.length() );
 					keys.add(key);
 				}
@@ -714,4 +755,5 @@ public final class GUI {
 		comp.setBorder(BorderFactory.createEmptyBorder(width, width, width, width));
 		return comp;
 	}
+
 }
