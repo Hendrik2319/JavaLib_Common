@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -306,6 +307,10 @@ public final class GUI {
     }
 
 	public static <E> JComboBox<E> createComboBox_Gen( E[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
+    }
+
+	public static <E> JComboBox<E> createComboBox_Gen( Vector<E> items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
     }
 	
