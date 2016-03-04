@@ -37,6 +37,8 @@ public abstract class IconSource<E extends Enum<E>> {
 	protected abstract int getIconIndexInImage(E key);
 	
 	public Icon getIcon(E key) {
-		return new ImageIcon(images.getSubimage( getIconIndexInImage(key)*iconWidth,0, iconWidth,iconHeight ));
+		int indexInImage = getIconIndexInImage(key);
+		if (indexInImage<0) return null;
+		return new ImageIcon(images.getSubimage( indexInImage*iconWidth,0, iconWidth,iconHeight ));
 	}
 }
