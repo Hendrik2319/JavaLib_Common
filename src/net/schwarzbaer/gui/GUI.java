@@ -195,7 +195,14 @@ public final class GUI {
         return menu;
     }
     
-    public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener ) {
+    public static JMenu createMenu(String title, int mnemonic, JMenuItem[] jMenuItems) {
+        JMenu menu = createMenu( title, mnemonic, true );
+        for (JMenuItem menuItem:jMenuItems)
+        	menu.add(menuItem);
+        return menu;
+	}
+
+	public static JMenuItem createMenuItem( String title, String commandStr, ActionListener actionListener ) {
     	JMenuItem menuItem = new JMenuItem( title );
         menuItem.addActionListener(actionListener);
         menuItem.setActionCommand( commandStr );
