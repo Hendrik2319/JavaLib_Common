@@ -198,7 +198,8 @@ public final class GUI {
     public static JMenu createMenu(String title, int mnemonic, JMenuItem[] jMenuItems) {
         JMenu menu = createMenu( title, mnemonic, true );
         for (JMenuItem menuItem:jMenuItems)
-        	menu.add(menuItem);
+        	if (menuItem==null) menu.addSeparator();
+        	else                menu.add(menuItem);
         return menu;
 	}
 
