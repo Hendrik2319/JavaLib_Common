@@ -72,6 +72,10 @@ public class FileSelector implements ActionListener {
 		}
 	}
 
+	public void setFile(File file) {
+		setFieldText(file.toString());
+	}
+
 	public void addAlternative(File file) {
 		if (DEBUG) System.out.printf("FileSelector.addAlternative(\"%s\")\r\n",file);
 		if (type!=Type.WITH_ALTERNATIVES) return;
