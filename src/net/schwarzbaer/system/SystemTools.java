@@ -1,5 +1,6 @@
 package net.schwarzbaer.system;
 
+import java.io.File;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,7 +9,24 @@ import java.util.Vector;
 
 
 public final class SystemTools {
-
+	
+	public static File getRelativeFile( File hostFile, String filename ) {
+		File newFile = new File(filename);
+		if (!newFile.isAbsolute()) {
+			File folder = hostFile.getParentFile();
+			if (folder==null) folder = hostFile.getAbsoluteFile().getParentFile();
+			newFile = new File(folder,filename);
+		}
+		return newFile;
+	}
+	public static String getRelativePath( File hostFile, File file ) {
+		String parentPath = file.getParent();
+		if (!parentPath.endsWith(File.separator)) parentPath = parentPath+File.separator;
+		String path = file.getPath();
+		if (path.startsWith(parentPath)) path = path.substring(parentPath.length());
+		return path;
+	}
+	
 	public static void listSystemPropertiesSorted(PrintStream out) {
 		Properties properties = java.lang.System.getProperties();
 		Vector<Object> keySet = new Vector<Object>(properties.keySet());
