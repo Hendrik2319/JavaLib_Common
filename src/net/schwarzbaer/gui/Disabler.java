@@ -18,6 +18,10 @@ public class Disabler<ActionCommands> {
 		map.put(actionCommand,new Vector<JComponent>());
 	}
 
+	public void setCareFor(ActionCommands[] values) {
+		for (ActionCommands ac:values) setCareFor(ac);
+	}
+
 	public boolean caresFor(ActionCommands actionCommand) {
 		return map.containsKey(actionCommand);
 	}
@@ -50,6 +54,17 @@ public class Disabler<ActionCommands> {
 	public void setEnableAll( boolean enabled, ActionCommands exceptThis ) {
 		for (ActionCommands key:map.keySet())
 			if (!exceptThis.equals(key))
+				setEnable(key, enabled);
+	}
+
+	private boolean contains( ActionCommands[] values, ActionCommands value ) {
+		for(ActionCommands ac:values) if (ac.equals(value)) return true;
+		return false;
+	}
+	
+	public void setEnableAll( boolean enabled, ActionCommands[] exceptThis ) {
+		for (ActionCommands key:map.keySet()) 
+			if (!contains(exceptThis,key))
 				setEnable(key, enabled);
 	}
 
