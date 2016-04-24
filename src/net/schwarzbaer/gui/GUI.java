@@ -294,9 +294,16 @@ public final class GUI {
 	}
 
 	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener ) {
+        return createToggleButton( title, commandStr, actionListener, null, false, true );
+    }
+
+	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
     	JToggleButton button = new JToggleButton( title );
         button.addActionListener(actionListener);
         button.setActionCommand( commandStr );
+        button.setSelected(isSelected);
+        button.setEnabled(isEnabled);
+        if (buttonGroup!=null) buttonGroup.add(button);
         return button;
     }
 
@@ -306,7 +313,7 @@ public final class GUI {
         button.setActionCommand( commandStr );
         button.setSelected(isSelected);
         button.setEnabled(isEnabled);
-        buttonGroup.add(button);
+        if (buttonGroup!=null) buttonGroup.add(button);
         return button;
     }
 	
