@@ -327,6 +327,10 @@ public final class GUI {
 		return cmbbx.getItemAt(index);
 	}
 	
+	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
+        return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), selected, commandStr, enabled, actionListener);
+    }
+	
 	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), commandStr, enabled, actionListener);
     }
