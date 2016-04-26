@@ -317,6 +317,16 @@ public final class GUI {
         return button;
     }
 	
+	public static <E> void setSelectedValueOf( JComboBox<E> cmbbx, E value ) {
+		cmbbx.setSelectedItem(value);
+    }
+	
+	public static <E> E getSelectedValueOf( JComboBox<E> cmbbx ) {
+		int index = cmbbx.getSelectedIndex();
+		if (index<0) return null;
+		return cmbbx.getItemAt(index);
+	}
+	
 	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), commandStr, enabled, actionListener);
     }
