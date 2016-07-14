@@ -6,6 +6,9 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -788,6 +791,20 @@ public final class GUI {
 	public static Component addEmptyBorder(int width, JComponent comp) {
 		comp.setBorder(BorderFactory.createEmptyBorder(width, width, width, width));
 		return comp;
+	}
+
+	public static JFrame createWindowOnScreen(int screenID) {
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		GraphicsDevice[] screenDevices = ge.getScreenDevices();
+		GraphicsConfiguration gc;
+		if (screenDevices.length>screenID) {
+			gc = screenDevices[screenID].getDefaultConfiguration();
+			System.out.println("Create window on screen "+screenID+".");
+		} else {
+			gc = ge.getDefaultScreenDevice().getDefaultConfiguration();
+			System.out.println("Create window on defaul screen.");
+		}
+		return new JFrame(gc);
 	}
 
 }
