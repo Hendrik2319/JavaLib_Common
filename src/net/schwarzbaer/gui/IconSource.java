@@ -47,7 +47,18 @@ public abstract class IconSource<E extends Enum<E>> {
 	}
 
 	public Icon getIcon(int indexInImage) {
+		BufferedImage subimage = getImage(indexInImage);
+		if (subimage==null) return null;
+		return new ImageIcon(subimage);
+	}
+	
+	public BufferedImage getImage(E key) {
+		return getImage(getIconIndexInImage(key));
+	}
+
+	public BufferedImage getImage(int indexInImage) {
 		if (indexInImage<0) return null;
+		
 		int x,y;
 		if (columnCount<=0) {
 			x = indexInImage*iconWidth;
@@ -56,7 +67,8 @@ public abstract class IconSource<E extends Enum<E>> {
 			x = (indexInImage%columnCount)*iconWidth;
 			y = (indexInImage/columnCount)*iconHeight;
 		}
-		return new ImageIcon(images.getSubimage( x,y, iconWidth,iconHeight ));
+		
+		return images.getSubimage( x,y, iconWidth,iconHeight );
 	}
 	
 	private enum Dummy {}
