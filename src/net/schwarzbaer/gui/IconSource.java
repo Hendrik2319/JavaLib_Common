@@ -3,6 +3,7 @@ package net.schwarzbaer.gui;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.EnumMap;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -14,6 +15,7 @@ public abstract class IconSource<E extends Enum<E>> {
 	private final int iconHeight;
 	private final int columnCount;
 	private BufferedImage images;
+	private EnumMap<E, Icon> iconCache;
 	
 	public IconSource(int iconWidth, int iconHeight) {
 		this(iconWidth,iconHeight,-1);
@@ -40,6 +42,17 @@ public abstract class IconSource<E extends Enum<E>> {
 		}
 	}
 	
+	public Icon getCachedIcon(E key) {
+		return iconCache.get(key);
+	}
+	
+	public void cacheIcons(E[] keys) {
+		if (keys.length==0) return;
+		iconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
+		for (E key:keys)
+			iconCache.put(key, getIcon(key));
+	}
+
 	protected abstract int getIconIndexInImage(E key);
 	
 	public Icon getIcon(E key) {
