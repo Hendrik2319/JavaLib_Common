@@ -46,6 +46,10 @@ public abstract class IconSource<E extends Enum<E>> {
 		return iconCache.get(key);
 	}
 	
+	public void setCachedIcon(E key, Icon icon) {
+		iconCache.put(key,icon);
+	}
+
 	public void cacheIcons(E[] keys) {
 		if (keys.length==0) return;
 		iconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
@@ -84,6 +88,16 @@ public abstract class IconSource<E extends Enum<E>> {
 		return images.getSubimage( x,y, iconWidth,iconHeight );
 	}
 	
+	public static Icon cutIcon(Icon icon, int x, int y, int w, int h) {
+		if (!(icon instanceof ImageIcon)) return icon;
+		
+		ImageIcon imageIcon = (ImageIcon)icon;
+		BufferedImage bufferedImage = new BufferedImage(imageIcon.getIconWidth(),imageIcon.getIconHeight(),BufferedImage.TYPE_INT_ARGB);
+		bufferedImage.getGraphics().drawImage(imageIcon.getImage(),0,0,null);
+		
+		return new ImageIcon(bufferedImage.getSubimage(x,y,w,h));
+	}
+
 	private enum Dummy {}
 	
 	public static class IndexOnlyIconSource extends IconSource<Dummy> {
