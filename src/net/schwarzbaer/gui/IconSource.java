@@ -1,5 +1,6 @@
 package net.schwarzbaer.gui;
 
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -90,12 +91,26 @@ public abstract class IconSource<E extends Enum<E>> {
 	
 	public static Icon cutIcon(Icon icon, int x, int y, int w, int h) {
 		if (!(icon instanceof ImageIcon)) return icon;
-		
 		ImageIcon imageIcon = (ImageIcon)icon;
+		
 		BufferedImage bufferedImage = new BufferedImage(imageIcon.getIconWidth(),imageIcon.getIconHeight(),BufferedImage.TYPE_INT_ARGB);
 		bufferedImage.getGraphics().drawImage(imageIcon.getImage(),0,0,null);
 		
 		return new ImageIcon(bufferedImage.getSubimage(x,y,w,h));
+	}
+
+	public static Icon combine(Icon icon1, Icon icon2) {
+		if (!(icon1 instanceof ImageIcon)) return icon1;
+		if (!(icon2 instanceof ImageIcon)) return icon1;
+		ImageIcon imageIcon1 = (ImageIcon)icon1;
+		ImageIcon imageIcon2 = (ImageIcon)icon2;
+		
+		BufferedImage bufferedImage = new BufferedImage(imageIcon1.getIconWidth(),imageIcon1.getIconHeight(),BufferedImage.TYPE_INT_ARGB);
+		Graphics g = bufferedImage.getGraphics();
+		g.drawImage(imageIcon1.getImage(),0,0,null);
+		g.drawImage(imageIcon2.getImage(),0,0,null);
+		
+		return new ImageIcon(bufferedImage);
 	}
 
 	private enum Dummy {}
