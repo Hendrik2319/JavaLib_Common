@@ -16,7 +16,10 @@ public abstract class IconSource<E extends Enum<E>> {
 	private final int iconHeight;
 	private final int columnCount;
 	private BufferedImage images;
-	private EnumMap<E, Icon> iconCache;
+	private EnumMap<E, Icon>          enumIconCache;
+	private EnumMap<E, BufferedImage> enumImageCache;
+	private Icon[]          indexedIconCache;
+	private BufferedImage[] indexedImageCache;
 	
 	public IconSource(int iconWidth, int iconHeight) {
 		this(iconWidth,iconHeight,-1);
@@ -26,9 +29,17 @@ public abstract class IconSource<E extends Enum<E>> {
 		this.iconWidth = iconWidth;
 		this.iconHeight = iconHeight;
 		this.columnCount = columnCount;
+		this.enumIconCache = null;
+		this.enumImageCache = null;
+		this.indexedIconCache = null;
+		this.indexedImageCache = null;
 		this.images = null;
 	}
 	
+	private boolean exitsCache() {
+		return enumIconCache!=null || indexedIconCache!=null || enumImageCache!=null || indexedImageCache!=null;
+	}
+
 	public void readIconsFromResource(String resourcePath) {
 //		String resourcePath = "/Toolbar.png";
 		InputStream stream = getClass().getResourceAsStream(resourcePath);
@@ -43,26 +54,46 @@ public abstract class IconSource<E extends Enum<E>> {
 		}
 	}
 	
-	public Icon getCachedIcon(E key) {
-		return iconCache.get(key);
-	}
-	
-	public void setCachedIcon(E key, Icon icon) {
-		iconCache.put(key,icon);
-	}
-
+	public Icon getCachedIcon(E key) { return enumIconCache.get(key); }
+	public void setCachedIcon(E key, Icon icon) { enumIconCache.put(key,icon); }
 	public void cacheIcons(E[] keys) {
 		if (keys.length==0) return;
-		iconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
-		for (E key:keys)
-			iconCache.put(key, getIcon(key));
+		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
+		enumIconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
+		for (E key:keys) enumIconCache.put(key, getIcon(key));
+	}
+	
+	public BufferedImage getCachedImage(E key) { return enumImageCache.get(key); }
+	public void setCachedImage(E key, BufferedImage image) { enumImageCache.put(key,image); }
+	public void cacheImages(E[] keys) {
+		if (keys.length==0) return;
+		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
+		enumImageCache = new EnumMap<E,BufferedImage>(keys[0].getDeclaringClass());
+		for (E key:keys) enumImageCache.put(key, getImage(key));
+	}
+	
+	public Icon getCachedIcon(int key) { return indexedIconCache[key]; }
+	public void setCachedIcon(int key, Icon icon) { indexedIconCache[key]=icon; }
+	public void cacheIcons(int numberOfIcons) {
+		if (numberOfIcons==0) return;
+		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
+		indexedIconCache = new Icon[numberOfIcons];
+		for (int i=0; i<numberOfIcons; ++i) indexedIconCache[i] = getIcon(i);
+	}
+	
+	public BufferedImage getCachedImage(int key) { return indexedImageCache[key]; }
+	public void setCachedImage(int key, BufferedImage image) { indexedImageCache[key]=image; }
+	public void cacheImages(int numberOfImages) {
+		if (numberOfImages==0) return;
+		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
+		indexedImageCache = new BufferedImage[numberOfImages];
+		for (int i=0; i<numberOfImages; ++i) indexedImageCache[i] = getImage(i);
 	}
 
 	protected abstract int getIconIndexInImage(E key);
 	
-	public Icon getIcon(E key) {
-		return getIcon(getIconIndexInImage(key));
-	}
+	public Icon          getIcon (E key) { return getIcon (getIconIndexInImage(key)); }
+	public BufferedImage getImage(E key) { return getImage(getIconIndexInImage(key)); }
 
 	public Icon getIcon(int indexInImage) {
 		BufferedImage subimage = getImage(indexInImage);
@@ -70,10 +101,6 @@ public abstract class IconSource<E extends Enum<E>> {
 		return new ImageIcon(subimage);
 	}
 	
-	public BufferedImage getImage(E key) {
-		return getImage(getIconIndexInImage(key));
-	}
-
 	public BufferedImage getImage(int indexInImage) {
 		if (indexInImage<0) return null;
 		
@@ -120,9 +147,6 @@ public abstract class IconSource<E extends Enum<E>> {
 		public IndexOnlyIconSource(int iconWidth, int iconHeight) { super(iconWidth, iconHeight); }
 		public IndexOnlyIconSource(int iconWidth, int iconHeight, int columnCount) { super(iconWidth, iconHeight, columnCount); }
 
-		@Override public Icon getIcon(Dummy key) {
-		 	throw new IllegalArgumentException("Only indexed access allowed");
-		}
 		@Override protected int getIconIndexInImage(Dummy key) {
 		 	throw new IllegalArgumentException("Only indexed access allowed");
 		}
