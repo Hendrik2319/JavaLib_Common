@@ -9,25 +9,43 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.Window;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 
-public class StandardDialog extends JDialog {
+public class StandardDialog extends JDialog implements WindowListener {
 	private static final long serialVersionUID = -2236026007551538954L;
 	
-	private Window parent; 
+	private Window parent;
+	private boolean repeatedUseOfDialogObject; 
 	
 	public StandardDialog( Window parent, String title ) {
 		this(parent, title, Dialog.ModalityType.APPLICATION_MODAL);
 	}
 	
 	public StandardDialog( Window parent, String title, ModalityType modality ) {
+		this(parent, title, Dialog.ModalityType.APPLICATION_MODAL, true);
+	}
+	
+	public StandardDialog( Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject ) {
 		super( parent, title, modality );
 		this.parent = parent;
+		this.repeatedUseOfDialogObject = repeatedUseOfDialogObject;
+		addWindowListener(this);
+		setDefaultCloseOperation(repeatedUseOfDialogObject?HIDE_ON_CLOSE:DISPOSE_ON_CLOSE);
 	}
     
-    public void createGUI( JComponent contentPane ) {
+	@Override public void windowOpened      (WindowEvent e) { /*System.out.printf("[%08X] dialogOpened     \r\n", this.hashCode());*/ }
+	@Override public void windowClosed      (WindowEvent e) { /*System.out.printf("[%08X] dialogClosed     \r\n", this.hashCode());*/ }
+	@Override public void windowClosing     (WindowEvent e) { /*System.out.printf("[%08X] dialogClosing    \r\n", this.hashCode());*/ }
+	@Override public void windowIconified   (WindowEvent e) { /*System.out.printf("[%08X] dialogIconified  \r\n", this.hashCode());*/ }
+	@Override public void windowDeiconified (WindowEvent e) { /*System.out.printf("[%08X] dialogDeiconified\r\n", this.hashCode());*/ }
+	@Override public void windowActivated   (WindowEvent e) { /*System.out.printf("[%08X] dialogActivated  \r\n", this.hashCode());*/ }
+	@Override public void windowDeactivated (WindowEvent e) { /*System.out.printf("[%08X] dialogDeactivated\r\n", this.hashCode());*/ }
+
+	public void createGUI( JComponent contentPane ) {
     	createGUI( contentPane, null, null );
 	}
     
@@ -94,6 +112,7 @@ public class StandardDialog extends JDialog {
 
     public void closeDialog() {
         setVisible( false );
+        if (!repeatedUseOfDialogObject) dispose();
     }
 
 	public static enum Position {
