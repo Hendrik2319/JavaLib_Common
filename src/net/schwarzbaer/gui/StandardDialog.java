@@ -102,12 +102,12 @@ public class StandardDialog extends JDialog implements WindowListener {
     }
 
     public void showDialog(Position position) {
-    	setPosition(position);
+    	if (position!=null) setPosition(position);
         setVisible( true );
     }
 
     public void showDialog() {
-        setVisible( true );
+    	showDialog(null);
     }
 
     public void closeDialog() {
