@@ -2,16 +2,17 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dialog;
+import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.SwingUtilities;
 
 public class ProgressDialog extends StandardDialog implements ActionListener {
 	private static final long serialVersionUID = 1401683964054921965L;
@@ -19,40 +20,6 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 	private JProgressBar progressbar;
 	private Vector<CancelListener> cancelListeners;
 	private boolean canceled;
-	
-	public static void main(String[] args) {
-		GUI.setSystemLookAndFeel();
-		StandardMainWindow smw = new StandardMainWindow("Test");
-		smw.startGUI(new JPanel());
-		
-		final ProgressDialog pd = new ProgressDialog(smw,"Test");
-		
-		pd.addCancelListener(new CancelListener() {
-			@Override public void cancelTask() {
-				pd.closeDialog();
-			}
-		});
-		
-		new Thread(new Runnable() {
-			@Override public void run() {
-				int max = 1000000000;
-				pd.setTaskTitle("Import station adresses:");
-				pd.setValue(0, max);
-				for (int i=0; i<max; i++) {
-					Vector<String> temp = new Vector<String>();
-					temp.add("");
-					temp.clear();
-					pd.setValue(i+1);
-				}
-				pd.closeDialog();
-			}
-		}).start();
-		SwingUtilities.invokeLater(new Runnable() {
-			@Override public void run() {
-				pd.showDialog();
-			}
-		});
-	}
 	
 	public ProgressDialog(Window parent, String title, ModalityType modality) {
 		super(parent, title, modality);
@@ -72,10 +39,17 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		progressbarPane.add(taskTitle = new JLabel("  "), BorderLayout.NORTH);
 		progressbarPane.add(progressbar = new JProgressBar(JProgressBar.HORIZONTAL), BorderLayout.CENTER);
 		
+		JButton cancelButton = new JButton("Cancel");
+		cancelButton.setActionCommand("Cancel");
+		cancelButton.addActionListener(this);
+		
+		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,5,5));
+		southPanel.add(cancelButton);
+		
 		JPanel contentPane = new JPanel(new BorderLayout(3,3));
 		contentPane.setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
 		contentPane.add(progressbarPane);
-		contentPane.add(GUI.createRightAlignedPanel(GUI.createButton("Cancel","Cancel",this)),BorderLayout.SOUTH);
+		contentPane.add(southPanel,BorderLayout.SOUTH);
 		
 		progressbar.setIndeterminate(true);
 //		progressbar.setPreferredSize(new Dimension(10, 10));
