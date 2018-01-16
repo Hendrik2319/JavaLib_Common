@@ -10,16 +10,12 @@ import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 
-public abstract class IconSource<E extends Enum<E>> {
+public class IconSource<E extends Enum<E>> {
 	
 	private final int iconWidth;
 	private final int iconHeight;
 	private final int columnCount;
 	private BufferedImage images;
-	private EnumMap<E, Icon>          enumIconCache;
-	private EnumMap<E, BufferedImage> enumImageCache;
-	private Icon[]          indexedIconCache;
-	private BufferedImage[] indexedImageCache;
 	
 	public IconSource(int iconWidth, int iconHeight) {
 		this(iconWidth,iconHeight,-1);
@@ -29,15 +25,7 @@ public abstract class IconSource<E extends Enum<E>> {
 		this.iconWidth = iconWidth;
 		this.iconHeight = iconHeight;
 		this.columnCount = columnCount;
-		this.enumIconCache = null;
-		this.enumImageCache = null;
-		this.indexedIconCache = null;
-		this.indexedImageCache = null;
 		this.images = null;
-	}
-	
-	private boolean exitsCache() {
-		return enumIconCache!=null || indexedIconCache!=null || enumImageCache!=null || indexedImageCache!=null;
 	}
 
 	public void readIconsFromResource(String resourcePath) {
@@ -54,43 +42,26 @@ public abstract class IconSource<E extends Enum<E>> {
 		}
 	}
 	
-	public Icon getCachedIcon(E key) { return enumIconCache.get(key); }
-	public void setCachedIcon(E key, Icon icon) { enumIconCache.put(key,icon); }
-	public void cacheIcons(E[] keys) {
-		if (keys.length==0) return;
-		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
-		enumIconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
-		for (E key:keys) enumIconCache.put(key, getIcon(key));
+	public CachedIcons<E> cacheIcons(E[] keys) {
+		return new CachedIcons<E>(this,keys);
 	}
 	
-	public BufferedImage getCachedImage(E key) { return enumImageCache.get(key); }
-	public void setCachedImage(E key, BufferedImage image) { enumImageCache.put(key,image); }
-	public void cacheImages(E[] keys) {
-		if (keys.length==0) return;
-		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
-		enumImageCache = new EnumMap<E,BufferedImage>(keys[0].getDeclaringClass());
-		for (E key:keys) enumImageCache.put(key, getImage(key));
+	public CachedImages<E> cacheImages(E[] keys) {
+		return new CachedImages<E>(this,keys);
 	}
 	
-	public Icon getCachedIcon(int key) { return indexedIconCache[key]; }
-	public void setCachedIcon(int key, Icon icon) { indexedIconCache[key]=icon; }
-	public void cacheIcons(int numberOfIcons) {
-		if (numberOfIcons==0) return;
-		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
-		indexedIconCache = new Icon[numberOfIcons];
-		for (int i=0; i<numberOfIcons; ++i) indexedIconCache[i] = getIcon(i);
+	public CachedIndexedIcons cacheIcons(int numberOfIcons) {
+		return new CachedIndexedIcons(this,numberOfIcons);
 	}
 	
-	public BufferedImage getCachedImage(int key) { return indexedImageCache[key]; }
-	public void setCachedImage(int key, BufferedImage image) { indexedImageCache[key]=image; }
-	public void cacheImages(int numberOfImages) {
-		if (numberOfImages==0) return;
-		if (exitsCache()) System.err.println("Warning: Another cache already exists.");
-		indexedImageCache = new BufferedImage[numberOfImages];
-		for (int i=0; i<numberOfImages; ++i) indexedImageCache[i] = getImage(i);
+	public CachedIndexedImages cacheImages(int numberOfImages) {
+		return new CachedIndexedImages(this,numberOfImages);
 	}
 
-	protected abstract int getIconIndexInImage(E key);
+	protected int getIconIndexInImage(E key) {
+		if (key!=null) return key.ordinal();
+	 	throw new IllegalArgumentException("Unknown icon key: "+key);
+	}
 	
 	public Icon          getIcon (E key) { return getIcon (getIconIndexInImage(key)); }
 	public BufferedImage getImage(E key) { return getImage(getIconIndexInImage(key)); }
@@ -150,5 +121,47 @@ public abstract class IconSource<E extends Enum<E>> {
 		@Override protected int getIconIndexInImage(Dummy key) {
 		 	throw new IllegalArgumentException("Only indexed access allowed");
 		}
+	}
+	
+	public static class CachedImages<E extends Enum<E>> {
+		private EnumMap<E, BufferedImage> enumImageCache;
+		public CachedImages(IconSource<E> iconSource, E[] keys) {
+			enumImageCache = new EnumMap<E,BufferedImage>(keys[0].getDeclaringClass());
+			for (E key:keys) enumImageCache.put(key, iconSource.getImage(key));
+		}
+		public BufferedImage getCachedImage(E key) { return enumImageCache.get(key); }
+		public void setCachedImage(E key, BufferedImage image) { enumImageCache.put(key, image); }
+	}
+	
+	public static class CachedIcons<E extends Enum<E>> {
+		private EnumMap<E, Icon> enumIconCache;
+		public CachedIcons(IconSource<E> iconSource, E[] keys) {
+			enumIconCache = new EnumMap<E,Icon>(keys[0].getDeclaringClass());
+			for (E key:keys) enumIconCache.put(key, iconSource.getIcon(key));
+		}
+		public Icon getCachedIcon(E key) { return enumIconCache.get(key); }
+		public void setCachedIcon(E key, Icon icon) { enumIconCache.put(key, icon); }
+	}
+
+	public static class CachedIndexedImages {
+		private BufferedImage[] cache;
+
+		public CachedIndexedImages(IconSource<?> iconSource, int numberOfImages) {
+			cache = new BufferedImage[numberOfImages];
+			for (int i=0; i<numberOfImages; ++i) cache[i] = iconSource.getImage(i);
+		}
+		public BufferedImage getCachedImage(int key) { return cache[key]; }
+		public void setCachedImage(int key, BufferedImage image) { cache[key]=image; }
+	}
+	
+	public static class CachedIndexedIcons {
+		private Icon[] cache;
+
+		public CachedIndexedIcons(IconSource<?> iconSource, int numberOfIcons) {
+			cache = new Icon[numberOfIcons];
+			for (int i=0; i<numberOfIcons; ++i) cache[i] = iconSource.getIcon(i);
+		}
+		public Icon getCachedIcon(int key) { return cache[key]; }
+		public void setCachedIcon(int key, Icon icon) { cache[key]=icon; }
 	}
 }
