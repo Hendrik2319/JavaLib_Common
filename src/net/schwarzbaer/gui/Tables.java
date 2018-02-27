@@ -1,10 +1,23 @@
 package net.schwarzbaer.gui;
 
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.util.Arrays;
 import java.util.Vector;
+import java.util.function.Function;
 
+import javax.swing.AbstractCellEditor;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JTable;
+import javax.swing.ListCellRenderer;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
@@ -152,6 +165,126 @@ public class Tables {
 			if (preferred>=0) column.setPreferredWidth(preferred);
 			if (width    >=0) column.setWidth(width);
 		}
+	}
+	
+	public static class ComboboxCellEditor<T> extends AbstractCellEditor implements TableCellEditor {
+		private static final long serialVersionUID = 8936989376730045132L;
+
+		private Object currentValue;
+		private T[] values;
+		private ListCellRenderer<? super T> renderer;
+		
+		public ComboboxCellEditor(T[] values) {
+			this.values = values;
+			this.currentValue = null;
+			this.renderer = null;
+		}
+		
+		public void addValue(T newValue) {
+			stopCellEditing();
+			values = Arrays.copyOf(values, values.length+1);
+			values[values.length-1] = newValue;
+		}
+
+		public void setValues(T[] newValues) {
+			stopCellEditing();
+			values = newValues;
+		}
+
+		public void setRenderer(ListCellRenderer<? super T> renderer) {
+			this.renderer = renderer;
+		}
+
+		public void setRenderer(Function<Object,String> converter) {
+			this.renderer = new NonStringRenderer<T>(converter);
+		}
+		
+		@Override
+		public Object getCellEditorValue() {
+			return currentValue;
+		}
+
+		@Override
+		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+			this.currentValue = value;
+			
+			JComboBox<T> cmbbx = new JComboBox<T>(values);
+			if (renderer!=null) cmbbx.setRenderer(renderer);
+			cmbbx.setSelectedItem(currentValue);
+			cmbbx.setBackground(isSelected?table.getSelectionBackground():table.getBackground());
+			cmbbx.addActionListener(e->{
+				currentValue = cmbbx.getSelectedItem();
+				fireEditingStopped();
+			});
+			
+			return cmbbx;
+		}
+		
+	}
+	
+	public static class NonStringRenderer<T> implements ListCellRenderer<T>, TableCellRenderer {
+		
+		private RendererComponent comp;
+		private Function<Object, String> converter;
+		
+		public NonStringRenderer(Function<Object,String> converter) {
+			this.converter = converter;
+			this.comp = new RendererComponent();
+			comp.setPreferredSize(new Dimension(1,16));
+		}
+		
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			Color bgColor   = isSelected ? table.getSelectionBackground() : table.getBackground();
+			Color textColor = isSelected ? table.getSelectionForeground() : table.getForeground();
+			comp.set(converter.apply(value),bgColor,textColor);
+			return comp;
+		}
+
+		@Override
+		public Component getListCellRendererComponent(JList<? extends T> list, T value, int index, boolean isSelected, boolean cellHasFocus) {
+			Color bgColor   = isSelected ? list.getSelectionBackground() : list.getBackground();
+			Color textColor = isSelected ? list.getSelectionForeground() : list.getForeground();
+			comp.set(converter.apply(value),bgColor,textColor);
+			return comp;
+		}
+
+		public static class RendererComponent extends LabelRendererComponent {
+			private static final long serialVersionUID = 6214683201455907406L;
+
+			private RendererComponent() {
+				setOpaque(true);
+			}
+
+			public void set(String value, Color bgColor, Color textColor) {
+				setBackground(bgColor);
+				setForeground(textColor);
+				setText(value==null?"":value);
+			}
+		}
+	}
+
+	private static class LabelRendererComponent extends JLabel {
+		private static final long serialVersionUID = -4524101782848184348L;
+		
+		@Override public void revalidate() {}
+		@Override public void invalidate() {}
+		@Override public void validate() {}
+		@Override public void repaint(long tm, int x, int y, int width, int height) {}
+		@Override public void repaint(Rectangle r) {}
+		@Override public void repaint() {}
+		@Override public void repaint(long tm) {}
+		@Override public void repaint(int x, int y, int width, int height) {}
+
+		@Override public void firePropertyChange(String propertyName, boolean oldValue, boolean newValue) {}
+		@Override public void firePropertyChange(String propertyName, int oldValue, int newValue) {}
+		@Override public void firePropertyChange(String propertyName, char oldValue, char newValue) {}
+		@Override protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {}
+		@Override public void firePropertyChange(String propertyName, byte oldValue, byte newValue) {}
+		@Override public void firePropertyChange(String propertyName, short oldValue, short newValue) {}
+		@Override public void firePropertyChange(String propertyName, long oldValue, long newValue) {}
+		@Override public void firePropertyChange(String propertyName, float oldValue, float newValue) {}
+		@Override public void firePropertyChange(String propertyName, double oldValue, double newValue) {}
 	}
 
 
