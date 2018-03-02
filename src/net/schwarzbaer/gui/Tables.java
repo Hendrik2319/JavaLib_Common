@@ -5,8 +5,12 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Vector;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
@@ -14,6 +18,8 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JTable;
 import javax.swing.ListCellRenderer;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
@@ -23,6 +29,180 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
 public class Tables {
+	
+	public static class SimplifiedRowSorter extends RowSorter<SimplifiedTableModel<?>> {
+
+		private SimplifiedTableModel<?> model;
+		private LinkedList<RowSorter.SortKey> keys;
+		private Integer[] modelRowIndexes;
+		private int[] viewRowIndexes;
+
+		public SimplifiedRowSorter(SimplifiedTableModel<?> model) {
+			this.model = model;
+			this.keys = new LinkedList<RowSorter.SortKey>();
+			this.modelRowIndexes = null;
+			this.viewRowIndexes = null;
+		}
+		
+		public void setModel(SimplifiedTableModel<?> model) {
+			this.model = model;
+			this.keys = new LinkedList<RowSorter.SortKey>();
+			sort();
+		}
+
+		@Override public SimplifiedTableModel<?> getModel() { return model; }
+
+		private void log(String format, Object... values) {
+			//System.out.printf(String.format("[%08X:%s] ", this.hashCode(), name)+format+"\r\n",values);
+		}
+
+		private static String toString(List<? extends RowSorter.SortKey> keys) {
+			if (keys==null) return "<null>";
+			String str = "";
+			for (RowSorter.SortKey key:keys) {
+				if (!str.isEmpty()) str+=", ";
+				str+=key.getColumn()+":"+key.getSortOrder();
+			}
+			if (!str.isEmpty()) str = "[ "+str+" ]";
+			return str;
+		}
+		
+		private void sort() {
+			if (model==null) {
+				this.modelRowIndexes = null;
+				this.viewRowIndexes = null;
+				return;
+			}
+			
+			log("sort() -> %s",toString(keys));
+			
+			int rowCount = getModelRowCount();
+			if (modelRowIndexes==null || modelRowIndexes.length!=rowCount)
+				modelRowIndexes = new Integer[rowCount];
+			
+			for (int i=0; i<modelRowIndexes.length; ++i)
+				modelRowIndexes[i] = i;
+			
+			Comparator<Integer> comparator = null;
+			
+			int unsortedRows = model.getUnsortedRowsCount();
+			if (0<unsortedRows)
+				comparator = Comparator.comparingInt((Integer row)->(row<unsortedRows?row:unsortedRows));
+			
+			for (SortKey key:keys) {
+				SortOrder sortOrder = key.getSortOrder();
+				if (sortOrder==SortOrder.UNSORTED) continue;
+				int column = key.getColumn();
+				
+				if      (model.getColumnClass(column) == Boolean.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == String .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Long   .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Integer.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Double .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Float  .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
+				else comparator = setComparator(comparator,sortOrder,
+							(Integer row)->{
+								Object object = model.getValueAt(row,column);
+								if (object==null) return null;
+								return object.toString();
+							});
+			}
+			
+			if (comparator!=null)
+				Arrays.sort(modelRowIndexes, comparator);
+			
+			if (viewRowIndexes==null || viewRowIndexes.length!=rowCount)
+				viewRowIndexes = new int[rowCount];
+			for (int i=0; i<viewRowIndexes.length; ++i) viewRowIndexes[i] = -1;
+			for (int i=0; i<modelRowIndexes    .length; ++i) viewRowIndexes[modelRowIndexes[i]] = i;
+			
+			fireSortOrderChanged();
+		}
+		
+		private <U extends Comparable<? super U>> Comparator<Integer> setComparator(Comparator<Integer> comp, SortOrder sortOrder, Function<? super Integer,? extends U> keyExtractor) {
+			if (sortOrder==SortOrder.DESCENDING) {
+				if (comp==null) {
+					Comparator<Integer> comparator = Comparator.comparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
+					return comparator.reversed();
+				}
+				Comparator<Integer> comparator = comp.reversed().thenComparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
+				return comparator.reversed();
+			} else {
+				if (comp==null) return Comparator.comparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+				return comp.thenComparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+			}
+		}
+		
+		
+		@Override
+		public void toggleSortOrder(int column) {
+			RemovePred pred = new RemovePred(column);
+			keys.removeIf(pred);
+			if (pred.oldSortOrder == SortOrder.ASCENDING)
+				keys.addFirst(new SortKey(column, SortOrder.DESCENDING));
+			else
+				keys.addFirst(new SortKey(column, SortOrder.ASCENDING));
+			log("toggleSortOrder( %d )", column);
+			sort();
+		}
+
+		private static class RemovePred implements Predicate<SortKey> {
+			private int column;
+			private SortOrder oldSortOrder;
+			public RemovePred(int column) {
+				this.column = column;
+				this.oldSortOrder = SortOrder.UNSORTED;
+			}
+			@Override public boolean test(SortKey k) {
+				if (k.getColumn()==column) {
+					oldSortOrder = k.getSortOrder();
+					return true;
+				}
+				return false;
+			}
+		}
+
+		@Override
+		public void setSortKeys(List<? extends RowSorter.SortKey> keys) {
+			if (keys==null) this.keys = new LinkedList<RowSorter.SortKey>();
+			else            this.keys = new LinkedList<RowSorter.SortKey>(keys);
+			log("setSortKeys( %s )",toString(this.keys));
+		}
+
+		@Override
+		public List<? extends RowSorter.SortKey> getSortKeys() {
+			//log("getSortKeys()");
+			return keys;
+		}
+
+		@Override
+		public int convertRowIndexToModel(int index) {
+			if (modelRowIndexes==null) return index;
+			if (index<0) return -1;
+			if (index>=modelRowIndexes.length) return -1;
+			return modelRowIndexes[index];
+		}
+
+		@Override
+		public int convertRowIndexToView(int index) {
+			if (viewRowIndexes==null) return index;
+			if (index<0) return -1;
+			if (index>=viewRowIndexes.length) return -1;
+			return viewRowIndexes[index];
+		}
+
+		@Override public int getViewRowCount() { return getModelRowCount(); }
+		@Override public int getModelRowCount() { if (model==null) return 0; return model.getRowCount(); }
+
+		@Override public void modelStructureChanged() { log("modelStructureChanged()"); sort(); }
+		@Override public void allRowsChanged() { log("allRowsChanged()"); sort(); }
+		@Override public void rowsInserted(int firstRow, int endRow) { log("rowsInserted( %d, %d )", firstRow, endRow); sort(); }
+		@Override public void rowsDeleted(int firstRow, int endRow) { log("rowsDeleted( %d, %d )", firstRow, endRow); sort(); }
+		@Override public void rowsUpdated(int firstRow, int endRow) { log("rowsUpdated( %d, %d )", firstRow, endRow); sort(); }
+		@Override public void rowsUpdated(int firstRow, int endRow, int column) { log("rowsUpdated( %d, %d, %d )", firstRow, endRow, column); sort();
+		}
+		
+	}
 
 	public static class SimplifiedColumnConfig {
 		public String name;
@@ -264,7 +444,7 @@ public class Tables {
 		}
 	}
 
-	private static class LabelRendererComponent extends JLabel {
+	public static class LabelRendererComponent extends JLabel {
 		private static final long serialVersionUID = -4524101782848184348L;
 		
 		@Override public void revalidate() {}
