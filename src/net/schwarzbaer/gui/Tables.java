@@ -94,7 +94,8 @@ public class Tables {
 				if (sortOrder==SortOrder.UNSORTED) continue;
 				int column = key.getColumn();
 				
-				if      (model.getColumnClass(column) == Boolean.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
+				if      (model.hasSpecialSorting(column)              ) comparator = setComparator(comparator,sortOrder,model.getSpecialSorting(column));
+				else if (model.getColumnClass(column) == Boolean.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
 				else if (model.getColumnClass(column) == String .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
 				else if (model.getColumnClass(column) == Long   .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
 				else if (model.getColumnClass(column) == Integer.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
@@ -119,6 +120,20 @@ public class Tables {
 			fireSortOrderChanged();
 		}
 		
+		private Comparator<Integer> setComparator(Comparator<Integer> comp, SortOrder sortOrder, Comparator<Integer> specialSorting) {
+			if (sortOrder==SortOrder.DESCENDING) {
+				if (comp==null) {
+					Comparator<Integer> comparator = specialSorting;
+					return comparator.reversed();
+				}
+				Comparator<Integer> comparator = comp.reversed().thenComparing(specialSorting);
+				return comparator.reversed();
+			} else {
+				if (comp==null) return specialSorting;
+				return comp.thenComparing(specialSorting);
+			}
+		}
+
 		private <U extends Comparable<? super U>> Comparator<Integer> setComparator(Comparator<Integer> comp, SortOrder sortOrder, Function<? super Integer,? extends U> keyExtractor) {
 			if (sortOrder==SortOrder.DESCENDING) {
 				if (comp==null) {
@@ -211,17 +226,22 @@ public class Tables {
 		public int prefWidth;
 		public int currentWidth;
 		public Class<?> columnClass;
+		public boolean hasSpecialSorting;
 		
 		SimplifiedColumnConfig() {
-			this("",String.class,-1,-1,-1,-1);
+			this("",String.class,-1,-1,-1,-1,false);
 		}
 		public SimplifiedColumnConfig(String name, Class<?> columnClass, int minWidth, int maxWidth, int prefWidth, int currentWidth) {
+			this(name, columnClass, minWidth, maxWidth, prefWidth, currentWidth, false);
+		}
+		public SimplifiedColumnConfig(String name, Class<?> columnClass, int minWidth, int maxWidth, int prefWidth, int currentWidth, boolean hasSpecialSorting) {
 			this.name = name;
 			this.columnClass = columnClass;
 			this.minWidth = minWidth;
 			this.maxWidth = maxWidth;
 			this.prefWidth = prefWidth;
 			this.currentWidth = currentWidth;
+			this.hasSpecialSorting = hasSpecialSorting;
 		}
 	}
 
@@ -344,6 +364,22 @@ public class Tables {
 			if (max>=0) column.setMinWidth(max);
 			if (preferred>=0) column.setPreferredWidth(preferred);
 			if (width    >=0) column.setWidth(width);
+		}
+
+		public boolean hasSpecialSorting(int columnIndex) {
+			ColumnID columnID = getColumnID(columnIndex);
+			if (columnID==null) return false;
+			return columnID.getColumnConfig().hasSpecialSorting;
+		}
+
+		public Comparator<Integer> getSpecialSorting(int columnIndex) {
+			ColumnID columnID = getColumnID(columnIndex);
+			if (columnID==null) return null;
+			return getSpecialSorting(columnID);
+		}
+
+		protected Comparator<Integer> getSpecialSorting(ColumnID columnID) {
+			return null;
 		}
 	}
 	
