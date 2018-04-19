@@ -452,7 +452,7 @@ public final class GUI {
 		return scrollPanel;
 	}
 
-	public static JPanel createGridPanel(int rows, int cols, int hgap, int vgap, JComponent[] components) {
+	public static JPanel createGridPanel(int rows, int cols, int hgap, int vgap, JComponent... components) {
 		JPanel panel = new JPanel( new GridLayout(rows,cols,hgap,vgap) );
 		if (components!=null)
 			for (int i=0; i<components.length; i++) panel.add(components[i]);
