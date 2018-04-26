@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import javax.swing.AbstractCellEditor;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -478,6 +479,29 @@ public class Tables {
 				setText(value==null?"":value);
 			}
 		}
+	}
+
+	public static class CheckBoxRendererComponent extends JCheckBox {
+		private static final long serialVersionUID = -1094682628853018055L;
+
+		@Override public void revalidate() {}
+		@Override public void invalidate() {}
+		@Override public void validate() {}
+		@Override public void repaint(long tm, int x, int y, int width, int height) {}
+		@Override public void repaint(Rectangle r) {}
+		@Override public void repaint() {}
+		@Override public void repaint(long tm) {}
+		@Override public void repaint(int x, int y, int width, int height) {}
+
+		@Override public void firePropertyChange(String propertyName, boolean oldValue, boolean newValue) {}
+		@Override public void firePropertyChange(String propertyName, int oldValue, int newValue) {}
+		@Override public void firePropertyChange(String propertyName, char oldValue, char newValue) {}
+		@Override protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {}
+		@Override public void firePropertyChange(String propertyName, byte oldValue, byte newValue) {}
+		@Override public void firePropertyChange(String propertyName, short oldValue, short newValue) {}
+		@Override public void firePropertyChange(String propertyName, long oldValue, long newValue) {}
+		@Override public void firePropertyChange(String propertyName, float oldValue, float newValue) {}
+		@Override public void firePropertyChange(String propertyName, double oldValue, double newValue) {}
 	}
 
 	public static class LabelRendererComponent extends JLabel {
