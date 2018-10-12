@@ -23,17 +23,17 @@ public class StandardMainWindow extends JFrame implements WindowListener {
 	private static final long serialVersionUID = -6515512014217265169L;
 	
 	private final CloseListener closeListener;
-	private final boolean disposeOnClose;
+	private final DefaultCloseOperation defaultCloseOperation;
 
-    public StandardMainWindow(String title, CloseListener closeListener, boolean disposeOnClose ) throws HeadlessException {
+    public StandardMainWindow(String title, CloseListener closeListener, DefaultCloseOperation defaultCloseOperation ) throws HeadlessException {
         super(title);
         this.closeListener = closeListener;
-		this.disposeOnClose = disposeOnClose;
+		this.defaultCloseOperation = defaultCloseOperation;
     }
-    public StandardMainWindow(String title, CloseListener closeListener ) throws HeadlessException { this(title,closeListener,false); }
-    public StandardMainWindow(String title, boolean disposeOnClose      ) throws HeadlessException { this(title,null,disposeOnClose); }
-    public StandardMainWindow(String title) throws HeadlessException { this(title,null); }
-    public StandardMainWindow(            ) throws HeadlessException { this("",null); }
+    public StandardMainWindow(String title, CloseListener closeListener                 ) throws HeadlessException { this(title,closeListener,DefaultCloseOperation.DO_NOTHING_ON_CLOSE); }
+    public StandardMainWindow(String title, DefaultCloseOperation defaultCloseOperation ) throws HeadlessException { this(title,null,defaultCloseOperation); }
+    public StandardMainWindow(String title) throws HeadlessException { this(title,null,DefaultCloseOperation.EXIT_ON_CLOSE); }
+    public StandardMainWindow(            ) throws HeadlessException { this(""); }
 
     public void startGUI( JComponent contentPane ) {
         startGUI( contentPane, null, null );
@@ -57,10 +57,19 @@ public class StandardMainWindow extends JFrame implements WindowListener {
     public void prepareGUI(JComponent contentPane) {
     	prepareGUI(contentPane, null);
     }
+    
+    public enum DefaultCloseOperation {
+    	DO_NOTHING_ON_CLOSE(JFrame.DO_NOTHING_ON_CLOSE),
+    	DISPOSE_ON_CLOSE(JFrame.DISPOSE_ON_CLOSE),
+    	EXIT_ON_CLOSE(JFrame.EXIT_ON_CLOSE);
+    	
+    	public int operationID;
+		private DefaultCloseOperation(int operationID) {
+			this.operationID = operationID;
+    	}
+    }
     public void prepareGUI(JComponent contentPane, JMenuBar menuBar) {
-		if (closeListener!=null) setDefaultCloseOperation( JFrame.DO_NOTHING_ON_CLOSE );
-	    if (disposeOnClose)      setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-	    else                     setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		setDefaultCloseOperation( defaultCloseOperation.operationID );
 	    addWindowListener(this);
 	    setContentPane( contentPane );
 	    if (menuBar!=null) setJMenuBar(menuBar);
