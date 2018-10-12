@@ -34,6 +34,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import net.schwarzbaer.gui.StandardMainWindow.DefaultCloseOperation;
+
 public class XMLTreeView extends JTree implements TreeSelectionListener {
 	private static final long serialVersionUID = -691121546633787401L;
 	
@@ -69,7 +71,7 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 			simplePane.add( createScrollableTreeView(document,prefWidth,prefHeight,null), BorderLayout.CENTER );
 			contentPane = simplePane;
 		}
-		StandardMainWindow window = new StandardMainWindow(windowTitle,!exitOnClose);
+		StandardMainWindow window = new StandardMainWindow(windowTitle,exitOnClose?DefaultCloseOperation.EXIT_ON_CLOSE:DefaultCloseOperation.DISPOSE_ON_CLOSE);
 		window.startGUI(contentPane);
 	}
 	

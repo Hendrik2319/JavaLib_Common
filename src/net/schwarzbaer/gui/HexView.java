@@ -32,7 +32,7 @@ public class HexView implements ActionListener{
 
 	private void createWindow(String title, String descriptionTitle, String[] description, String contentTitle) {
 		JPanel contentPane = createPanel(descriptionTitle, description, contentTitle);
-		StandardMainWindow hauptfenster = new StandardMainWindow(title,true);
+		StandardMainWindow hauptfenster = new StandardMainWindow(title,StandardMainWindow.DefaultCloseOperation.DISPOSE_ON_CLOSE);
 		hauptfenster.startGUI( contentPane );
 		hauptfenster.limitSizeToFractionOfScreenSize(0.95f);
 	}
