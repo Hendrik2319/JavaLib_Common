@@ -94,7 +94,10 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 
 	public void setTaskTitle(String str) {
 		taskTitle.setText(str);
-		
+	}
+	
+	public void setIndeterminate(boolean isIndeterminate) {
+		progressbar.setIndeterminate(isIndeterminate);
 	}
 	
 	public void setValue(int min, int value, int max) {
