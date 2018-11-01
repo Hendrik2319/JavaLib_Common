@@ -100,15 +100,19 @@ public class IconSource<E extends Enum<E>> {
 	public static Icon combine(Icon icon1, Icon icon2) {
 		if (icon1==null) return icon2;
 		if (icon2==null) return icon1;
-		if (!(icon1 instanceof ImageIcon)) throw new IllegalArgumentException("First icon parameter is not an instance of ImageIcon.");
-		if (!(icon2 instanceof ImageIcon)) throw new IllegalArgumentException("Second icon parameter is not an instance of ImageIcon.");
-		ImageIcon imageIcon1 = (ImageIcon)icon1;
-		ImageIcon imageIcon2 = (ImageIcon)icon2;
+//		if (!(icon1 instanceof ImageIcon)) throw new IllegalArgumentException("First icon parameter is not an instance of ImageIcon.");
+//		if (!(icon2 instanceof ImageIcon)) throw new IllegalArgumentException("Second icon parameter is not an instance of ImageIcon.");
+//		ImageIcon imageIcon1 = (ImageIcon)icon1;
+//		ImageIcon imageIcon2 = (ImageIcon)icon2;
 		
-		BufferedImage bufferedImage = new BufferedImage(imageIcon1.getIconWidth(),imageIcon1.getIconHeight(),BufferedImage.TYPE_INT_ARGB);
+		int width  = Math.max( icon1.getIconWidth (), icon2.getIconWidth () );
+		int height = Math.max( icon1.getIconHeight(), icon2.getIconHeight() );
+		BufferedImage bufferedImage = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
 		Graphics g = bufferedImage.getGraphics();
-		g.drawImage(imageIcon1.getImage(),0,0,null);
-		g.drawImage(imageIcon2.getImage(),0,0,null);
+		icon1.paintIcon(null, g, 0,0);
+		icon2.paintIcon(null, g, 0,0);
+//		g.drawImage(imageIcon1.getImage(),0,0,null);
+//		g.drawImage(imageIcon2.getImage(),0,0,null);
 		
 		return new ImageIcon(bufferedImage);
 	}
