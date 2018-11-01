@@ -98,8 +98,10 @@ public class IconSource<E extends Enum<E>> {
 	}
 
 	public static Icon combine(Icon icon1, Icon icon2) {
-		if (!(icon1 instanceof ImageIcon)) return icon1;
-		if (!(icon2 instanceof ImageIcon)) return icon1;
+		if (icon1==null) return icon2;
+		if (icon2==null) return icon1;
+		if (!(icon1 instanceof ImageIcon)) throw new IllegalArgumentException("First icon parameter is not an instance of ImageIcon.");
+		if (!(icon2 instanceof ImageIcon)) throw new IllegalArgumentException("Second icon parameter is not an instance of ImageIcon.");
 		ImageIcon imageIcon1 = (ImageIcon)icon1;
 		ImageIcon imageIcon2 = (ImageIcon)icon2;
 		
