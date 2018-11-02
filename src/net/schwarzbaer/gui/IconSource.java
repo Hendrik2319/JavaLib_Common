@@ -12,6 +12,8 @@ import javax.swing.ImageIcon;
 
 public class IconSource<E extends Enum<E>> {
 	
+	private final int offsetX;
+	private final int offsetY;
 	private final int iconWidth;
 	private final int iconHeight;
 	private final int columnCount;
@@ -22,6 +24,16 @@ public class IconSource<E extends Enum<E>> {
 	}
 	
 	public IconSource(int iconWidth, int iconHeight, int columnCount) {
+		this(0,0,iconWidth,iconHeight,columnCount);
+	}
+	
+	public IconSource(int offsetX, int offsetY, int iconWidth, int iconHeight) {
+		this(offsetX,offsetY,iconWidth,iconHeight,-1);
+	}
+	
+	public IconSource(int offsetX, int offsetY, int iconWidth, int iconHeight, int columnCount) {
+		this.offsetX = offsetX;
+		this.offsetY = offsetY;
 		this.iconWidth = iconWidth;
 		this.iconHeight = iconHeight;
 		this.columnCount = columnCount;
@@ -84,7 +96,7 @@ public class IconSource<E extends Enum<E>> {
 			y = (indexInImage/columnCount)*iconHeight;
 		}
 		
-		return images.getSubimage( x,y, iconWidth,iconHeight );
+		return images.getSubimage( offsetX+x,offsetY+y, iconWidth,iconHeight );
 	}
 	
 	public static Icon cutIcon(Icon icon, int x, int y, int w, int h) {
