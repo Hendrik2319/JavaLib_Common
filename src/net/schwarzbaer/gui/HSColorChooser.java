@@ -18,6 +18,7 @@ import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
 
 import net.schwarzbaer.gui.ColorSlider.ColorChangeListener;
 import net.schwarzbaer.gui.ColorSlider.SliderType;
@@ -41,8 +42,11 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	}
 
 	private StandardDialog dlgFenster;
-	private JLabel newColorField;
 	private JLabel oldColorField;
+	private JLabel colForegrField;
+	private JLabel colBackgrFieldB;
+	private JLabel colForegrFieldW;
+	private JLabel colBackgrFieldW;
 	private ColorCompSlider sliderR;
 	private ColorCompSlider sliderG;
 	private ColorCompSlider sliderB;
@@ -63,7 +67,10 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 
 	private void setColor(Color color) {
 		this.newColor = color;
-		newColorField.setBackground(color);
+		colForegrField.setForeground(color);
+		colForegrFieldW.setForeground(color);
+		colBackgrFieldB.setBackground(color);
+		colBackgrFieldW.setBackground(color);
 		int blue  = color.getBlue();
 		int green = color.getGreen();
 		int red   = color.getRed();
@@ -116,12 +123,11 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 		
 		JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
 		examplePanel.setBorder(BorderFactory.createTitledBorder(""));
-		examplePanel.add(newColorField = new JLabel("   "));
-		examplePanel.add(oldColorField = new JLabel("   "));
-		newColorField.setOpaque(true);
-		oldColorField.setOpaque(true);
-		newColorField.setPreferredSize(new Dimension(30,15));
-		oldColorField.setPreferredSize(new Dimension(30,15));
+		examplePanel.add(oldColorField = new JLabel("   ")); oldColorField.setOpaque(true); oldColorField.setPreferredSize(new Dimension(30,15));
+		examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
+		examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
+		examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
+		examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
 		
 		userColorButtons = new ColorButton[userdefinedColors.length];
 		ButtonGroup buttonGroup_colorList = new ButtonGroup();
