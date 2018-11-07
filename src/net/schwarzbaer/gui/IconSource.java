@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumMap;
+import java.util.function.Function;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -18,6 +19,8 @@ public class IconSource<E extends Enum<E>> {
 	private final int iconHeight;
 	private final int columnCount;
 	private BufferedImage images;
+	private int[] iconOffsetX;
+	private int[] iconWidths;
 	
 	public IconSource(int iconWidth, int iconHeight) {
 		this(iconWidth,iconHeight,-1);
@@ -31,6 +34,24 @@ public class IconSource<E extends Enum<E>> {
 		this(offsetX,offsetY,iconWidth,iconHeight,-1);
 	}
 	
+	public IconSource(int iconHeight, Function<E,Integer> getIconWidth, E[] keys) {
+		this(0,0,iconHeight,getIconWidth,keys);
+	}
+	
+	public IconSource(int offsetX, int offsetY, int iconHeight, Function<E,Integer> getIconWidth, E[] keys) {
+		this(offsetX,offsetY,-1,iconHeight,-1);
+		
+		this.iconOffsetX = new int[keys.length];
+		this.iconWidths  = new int[keys.length];
+		
+		iconOffsetX[0] = 0;
+		for (int i=0; i<iconOffsetX.length; i++) {
+			iconWidths[i] = getIconWidth.apply(keys[i]);
+			if (i+1<iconOffsetX.length)
+				iconOffsetX[i+1] = iconOffsetX[i]+iconWidths[i];
+		}
+	}
+	
 	public IconSource(int offsetX, int offsetY, int iconWidth, int iconHeight, int columnCount) {
 		this.offsetX = offsetX;
 		this.offsetY = offsetY;
@@ -38,6 +59,9 @@ public class IconSource<E extends Enum<E>> {
 		this.iconHeight = iconHeight;
 		this.columnCount = columnCount;
 		this.images = null;
+		
+		this.iconOffsetX = null;
+		this.iconWidths = null;
 	}
 
 	public void readIconsFromResource(String resourcePath) {
@@ -71,8 +95,7 @@ public class IconSource<E extends Enum<E>> {
 	}
 
 	protected int getIconIndexInImage(E key) {
-		if (key!=null) return key.ordinal();
-	 	throw new IllegalArgumentException("Unknown icon key: "+key);
+		return key.ordinal();
 	}
 	
 	public Icon          getIcon (E key) { return getIcon (getIconIndexInImage(key)); }
@@ -87,8 +110,12 @@ public class IconSource<E extends Enum<E>> {
 	public BufferedImage getImage(int indexInImage) {
 		if (indexInImage<0) return null;
 		
-		int x,y;
-		if (columnCount<=0) {
+		int x,y,localIconWidth = iconWidth;
+		if (iconWidths!=null && iconOffsetX!=null) {
+			localIconWidth = iconWidths[indexInImage];
+			x = iconOffsetX[indexInImage];
+			y = 0;
+		} else if (columnCount<=0) {
 			x = indexInImage*iconWidth;
 			y = 0;
 		} else {
@@ -96,7 +123,7 @@ public class IconSource<E extends Enum<E>> {
 			y = (indexInImage/columnCount)*iconHeight;
 		}
 		
-		return images.getSubimage( offsetX+x,offsetY+y, iconWidth,iconHeight );
+		return images.getSubimage( offsetX+x,offsetY+y, localIconWidth,iconHeight );
 	}
 	
 	public static Icon cutIcon(Icon icon, int x, int y, int w, int h) {
@@ -125,6 +152,20 @@ public class IconSource<E extends Enum<E>> {
 		icon2.paintIcon(null, g, 0,0);
 //		g.drawImage(imageIcon1.getImage(),0,0,null);
 //		g.drawImage(imageIcon2.getImage(),0,0,null);
+		
+		return new ImageIcon(bufferedImage);
+	}
+
+	public static Icon setSideBySide(Icon icon1, Icon icon2) {
+		if (icon1==null) return icon2;
+		if (icon2==null) return icon1;
+		
+		int width  = icon1.getIconWidth() + icon2.getIconWidth();
+		int height = Math.max( icon1.getIconHeight(), icon2.getIconHeight() );
+		BufferedImage bufferedImage = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
+		Graphics g = bufferedImage.getGraphics();
+		icon1.paintIcon(null, g, 0,0);
+		icon2.paintIcon(null, g, icon1.getIconWidth(),0);
 		
 		return new ImageIcon(bufferedImage);
 	}
