@@ -2,6 +2,7 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
@@ -24,9 +25,11 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 	private boolean canceled;
 	private boolean wasOpened;
 	private String monitorObj;
+	private int minWidth;
 	
-	public ProgressDialog(Window parent, String title, ModalityType modality) {
+	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality) {
 		super(parent, title, modality);
+		this.minWidth = minWidth;
 		createGUI();
 		this.cancelListeners = new Vector<CancelListener>();
 		this.canceled = false;
@@ -34,8 +37,16 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		this.monitorObj = "";
 	}
 
+	public ProgressDialog(Window parent, String title, ModalityType modality) {
+		this(parent, title, -1, modality);
+	}
+
+	public ProgressDialog(Window parent, String title, int minWidth) {
+		this(parent, title, minWidth, Dialog.ModalityType.APPLICATION_MODAL);
+	}
+
 	public ProgressDialog(Window parent, String title) {
-		this(parent, title, Dialog.ModalityType.APPLICATION_MODAL);
+		this(parent, title, -1, Dialog.ModalityType.APPLICATION_MODAL);
 	}
 	
 	private void createGUI() {
@@ -66,7 +77,8 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		contentPane.add(southPanel,BorderLayout.SOUTH);
 		
 		progressbar.setIndeterminate(true);
-//		progressbar.setPreferredSize(new Dimension(10, 10));
+		if (minWidth>0)
+			progressbar.setPreferredSize(new Dimension(minWidth,14));
 		
 		super.createGUI( contentPane );
 		super.setSizeAsMinSize();
