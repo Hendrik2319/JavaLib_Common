@@ -33,7 +33,7 @@ public class Tables {
 	
 	public static class SimplifiedRowSorter extends RowSorter<SimplifiedTableModel<?>> {
 
-		private SimplifiedTableModel<?> model;
+		protected SimplifiedTableModel<?> model;
 		private LinkedList<RowSorter.SortKey> keys;
 		private Integer[] modelRowIndexes;
 		private int[] viewRowIndexes;
@@ -95,14 +95,15 @@ public class Tables {
 				if (sortOrder==SortOrder.UNSORTED) continue;
 				int column = key.getColumn();
 				
-				if      (model.hasSpecialSorting(column)              ) comparator = setComparator(comparator,sortOrder,model.getSpecialSorting(column));
-				else if (model.getColumnClass(column) == Boolean.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == String .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Long   .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Integer.class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Double .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Float  .class) comparator = setComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
-				else comparator = setComparator(comparator,sortOrder,
+				if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column));
+				else if (isNewClass(model.getColumnClass(column))     ) comparator = addComparatorForNewClass(comparator,sortOrder,column);
+				else if (model.getColumnClass(column) == Boolean.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == String .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Long   .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Integer.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Double .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
+				else if (model.getColumnClass(column) == Float  .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
+				else comparator = addComparator(comparator,sortOrder,
 							(Integer row)->{
 								Object object = model.getValueAt(row,column);
 								if (object==null) return null;
@@ -121,31 +122,30 @@ public class Tables {
 			fireSortOrderChanged();
 		}
 		
-		private Comparator<Integer> setComparator(Comparator<Integer> comp, SortOrder sortOrder, Comparator<Integer> specialSorting) {
+		protected boolean isNewClass(Class<?> columnClass) { return false; }
+		protected Comparator<Integer> addComparatorForNewClass(Comparator<Integer> comparator, SortOrder sortOrder, int column) { return comparator; }
+
+		protected Comparator<Integer> addComparator(Comparator<Integer> comp, SortOrder sortOrder, Comparator<Integer> specialSorting) {
 			if (sortOrder==SortOrder.DESCENDING) {
-				if (comp==null) {
-					Comparator<Integer> comparator = specialSorting;
-					return comparator.reversed();
-				}
-				Comparator<Integer> comparator = comp.reversed().thenComparing(specialSorting);
-				return comparator.reversed();
+				if (comp==null) comp = specialSorting;
+				else            comp = comp.reversed().thenComparing(specialSorting);
+				return comp.reversed();
 			} else {
-				if (comp==null) return specialSorting;
-				return comp.thenComparing(specialSorting);
+				if (comp==null) comp = specialSorting;
+				else            comp = comp.thenComparing(specialSorting);
+				return comp;
 			}
 		}
 
-		private <U extends Comparable<? super U>> Comparator<Integer> setComparator(Comparator<Integer> comp, SortOrder sortOrder, Function<? super Integer,? extends U> keyExtractor) {
+		protected <U extends Comparable<? super U>> Comparator<Integer> addComparator(Comparator<Integer> comp, SortOrder sortOrder, Function<? super Integer,? extends U> keyExtractor) {
 			if (sortOrder==SortOrder.DESCENDING) {
-				if (comp==null) {
-					Comparator<Integer> comparator = Comparator.comparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
-					return comparator.reversed();
-				}
-				Comparator<Integer> comparator = comp.reversed().thenComparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
-				return comparator.reversed();
+				if (comp==null) comp = Comparator     .comparing    (keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
+				else            comp = comp.reversed().thenComparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
+				return comp.reversed();
 			} else {
-				if (comp==null) return Comparator.comparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
-				return comp.thenComparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+				if (comp==null) comp = Comparator     .comparing    (keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+				else            comp = comp           .thenComparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+				return comp;
 			}
 		}
 		
@@ -229,7 +229,7 @@ public class Tables {
 		public Class<?> columnClass;
 		public boolean hasSpecialSorting;
 		
-		SimplifiedColumnConfig() {
+		public SimplifiedColumnConfig() {
 			this("",String.class,-1,-1,-1,-1,false);
 		}
 		public SimplifiedColumnConfig(String name, Class<?> columnClass, int minWidth, int maxWidth, int prefWidth, int currentWidth) {
@@ -277,7 +277,13 @@ public class Tables {
 		protected void fireTableRowAdded(int rowIndex) {
 			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT));
 		}
-		protected void fireTableUpdate() {
+		protected void fireTableRowRemoved(int rowIndex) {
+			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE));
+		}
+		protected void fireTableRowsRemoved(int firstRowIndex, int lastRowIndex) {
+			fireTableModelEvent(new TableModelEvent(this, firstRowIndex, lastRowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE));
+		}
+		public void fireTableUpdate() {
 			fireTableModelEvent(new TableModelEvent(this));
 		}
 		protected void fireTableStructureUpdate() {
@@ -460,7 +466,7 @@ public class Tables {
 
 		@Override
 		public Component getListCellRendererComponent(JList<? extends T> list, T value, int index, boolean isSelected, boolean cellHasFocus) {
-			Color bgColor   = isSelected ? list.getSelectionBackground() : list.getBackground();
+			Color bgColor   = isSelected ? list.getSelectionBackground() : null; //list.getBackground();
 			Color textColor = isSelected ? list.getSelectionForeground() : list.getForeground();
 			comp.set(converter.apply(value),bgColor,textColor);
 			return comp;
@@ -470,10 +476,11 @@ public class Tables {
 			private static final long serialVersionUID = 6214683201455907406L;
 
 			private RendererComponent() {
-				setOpaque(true);
+				//setOpaque(true);
 			}
 
 			public void set(String value, Color bgColor, Color textColor) {
+				setOpaque(bgColor!=null);
 				setBackground(bgColor);
 				setForeground(textColor);
 				setText(value==null?"":value);
