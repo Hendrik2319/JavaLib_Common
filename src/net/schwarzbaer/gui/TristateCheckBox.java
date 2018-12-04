@@ -113,10 +113,10 @@ public class TristateCheckBox extends JCheckBox {
 	private final ChangeListener enableListener = e -> setFocusable(getModel().isEnabled());
 
 	public TristateCheckBox(String text) {
-		this(text, null, TristateState.DESELECTED);
+		this(text, null, State.DESELECTED);
 	}
 
-	public TristateCheckBox(String text, Icon icon, TristateState initial) {
+	public TristateCheckBox(String text, Icon icon, State initial) {
 		super(text, icon);
 
 		// Set default single model
@@ -150,7 +150,7 @@ public class TristateCheckBox extends JCheckBox {
 		return getTristateModel().isUndefined();
 	}
 
-	public TristateState getState() {
+	public State getState() {
 		return getTristateModel().getState();
 	}
 
@@ -197,31 +197,31 @@ public class TristateCheckBox extends JCheckBox {
 		return (TristateButtonModel) super.getModel();
 	}
 
-	public enum TristateState {
-		SELECTED   { @Override public TristateState next() { return DESELECTED; } },
-		DESELECTED { @Override public TristateState next() { return UNDEFINED; } },
-		UNDEFINED  { @Override public TristateState next() { return SELECTED; } };
-		public abstract TristateState next();
+	public enum State {
+		SELECTED   { @Override public State next() { return DESELECTED; } },
+		DESELECTED { @Override public State next() { return UNDEFINED; } },
+		UNDEFINED  { @Override public State next() { return SELECTED; } };
+		public abstract State next();
 	}
 
 	public static class TristateButtonModel extends ToggleButtonModel {
 		private static final long serialVersionUID = 7263102475538798840L;
-		private TristateState state = TristateState.DESELECTED;
+		private State state = State.DESELECTED;
 	
-		public TristateButtonModel(TristateState state) {
+		public TristateButtonModel(State state) {
 			setState(state);
 		}
 	
 		public TristateButtonModel() {
-			this(TristateState.DESELECTED);
+			this(State.DESELECTED);
 		}
 	
 		public void setUndefined() {
-			setState(TristateState.UNDEFINED);
+			setState(State.UNDEFINED);
 		}
 	
 		public boolean isUndefined() {
-			return state == TristateState.UNDEFINED;
+			return state == State.UNDEFINED;
 		}
 	
 		// Overrides of superclass methods
@@ -234,7 +234,7 @@ public class TristateCheckBox extends JCheckBox {
 	
 		@Override
 		public void setSelected(boolean selected) {
-			setState(selected ? TristateState.SELECTED : TristateState.DESELECTED);
+			setState(selected ? State.SELECTED : State.DESELECTED);
 		}
 	
 		// Empty overrides of superclass methods
@@ -250,11 +250,11 @@ public class TristateCheckBox extends JCheckBox {
 			setState(state.next());
 		}
 	
-		private void setState(TristateState state) {
+		private void setState(State state) {
 			// Set internal state
 			this.state = state;
 			displayState();
-			if (state == TristateState.UNDEFINED && isEnabled()) {
+			if (state == State.UNDEFINED && isEnabled()) {
 				// force the events to fire
 	
 				// Send ChangeEvent
@@ -267,12 +267,12 @@ public class TristateCheckBox extends JCheckBox {
 		}
 	
 		private void displayState() {
-			super.setSelected(state == TristateState.SELECTED);
-			super.setArmed   (state == TristateState.UNDEFINED);
-			super.setPressed (state == TristateState.UNDEFINED);
+			super.setSelected(state == State.SELECTED);
+			super.setArmed   (state == State.UNDEFINED);
+			super.setPressed (state == State.UNDEFINED);
 		}
 	
-		public TristateState getState() {
+		public State getState() {
 			return state;
 		}
 	}
