@@ -16,7 +16,6 @@ import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonModel;
-import javax.swing.Icon;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -113,11 +112,11 @@ public class TristateCheckBox extends JCheckBox {
 	private final ChangeListener enableListener = e -> setFocusable(getModel().isEnabled());
 
 	public TristateCheckBox(String text) {
-		this(text, null, State.DESELECTED);
+		this(text, State.UNDEFINED);
 	}
 
-	public TristateCheckBox(String text, Icon icon, State initial) {
-		super(text, icon);
+	public TristateCheckBox(String text, State initial) {
+		super(text, null);
 
 		// Set default single model
 		setModel(new TristateButtonModel(initial));
