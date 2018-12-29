@@ -37,12 +37,25 @@ public class Tables {
 		private LinkedList<RowSorter.SortKey> keys;
 		private Integer[] modelRowIndexes;
 		private int[] viewRowIndexes;
+		private Vector<RowSorterListener> listeners;
 
 		public SimplifiedRowSorter(SimplifiedTableModel<?> model) {
 			this.model = model;
 			this.keys = new LinkedList<RowSorter.SortKey>();
 			this.modelRowIndexes = null;
 			this.viewRowIndexes = null;
+			this.listeners = new Vector<>();
+		}
+		
+		public void    addListener(RowSorterListener listener) { listeners.   add(listener); }
+		public void removeListener(RowSorterListener listener) { listeners.remove(listener); }
+		private void notifyListeners() {
+			for (RowSorterListener listener:listeners)
+				listener.sortingChangedByUser();
+		}
+		
+		public interface RowSorterListener {
+			public void sortingChangedByUser();
 		}
 		
 		public void setModel(SimplifiedTableModel<?> model) {
@@ -160,6 +173,7 @@ public class Tables {
 				keys.addFirst(new SortKey(column, SortOrder.ASCENDING));
 			log("toggleSortOrder( %d )", column);
 			sort();
+			notifyListeners();
 		}
 
 		private static class RemovePred implements Predicate<SortKey> {
