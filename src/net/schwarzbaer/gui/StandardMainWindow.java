@@ -1,8 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package net.schwarzbaer.gui;
 
 import java.awt.Dimension;
@@ -15,10 +10,6 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
 
-/**
- *
- * @author Hendrik
- */
 public class StandardMainWindow extends JFrame implements WindowListener {
 	private static final long serialVersionUID = -6515512014217265169L;
 	
