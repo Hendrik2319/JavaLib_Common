@@ -34,7 +34,7 @@ public class ImageGridPanel extends JPanel {
 	private Vector<ImageGridPanel.SelectionListener> selectionListeners;
 	private Vector<ImageGridPanel.RightClickListener> rightClickListener;
 	private int cols;
-	int selectedIndex;
+	public int selectedIndex;
 	public Vector<ImageGridPanel.ImageLabel> imageLabels;
 	
 	public ImageGridPanel(int cols, String preselectedImageID, Iterable<ImageData> images) {
@@ -81,7 +81,7 @@ public class ImageGridPanel extends JPanel {
 			this.image = image;
 		}
 	}
-	
+
 	public void resetImages(Iterable<ImageData> images) {
 		String selectedImageID = getSelectedImageID();
 		removeAll();
