@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.util.Iterator;
 import java.util.Vector;
 import java.util.function.Consumer;
 
@@ -80,6 +81,12 @@ public class ImageGridPanel extends JPanel {
 			this.name = name;
 			this.image = image;
 		}
+	}
+
+	public void resetImages(Iterator<ImageData> images) {
+		resetImages(new Iterable<ImageData>(){
+			@Override public Iterator<ImageData> iterator() { return images; }
+		});
 	}
 
 	public void resetImages(Iterable<ImageData> images) {
