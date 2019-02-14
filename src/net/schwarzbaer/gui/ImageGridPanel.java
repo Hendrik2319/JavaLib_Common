@@ -5,7 +5,9 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -34,29 +36,24 @@ public class ImageGridPanel extends JPanel {
 	private Color   COLOR_FOREGROUND_SELECTED = null;
 	private Font defaultFont;
 	
-	private Vector<ImageGridPanel.SelectionListener> selectionListeners;
-	private Vector<ImageGridPanel.RightClickListener> rightClickListener;
-	private Vector<ImageGridPanel.DoubleClickListener> doubleClickListener;
 	private int cols;
-	public int selectedIndex;
-	public Vector<ImageGridPanel.ImageLabel> imageLabels;
-	private int prefTxtWidth;
-	private int prefTxtHeight;
+	public int selectedIndex = -1;
+	public Vector<ImageItem> imageItems = new Vector<>();
+	private Vector<FocusListener> focusListeners = new Vector<>();
+	private Vector<SelectionListener> selectionListeners = new Vector<>();
+	private Vector<RightClickListener> rightClickListener = new Vector<>();
+	private Vector<DoubleClickListener> doubleClickListener = new Vector<>();
+	private int prefTxtWidth = 100;
+	private int prefTxtHeight = 60;
 	
 	public ImageGridPanel(int cols, String preselectedImageID, Iterable<ImageData> images) {
-		super(new GridLayout(0,cols,0,0));
+		super(new GridBagLayout());
 		this.cols = cols;
-		this.selectionListeners = new Vector<>();
-		this.rightClickListener = new Vector<>();
-		this.doubleClickListener = new Vector<>();
-		this.imageLabels = new Vector<>();
-		this.prefTxtWidth = 100;
-		this.prefTxtHeight = 60;
 		
 		defaultFont = new JLabel().getFont();
 		JTextArea dummy = new JTextArea();
-		COLOR_BACKGROUND = dummy.getBackground();
-		COLOR_FOREGROUND = dummy.getForeground();
+		COLOR_BACKGROUND = Color.WHITE;
+		COLOR_FOREGROUND = Color.BLACK;
 		COLOR_BACKGROUND_SELECTED = dummy.getSelectionColor();
 		COLOR_FOREGROUND_SELECTED = dummy.getSelectedTextColor();
 		COLOR_BACKGROUND_PRESELECTED = brighter(COLOR_BACKGROUND_SELECTED,0.7f);
@@ -68,6 +65,47 @@ public class ImageGridPanel extends JPanel {
 		setBackground(COLOR_BACKGROUND);
 	}
 	
+	protected void createImageLabels(String preselectedImageID, Iterable<ImageData> images, Consumer<Integer> indexOutput) {
+		selectedIndex = -1;
+		imageItems.clear();
+		if (images==null) return;
+		
+		GridBagConstraints c = new GridBagConstraints();
+		c.insets = new Insets(0, 0, 2, 2);
+		c.weightx = 1.0;
+		c.weighty = 0.0;
+		c.fill = GridBagConstraints.NONE;
+		
+		int index = 0;
+		int col=0; 
+		for (ImageData imageData : images) {
+//			if (imageData.image!=null) {
+			boolean isSelected = imageData.ID.equals(preselectedImageID);
+			if (isSelected) selectedIndex=index;
+			ImageItem imageLabel = new ImageItem(imageData.ID,imageData.name,index,imageData.image,isSelected);
+			imageItems.add(imageLabel);
+			
+			c.gridwidth = col+1==cols?GridBagConstraints.REMAINDER:1;
+			col = (col+1)%cols;
+			
+			add(imageLabel,c);
+			++index;
+			if (indexOutput!=null)
+				indexOutput.accept(index);
+//			}
+		}
+	}
+	
+	
+	
+	@Override
+	public void setBackground(Color bg) {
+		super.setBackground(bg);
+		COLOR_BACKGROUND = bg;
+		if (imageItems!=null)
+			imageItems.forEach(il->il.setColors());
+	}
+
 	public void setMarkerColors(Color[] colors) {
 		COLOR_BACKGROUND_MARKED = colors;
 	}
@@ -110,54 +148,71 @@ public class ImageGridPanel extends JPanel {
 		String selectedImageID = getSelectedImageID();
 		removeAll();
 		createImageLabels(selectedImageID,images,null);
+		revalidate();
 	}
 
 	protected String getSelectedImageID() {
 		String selectedImageID = null;
 		if (selectedIndex>=0)
-			selectedImageID = imageLabels.get(selectedIndex).ID;
+			selectedImageID = imageItems.get(selectedIndex).ID;
 		return selectedImageID;
 	}
 
-	protected void createImageLabels(String preselectedImageID, Iterable<ImageData> images, Consumer<Integer> indexOutput) {
-		selectedIndex = -1;
-		imageLabels.clear();
-		if (images==null) return;
-		
-		int index = 0;
-		for (ImageData imageData : images) {
-//			if (imageData.image!=null) {
-				boolean isSelected = imageData.ID.equals(preselectedImageID);
-				if (isSelected) selectedIndex=index;
-				ImageGridPanel.ImageLabel imageLabel = new ImageLabel(imageData.ID,imageData.name,index,imageData.image,isSelected);
-				imageLabels.add(imageLabel);
-				add(imageLabel);
-				++index;
-				if (indexOutput!=null)
-					indexOutput.accept(index);
-//			}
-		}
-	}
-
 	public void setImageName(int index, String newName) {
-		imageLabels.get(index).changeName(newName);
+		imageItems.get(index).changeName(newName);
 	}
 
-	public void    addSelectionListener( SelectionListener l ) { selectionListeners.   add(l); }
-	public void removeSelectionListener( SelectionListener l ) { selectionListeners.remove(l); }
+	public void setImage(int index, BufferedImage image) {
+		imageItems.get(index).changeImage(image);
+	}
+
+	public void setSelectedImage(String ID) {
+		if (ID!=null)
+			for (int i=0; i<imageItems.size(); i++)
+				if (imageItems.get(i).ID.equals(ID)) {
+					setSelectedImage(ID,i);
+					return;
+				}
+		setSelectedImage(null,-1);
+	}
 
 	public void setSelectedImage(int index) {
+		setSelectedImage(index<0?null:imageItems.get(index).ID, index);
+	}
+
+	private void setSelectedImage(String ID, int index) {
 		if (selectedIndex>=0)
-			imageLabels.get(selectedIndex).setSelected(false,false);
+			imageItems.get(selectedIndex).setSelected(false);
 		
 		selectedIndex=index;
-		String ID = imageLabels.get(selectedIndex).ID;
 		for (SelectionListener l:selectionListeners)
 			l.imageWasSelected(ID);
 		
 		if (selectedIndex>=0)
-			imageLabels.get(selectedIndex).setSelected(true,true);
+			imageItems.get(selectedIndex).setSelected(true);
 	}
+
+	protected void notifyFocusListeners(String ID, int index, boolean gainedFocus) {
+		focusListeners.forEach(l->l.imageFocusChanged(ID, index, gainedFocus));
+	}
+
+	protected void notifyRightClickListeners(String ID, int index, Component source, int x, int y) {
+		rightClickListener.forEach(l->l.imageWasRightClicked(ID, index, source, x, y));
+	}
+
+	protected void notifyDoubleClickListeners(String ID, int index, Component source, int x, int y) {
+		doubleClickListener.forEach(l->l.imageWasDoubleClicked(ID, index, source, x, y));
+	}
+
+	public void    addFocusListener( FocusListener l ) { focusListeners.   add(l); }
+	public void removeFocusListener( FocusListener l ) { focusListeners.remove(l); }
+
+	public static interface FocusListener {
+		public void imageFocusChanged(String ID, int index, boolean gainedFocus);
+	}
+
+	public void    addSelectionListener( SelectionListener l ) { selectionListeners.   add(l); }
+	public void removeSelectionListener( SelectionListener l ) { selectionListeners.remove(l); }
 
 	public static interface SelectionListener {
 		public void imageWasSelected(String ID);
@@ -166,11 +221,6 @@ public class ImageGridPanel extends JPanel {
 	public void    addRightClickListener( RightClickListener l ) { rightClickListener.   add(l); }
 	public void removeRightClickListener( RightClickListener l ) { rightClickListener.remove(l); }
 	
-	protected void processRightClick(String ID, int index, Component source, int x, int y) {
-		for (RightClickListener l:rightClickListener)
-			l.imageWasRightClicked(ID, index, source, x, y);
-	}
-
 	public static interface RightClickListener {
 		public void imageWasRightClicked(String ID, int index, Component source, int x, int y);
 	}
@@ -178,11 +228,6 @@ public class ImageGridPanel extends JPanel {
 	public void    addDoubleClickListener( DoubleClickListener l ) { doubleClickListener.   add(l); }
 	public void removeDoubleClickListener( DoubleClickListener l ) { doubleClickListener.remove(l); }
 	
-	protected void processDoubleClick(String ID, int index, Component source, int x, int y) {
-		for (DoubleClickListener l:doubleClickListener)
-			l.imageWasDoubleClicked(ID, index, source, x, y);
-	}
-
 	public static interface DoubleClickListener {
 		public void imageWasDoubleClicked(String ID, int index, Component source, int x, int y);
 	}
@@ -190,7 +235,7 @@ public class ImageGridPanel extends JPanel {
 	public void scrollToPreselectedImage(JScrollPane imageScrollPane) {
 		if (selectedIndex>=0) {
 			int row = selectedIndex/cols;
-			int rowCount = Math.round((float)Math.ceil(imageLabels.size()/(double)cols));
+			int rowCount = Math.round((float)Math.ceil(imageItems.size()/(double)cols));
 			//System.out.printf("Row %d/%d was preselected\r\n",row,rowCount);
 			
 			JScrollBar scrollBar = imageScrollPane.getVerticalScrollBar();
@@ -212,80 +257,100 @@ public class ImageGridPanel extends JPanel {
 		}
 	}
 
-	public class ImageLabel extends JPanel {
+	public class ImageItem extends JPanel {
 		private static final long serialVersionUID = 4629632101041946456L;
 
-		private JTextArea textArea;
+		private JLabel imageContainer;
+		private JTextArea label;
 		private boolean isSelected;
+		private boolean hasFocus;
 		private int markerIndex;
 		public String ID;
 
-		public ImageLabel(String ID, String name, int index, BufferedImage image, boolean isSelected) {
+		public ImageItem(String ID, String name, int index, BufferedImage image, boolean isSelected) {
 			super(new BorderLayout(3,3));
 			setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 			
 			this.ID = ID;
 			this.isSelected = isSelected;
+			this.hasFocus = false;
 			this.markerIndex = 0;
 			
-			textArea = new JTextArea(name);
-			if (prefTxtWidth>0 && prefTxtHeight>0) textArea.setPreferredSize(new Dimension(prefTxtWidth,prefTxtHeight));
-			textArea.setLineWrap(true);
-			textArea.setWrapStyleWord(false);
-			textArea.setEditable(false);
-			textArea.setFont(defaultFont);
-			textArea.setBackground(null);
-			MouseListener[] mouseListeners = textArea.getMouseListeners();
-			MouseMotionListener[] mouseMotionListeners = textArea.getMouseMotionListeners();
-			for (MouseListener l:mouseListeners) textArea.removeMouseListener(l);
-			for (MouseMotionListener l:mouseMotionListeners) textArea.removeMouseMotionListener(l);
+			label = new JTextArea(name);
+			if (prefTxtWidth>0 && prefTxtHeight>0) label.setPreferredSize(new Dimension(prefTxtWidth,prefTxtHeight));
+			label.setLineWrap(true);
+			label.setWrapStyleWord(false);
+			label.setEditable(false);
+			label.setFont(defaultFont);
+			label.setBackground(null);
+			MouseListener[] mouseListeners = label.getMouseListeners();
+			MouseMotionListener[] mouseMotionListeners = label.getMouseMotionListeners();
+			for (MouseListener l:mouseListeners) label.removeMouseListener(l);
+			for (MouseMotionListener l:mouseMotionListeners) label.removeMouseMotionListener(l);
 			
 			
-			add(new JLabel(image!=null?new ImageIcon(image):null),BorderLayout.NORTH);
-			add(textArea,BorderLayout.CENTER);
+			imageContainer = new JLabel(image!=null?new ImageIcon(image):null);
+			add(imageContainer,BorderLayout.NORTH);
+			add(label,BorderLayout.CENTER);
 			
 			MouseInputAdapter m = new MouseInputAdapter() {
 				@Override public void mouseClicked(MouseEvent e) {
-					if (e.getButton()==MouseEvent.BUTTON3) processRightClick(ID, index, ImageLabel.this, e.getX(), e.getY());
-					else if (e.getClickCount()==2) processDoubleClick(ID, index, ImageLabel.this, e.getX(), e.getY());
+					if (e.getButton()==MouseEvent.BUTTON3) notifyRightClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
+					else if (e.getClickCount()==2) notifyDoubleClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
 					else setSelectedImage(index);
+					grabFocus();
 				}
-				@Override public void mouseEntered(MouseEvent e) { setColors(true); }
-				@Override public void mouseExited (MouseEvent e) { setColors(false); }
+				@Override public void mouseEntered(MouseEvent e) { hasFocus=true;  setColors(); notifyFocusListeners(ID, index, hasFocus); }
+				@Override public void mouseExited (MouseEvent e) { hasFocus=false; setColors(); notifyFocusListeners(ID, index, hasFocus); }
 				
 			};
 			
-			setColors(false);
+			setColors();
 			addMouseListener(m);
 			addMouseMotionListener(m);
-			textArea.addMouseListener(m);
-			textArea.addMouseMotionListener(m);
+			label.addMouseListener(m);
+			label.addMouseMotionListener(m);
 		}
 		
-		public void changeName(String newName) {
-			textArea.setText(newName);
+		public void changeImage(BufferedImage image) {
+			imageContainer.setIcon(image!=null?new ImageIcon(image):null);
 		}
 
-		public void setSelected(boolean isSelected, boolean hasFocus) {
+		public void changeName(String newName) {
+			label.setText(newName);
+		}
+
+		public void setSelected(boolean isSelected) {
 			this.isSelected = isSelected;
-			//SaveViewer.log_ln("Image: %s -> %sselected", name, isSelected?"":"not ");
-			setColors(hasFocus);
+			setColors();
 			//repaint();
 		}
 
 		public void setMarkerIndex(int markerIndex) {
 			this.markerIndex = markerIndex;
-			setColors(false);
+			setColors();
 			//repaint();
 		}
+		
+		private void setColors() {
+			Color bgColor; 
+			if      (hasFocus     ) bgColor = COLOR_BACKGROUND_SELECTED;
+			else if (isSelected   ) bgColor = COLOR_BACKGROUND_PRESELECTED;
+			else if (markerIndex>0) bgColor = COLOR_BACKGROUND_MARKED[markerIndex-1];
+			else                    bgColor = COLOR_BACKGROUND;
+			setBackground(bgColor);
+			if (hasFocus)
+				label.setForeground(COLOR_FOREGROUND_SELECTED);
+			else {
+				if (isDark(bgColor))
+					label.setForeground(Color.WHITE);
+				else
+					label.setForeground(COLOR_FOREGROUND);
+			}
+		}
 
-		private void setColors(boolean hasFocus) {
-			if      (hasFocus     ) setBackground(COLOR_BACKGROUND_SELECTED);
-			else if (isSelected   ) setBackground(COLOR_BACKGROUND_PRESELECTED);
-			else if (markerIndex>0) setBackground(COLOR_BACKGROUND_MARKED[markerIndex-1]);
-			else                    setBackground(COLOR_BACKGROUND);
-			if (hasFocus) textArea.setForeground(COLOR_FOREGROUND_SELECTED);
-			else          textArea.setForeground(COLOR_FOREGROUND);
+		private boolean isDark(Color color) {
+			return color.getRed()<0x7F && color.getGreen()<0x7F && color.getBlue()<0x7F;
 		}
 	
 	}
