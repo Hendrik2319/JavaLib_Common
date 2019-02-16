@@ -298,7 +298,7 @@ public class ImageGridPanel extends JPanel {
 					if (e.getButton()==MouseEvent.BUTTON3) notifyRightClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
 					else if (e.getClickCount()==2) notifyDoubleClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
 					else setSelectedImage(index);
-					grabFocus();
+					requestFocusInWindow();
 				}
 				@Override public void mouseEntered(MouseEvent e) { hasFocus=true;  setColors(); notifyFocusListeners(ID, index, hasFocus); }
 				@Override public void mouseExited (MouseEvent e) { hasFocus=false; setColors(); notifyFocusListeners(ID, index, hasFocus); }
