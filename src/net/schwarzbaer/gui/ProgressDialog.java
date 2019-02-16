@@ -10,6 +10,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Vector;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -19,6 +20,17 @@ import javax.swing.JProgressBar;
 
 public class ProgressDialog extends StandardDialog implements ActionListener {
 	private static final long serialVersionUID = 1401683964054921965L;
+
+	public static void runWithProgressDialog(Window parent, String title, int minWidth, Consumer<ProgressDialog> useProgressDialog) {
+		ProgressDialog pd = new ProgressDialog(parent,title,minWidth);
+		new Thread(()->{
+			pd.waitUntilDialogIsVisible();
+			useProgressDialog.accept(pd);
+			pd.closeDialog();
+		}).start();
+		pd.showDialog();
+	}
+	
 	private JLabel taskTitle;
 	private JProgressBar progressbar;
 	private Vector<CancelListener> cancelListeners;
