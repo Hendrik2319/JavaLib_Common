@@ -37,6 +37,7 @@ public class ImageGridPanel extends JPanel {
 	private Font defaultFont;
 	
 	private int cols;
+	private boolean imageItemFillGridCell;
 	public int selectedIndex = -1;
 	public Vector<ImageItem> imageItems = new Vector<>();
 	private Vector<FocusListener> focusListeners = new Vector<>();
@@ -46,9 +47,10 @@ public class ImageGridPanel extends JPanel {
 	private int prefTxtWidth = 100;
 	private int prefTxtHeight = 60;
 	
-	public ImageGridPanel(int cols, String preselectedImageID, Iterable<ImageData> images) {
+	public ImageGridPanel(int cols, String preselectedImageID, boolean imageItemFillGridCell, Iterable<ImageData> images) {
 		super(new GridBagLayout());
 		this.cols = cols;
+		this.imageItemFillGridCell = imageItemFillGridCell;
 		
 		defaultFont = new JLabel().getFont();
 		JTextArea dummy = new JTextArea();
@@ -59,13 +61,13 @@ public class ImageGridPanel extends JPanel {
 		COLOR_BACKGROUND_PRESELECTED = brighter(COLOR_BACKGROUND_SELECTED,0.7f);
 		COLOR_BACKGROUND_MARKED = null;
 		
-		createImageLabels(preselectedImageID,images,null);
+		createImageItems(preselectedImageID,images,null);
 		
 		//setBorder(BorderFactory.createEtchedBorder());
 		setBackground(COLOR_BACKGROUND);
 	}
 	
-	protected void createImageLabels(String preselectedImageID, Iterable<ImageData> images, Consumer<Integer> indexOutput) {
+	protected void createImageItems(String preselectedImageID, Iterable<ImageData> images, Consumer<Integer> indexOutput) {
 		selectedIndex = -1;
 		imageItems.clear();
 		if (images==null) return;
@@ -74,12 +76,11 @@ public class ImageGridPanel extends JPanel {
 		c.insets = new Insets(0, 0, 2, 2);
 		c.weightx = 1.0;
 		c.weighty = 0.0;
-		c.fill = GridBagConstraints.NONE;
+		c.fill = imageItemFillGridCell?GridBagConstraints.BOTH:GridBagConstraints.NONE;
 		
 		int index = 0;
 		int col=0; 
 		for (ImageData imageData : images) {
-//			if (imageData.image!=null) {
 			boolean isSelected = imageData.ID.equals(preselectedImageID);
 			if (isSelected) selectedIndex=index;
 			ImageItem imageLabel = new ImageItem(imageData.ID,imageData.name,index,imageData.image,isSelected);
@@ -92,7 +93,6 @@ public class ImageGridPanel extends JPanel {
 			++index;
 			if (indexOutput!=null)
 				indexOutput.accept(index);
-//			}
 		}
 	}
 	
@@ -147,7 +147,7 @@ public class ImageGridPanel extends JPanel {
 	public void resetImages(Iterable<ImageData> images) {
 		String selectedImageID = getSelectedImageID();
 		removeAll();
-		createImageLabels(selectedImageID,images,null);
+		createImageItems(selectedImageID,images,null);
 		revalidate();
 	}
 
@@ -262,16 +262,19 @@ public class ImageGridPanel extends JPanel {
 
 		private JLabel imageContainer;
 		private JTextArea label;
+		
 		private boolean isSelected;
 		private boolean hasFocus;
 		private int markerIndex;
 		public String ID;
+		private int index;
 
 		public ImageItem(String ID, String name, int index, BufferedImage image, boolean isSelected) {
 			super(new BorderLayout(3,3));
 			setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 			
 			this.ID = ID;
+			this.index = index;
 			this.isSelected = isSelected;
 			this.hasFocus = false;
 			this.markerIndex = 0;
@@ -310,6 +313,10 @@ public class ImageGridPanel extends JPanel {
 			addMouseMotionListener(m);
 			label.addMouseListener(m);
 			label.addMouseMotionListener(m);
+		}
+		
+		public int getIndex() {
+			return index;
 		}
 		
 		public void changeImage(BufferedImage image) {
