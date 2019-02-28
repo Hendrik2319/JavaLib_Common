@@ -8,8 +8,11 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.stream.ImageInputStream;
 
 public class ImageReader {
 	
@@ -29,6 +32,8 @@ public class ImageReader {
 	}
 	
 	public static ImageResult readImage(File file, Algorithm algorithm) {
+		ImageResult result = new ImageResult();
+		
 		MessageDigest msgdig;
 		try { msgdig = MessageDigest.getInstance(algorithm.algorithmStr); }
 		catch (NoSuchAlgorithmException e1) { e1.printStackTrace(); return null; }
@@ -39,24 +44,45 @@ public class ImageReader {
 		
 		DigestInputStream input = new DigestInputStream(fileinput,msgdig);
 		
-		BufferedImage image;
-		try { image = ImageIO.read(input); }
+		try {
+			//image = ImageIO.read(input);
+			ImageInputStream stream = ImageIO.createImageInputStream(input);
+			
+			Iterator<javax.imageio.ImageReader> iter = ImageIO.getImageReaders(stream);
+			if (!iter.hasNext()) {
+				return null;
+			}
+			
+			javax.imageio.ImageReader reader = iter.next();
+			ImageReadParam param = reader.getDefaultReadParam();
+			reader.setInput(stream, true, true);
+			try {
+				result.image = reader.read(0, param);
+				result.formatName = reader.getFormatName();
+			} finally {
+				reader.dispose();
+				stream.close();
+			}
+		}
 		catch (IOException e) { e.printStackTrace(); return null; }
 		
 		byte[] buffer = new byte[100000];
 		try {while (input.read(buffer)>=0); } catch (IOException e) {}
+		result.digest = msgdig.digest();
 		
-		return new ImageResult(image,msgdig.digest());
+		return result;
 	}
 	
 	public static class ImageResult {
 
+		public String formatName;
 		public BufferedImage image;
 		public byte[] digest;
 
-		public ImageResult(BufferedImage image, byte[] digest) {
-			this.image = image;
-			this.digest = digest;
+		public ImageResult() {
+			this.image = null;
+			this.digest = null;
+			this.formatName = null;
 		}
 		
 	}
