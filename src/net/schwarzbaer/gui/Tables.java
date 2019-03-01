@@ -108,7 +108,7 @@ public class Tables {
 				if (sortOrder==SortOrder.UNSORTED) continue;
 				int column = key.getColumn();
 				
-				if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column));
+				if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column,sortOrder));
 				else if (isNewClass(model.getColumnClass(column))     ) comparator = addComparatorForNewClass(comparator,sortOrder,column);
 				else if (model.getColumnClass(column) == Boolean.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
 				else if (model.getColumnClass(column) == String .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
@@ -152,12 +152,12 @@ public class Tables {
 
 		protected <U extends Comparable<? super U>> Comparator<Integer> addComparator(Comparator<Integer> comp, SortOrder sortOrder, Function<? super Integer,? extends U> keyExtractor) {
 			if (sortOrder==SortOrder.DESCENDING) {
-				if (comp==null) comp = Comparator     .comparing    (keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
-				else            comp = comp.reversed().thenComparing(keyExtractor,Comparator.nullsFirst(Comparator.naturalOrder()));
+				if (comp==null) comp = Comparator     .<Integer,U>comparing(keyExtractor,Comparator.<U>nullsFirst(Comparator.<U>naturalOrder()));
+				else            comp = comp.reversed().    <U>thenComparing(keyExtractor,Comparator.<U>nullsFirst(Comparator.<U>naturalOrder()));
 				return comp.reversed();
 			} else {
-				if (comp==null) comp = Comparator     .comparing    (keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
-				else            comp = comp           .thenComparing(keyExtractor,Comparator.nullsLast(Comparator.naturalOrder()));
+				if (comp==null) comp = Comparator     .<Integer,U>comparing(keyExtractor,Comparator.<U>nullsLast(Comparator.<U>naturalOrder()));
+				else            comp = comp           .    <U>thenComparing(keyExtractor,Comparator.<U>nullsLast(Comparator.<U>naturalOrder()));
 				return comp;
 			}
 		}
@@ -285,18 +285,21 @@ public class Tables {
 			if (getRowCount()>0)
 				fireTableModelEvent(new TableModelEvent(this, 0, getRowCount()-1, columnIndex, TableModelEvent.UPDATE));
 		}
-		protected void fireTableCellUpdate(int rowIndex, int columnIndex) {
-			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, columnIndex, TableModelEvent.UPDATE));
+		protected void fireTableCellEvent(int rowIndex, int columnIndex, int type) {
+			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, columnIndex, type));
 		}
-		protected void fireTableRowAdded(int rowIndex) {
-			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT));
+		protected void fireTableCellUpdate(int rowIndex, int columnIndex) { fireTableCellEvent(rowIndex, columnIndex, TableModelEvent.UPDATE); }
+		protected void fireTableRowAdded  (int rowIndex) { fireTableCellEvent(rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT); }
+		protected void fireTableRowRemoved(int rowIndex) { fireTableCellEvent(rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE); }
+		protected void fireTableRowUpdate (int rowIndex) { fireTableCellEvent(rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE); }
+		
+		protected void fireTableRowsEvent(int firstRowIndex, int lastRowIndex, int type) {
+			fireTableModelEvent(new TableModelEvent(this, firstRowIndex, lastRowIndex, TableModelEvent.ALL_COLUMNS, type));
 		}
-		protected void fireTableRowRemoved(int rowIndex) {
-			fireTableModelEvent(new TableModelEvent(this, rowIndex, rowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE));
-		}
-		protected void fireTableRowsRemoved(int firstRowIndex, int lastRowIndex) {
-			fireTableModelEvent(new TableModelEvent(this, firstRowIndex, lastRowIndex, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE));
-		}
+		protected void fireTableRowsAdded  (int firstRowIndex, int lastRowIndex) { fireTableRowsEvent(firstRowIndex, lastRowIndex, TableModelEvent.INSERT); }
+		protected void fireTableRowsRemoved(int firstRowIndex, int lastRowIndex) { fireTableRowsEvent(firstRowIndex, lastRowIndex, TableModelEvent.DELETE); }
+		protected void fireTableRowsUpdate (int firstRowIndex, int lastRowIndex) { fireTableRowsEvent(firstRowIndex, lastRowIndex, TableModelEvent.UPDATE); }
+		
 		public void fireTableUpdate() {
 			fireTableModelEvent(new TableModelEvent(this));
 		}
@@ -393,13 +396,13 @@ public class Tables {
 			return columnID.getColumnConfig().hasSpecialSorting;
 		}
 
-		public Comparator<Integer> getSpecialSorting(int columnIndex) {
+		public Comparator<Integer> getSpecialSorting(int columnIndex, SortOrder sortOrder) {
 			ColumnID columnID = getColumnID(columnIndex);
 			if (columnID==null) return null;
-			return getSpecialSorting(columnID);
+			return getSpecialSorting(columnID,sortOrder);
 		}
 
-		protected Comparator<Integer> getSpecialSorting(ColumnID columnID) {
+		protected Comparator<Integer> getSpecialSorting(ColumnID columnID, SortOrder sortOrder) {
 			return null;
 		}
 	}
