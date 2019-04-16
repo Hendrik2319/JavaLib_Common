@@ -82,55 +82,58 @@ public class Tables {
 		}
 		
 		private void sort() {
-			if (model==null) {
-				this.modelRowIndexes = null;
-				this.viewRowIndexes = null;
-				return;
-			}
 			
-			log("sort() -> %s",toString(keys));
-			
-			int rowCount = getModelRowCount();
-			if (modelRowIndexes==null || modelRowIndexes.length!=rowCount)
-				modelRowIndexes = new Integer[rowCount];
-			
-			for (int i=0; i<modelRowIndexes.length; ++i)
-				modelRowIndexes[i] = i;
-			
-			Comparator<Integer> comparator = null;
-			
-			int unsortedRows = model.getUnsortedRowsCount();
-			if (0<unsortedRows)
-				comparator = Comparator.comparingInt((Integer row)->(row<unsortedRows?row:unsortedRows));
-			
-			for (SortKey key:keys) {
-				SortOrder sortOrder = key.getSortOrder();
-				if (sortOrder==SortOrder.UNSORTED) continue;
-				int column = key.getColumn();
+			synchronized (this) {
+				if (model==null) {
+					this.modelRowIndexes = null;
+					this.viewRowIndexes = null;
+					return;
+				}
 				
-				if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column,sortOrder));
-				else if (isNewClass(model.getColumnClass(column))     ) comparator = addComparatorForNewClass(comparator,sortOrder,column);
-				else if (model.getColumnClass(column) == Boolean.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == String .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Long   .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Integer.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Double .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
-				else if (model.getColumnClass(column) == Float  .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
-				else comparator = addComparator(comparator,sortOrder,
-							(Integer row)->{
-								Object object = model.getValueAt(row,column);
-								if (object==null) return null;
-								return object.toString();
-							});
+				log("sort() -> %s",toString(keys));
+				
+				int rowCount = getModelRowCount();
+				if (modelRowIndexes==null || modelRowIndexes.length!=rowCount)
+					modelRowIndexes = new Integer[rowCount];
+				
+				for (int i=0; i<modelRowIndexes.length; ++i)
+					modelRowIndexes[i] = i;
+				
+				Comparator<Integer> comparator = null;
+				
+				int unsortedRows = model.getUnsortedRowsCount();
+				if (0<unsortedRows)
+					comparator = Comparator.comparingInt((Integer row)->(row<unsortedRows?row:unsortedRows));
+				
+				for (SortKey key:keys) {
+					SortOrder sortOrder = key.getSortOrder();
+					if (sortOrder==SortOrder.UNSORTED) continue;
+					int column = key.getColumn();
+					
+					if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column,sortOrder));
+					else if (isNewClass(model.getColumnClass(column))     ) comparator = addComparatorForNewClass(comparator,sortOrder,column);
+					else if (model.getColumnClass(column) == Boolean.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
+					else if (model.getColumnClass(column) == String .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
+					else if (model.getColumnClass(column) == Long   .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
+					else if (model.getColumnClass(column) == Integer.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
+					else if (model.getColumnClass(column) == Double .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
+					else if (model.getColumnClass(column) == Float  .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
+					else comparator = addComparator(comparator,sortOrder,
+								(Integer row)->{
+									Object object = model.getValueAt(row,column);
+									if (object==null) return null;
+									return object.toString();
+								});
+				}
+				
+				if (comparator!=null)
+					Arrays.sort(modelRowIndexes, comparator);
+				
+				if (viewRowIndexes==null || viewRowIndexes.length!=rowCount)
+					viewRowIndexes = new int[rowCount];
+				for (int i=0; i<viewRowIndexes.length; ++i) viewRowIndexes[i] = -1;
+				for (int i=0; i<modelRowIndexes.length; ++i) viewRowIndexes[modelRowIndexes[i]] = i;
 			}
-			
-			if (comparator!=null)
-				Arrays.sort(modelRowIndexes, comparator);
-			
-			if (viewRowIndexes==null || viewRowIndexes.length!=rowCount)
-				viewRowIndexes = new int[rowCount];
-			for (int i=0; i<viewRowIndexes.length; ++i) viewRowIndexes[i] = -1;
-			for (int i=0; i<modelRowIndexes    .length; ++i) viewRowIndexes[modelRowIndexes[i]] = i;
 			
 			fireSortOrderChanged();
 		}
@@ -206,7 +209,7 @@ public class Tables {
 		}
 
 		@Override
-		public int convertRowIndexToModel(int index) {
+		public synchronized int convertRowIndexToModel(int index) {
 			if (modelRowIndexes==null) return index;
 			if (index<0) return -1;
 			if (index>=modelRowIndexes.length) return -1;
@@ -214,7 +217,7 @@ public class Tables {
 		}
 
 		@Override
-		public int convertRowIndexToView(int index) {
+		public synchronized int convertRowIndexToView(int index) {
 			if (viewRowIndexes==null) return index;
 			if (index<0) return -1;
 			if (index>=viewRowIndexes.length) return -1;
