@@ -101,5 +101,13 @@ public class BumpMapping {
 			);
 		}
 		
+		public static Vector3D blend(double f, double fmin, double fmax, Vector3D vmin, Vector3D vmax) {
+			f = (f-fmin)/(fmax-fmin); 
+			return new Vector3D(
+					vmax.x*f+vmin.x*(1-f),
+					vmax.y*f+vmin.y*(1-f),
+					vmax.z*f+vmin.z*(1-f)
+				);
+		}
 	}
 }
