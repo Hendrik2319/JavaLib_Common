@@ -35,6 +35,22 @@ public class BumpMapping {
 		this.faceF = getF(new Vector3D(0,0,1));
 	}
 
+	public Image renderBumpImage(int width, int height) {
+		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		WritableRaster raster = image.getRaster();
+		int[] color = new int[4];
+		color[3] = 255;
+		for (int x=0; x<width; x++)
+			for (int y=0; y<height; y++) {
+				Vector3D normal = getNormal.getNormal(x,y,width,height);
+				color[0] = (int) Math.round(((normal.x+1)/2)*255);
+				color[1] = (int) Math.round(((normal.y+1)/2)*255);;
+				color[2] = (int) Math.round(((normal.z+1)/2)*255);;
+				raster.setPixel(x, y, color);
+			}
+		return image;
+	}
+
 	public Image renderImage(int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
