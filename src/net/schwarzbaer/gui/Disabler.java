@@ -3,6 +3,7 @@ package net.schwarzbaer.gui;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Vector;
+import java.util.function.Function;
 
 import javax.swing.JComponent;
 
@@ -72,6 +73,16 @@ public class Disabler<ActionCommands> {
 		for (ActionCommands key:map.keySet())
 			if (!exceptThis.contains(key))
 				setEnable(key, enabled);
+	}
+
+	public void setEnable(Function<ActionCommands,Boolean> shouldEnable) {
+		for (ActionCommands key:map.keySet())
+			setEnable(key, shouldEnable.apply(key));
+	}
+
+	public void setEnable(ActionCommands[] actionCommands, boolean enabled) {
+		for (ActionCommands ac:actionCommands)
+			setEnable(ac, enabled);
 	}
 
 	public void setEnable(ActionCommands actionCommand, boolean enabled) {
