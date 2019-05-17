@@ -103,12 +103,14 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 	private JTextArea outputArea;
 	private boolean removeWhitespaceTextNodes;
 	private NodeContextMenu contextMenu;
+	private DefaultTreeModel treeModel;
 
 	public XMLTreeView() {
 		this(true);
 	}
 	public XMLTreeView(boolean removeWhitespaceTextNodes) {
 		super();
+		setModel(treeModel = new DefaultTreeModel(null));
 		this.removeWhitespaceTextNodes = removeWhitespaceTextNodes;
 		this.outputArea = null;
 		addTreeSelectionListener(this);
@@ -151,7 +153,8 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		setDocument(document);
 	}
 	public void setDocument(Document document) {
-		setModel(new DefaultTreeModel(new XMLTreeNode(document,null,0)));
+		treeModel.setRoot(document==null?null:new XMLTreeNode(document,null,0));
+		//setModel(new DefaultTreeModel(document==null?null:new XMLTreeNode(document,null,0)));
 	}
 	
 	@Override
