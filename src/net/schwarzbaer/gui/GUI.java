@@ -40,6 +40,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -52,8 +53,12 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
+import javax.swing.ListModel;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileSystemView;
 
 import net.schwarzbaer.system.Delayer;
@@ -190,8 +195,13 @@ public final class GUI {
         panel.add( comp, BorderLayout.CENTER );
         return panel;
     }
+	
+    private static <AC,C extends JComponent> C addToDisabler(Disabler<AC> disabler, AC actionCommand, C comp) {
+		disabler.add(actionCommand, comp);
+		return comp;
+	}
 
-    public static JMenu createMenu( String title, int mnemonic, boolean enabled ) {
+	public static JMenu createMenu( String title, int mnemonic, boolean enabled ) {
         JMenu menu = new JMenu( title );
         menu.setMnemonic( mnemonic );
         menu.setEnabled( enabled );
@@ -265,6 +275,10 @@ public final class GUI {
         return btn;
     }
 
+    public static <AC> JButton createButton( String title, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
+    	return addToDisabler(disabler, actionCommand, createButton( title, actionCommand.toString(), actionListener ));
+    }
+
     public static JButton createButton( String title, String commandStr, ActionListener actionListener ) {
         JButton btn = createButton( commandStr, actionListener );
         btn.setText(title);
@@ -272,8 +286,7 @@ public final class GUI {
     }
 
     public static JButton createButton( String title, String commandStr, ActionListener actionListener, Icon icon ) {
-        JButton btn = createButton( commandStr, actionListener );
-        btn.setText(title);
+        JButton btn = createButton( title, commandStr, actionListener );
         btn.setIcon(icon);
         return btn;
 	}
@@ -296,10 +309,16 @@ public final class GUI {
 	    return btn;
 	}
 
+	public static <AC> JToggleButton createToggleButton( String title, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
+        return createToggleButton( title, actionCommand, disabler, actionListener, null, false, true );
+    }
 	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener ) {
         return createToggleButton( title, commandStr, actionListener, null, false, true );
     }
 
+	public static <AC> JToggleButton createToggleButton( String title, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+		return addToDisabler(disabler, actionCommand, createToggleButton( title, actionCommand.toString(), actionListener, buttonGroup, isSelected, isEnabled ) );
+	}
 	public static JToggleButton createToggleButton( String title, String commandStr, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
     	JToggleButton button = new JToggleButton( title );
         button.addActionListener(actionListener);
@@ -330,27 +349,28 @@ public final class GUI {
 		return cmbbx.getItemAt(index);
 	}
 	
+	public static <AC,E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, int selected, AC actionCommand, boolean enabled, Disabler<AC> disabler, ActionListener actionListener ) {
+        return setComboBox_Gen( addToDisabler(disabler, actionCommand, new JComboBox<E>( comboBoxModel )), selected, actionCommand.toString(), enabled, actionListener);
+    }
 	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), selected, commandStr, enabled, actionListener);
     }
-	
 	public static <E> JComboBox<E> createComboBox_Gen( ComboBoxModel<E> comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( comboBoxModel ), commandStr, enabled, actionListener);
     }
-
+	public static <AC,E> JComboBox<E> createComboBox_Gen( E[] items, int selected, AC actionCommand, boolean enabled, Disabler<AC> disabler, ActionListener actionListener ) {
+        return setComboBox_Gen( addToDisabler(disabler, actionCommand, new JComboBox<E>( items )), selected, actionCommand.toString(), enabled, actionListener);
+    }
 	public static <E> JComboBox<E> createComboBox_Gen( E[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
     }
-
 	public static <E> JComboBox<E> createComboBox_Gen( Vector<E> items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
     }
-	
 	private static <E> JComboBox<E> setComboBox_Gen(JComboBox<E> cmbBx, int selected, String commandStr, boolean enabled, ActionListener actionListener) {
 		cmbBx.setSelectedIndex(selected);
 		return setComboBox_Gen( cmbBx, commandStr, enabled, actionListener);
     }
-
 	private static <E> JComboBox<E> setComboBox_Gen(JComboBox<E> cmbBx, String commandStr, boolean enabled, ActionListener actionListener) {
 		cmbBx.setActionCommand(commandStr);
         cmbBx.addActionListener(actionListener);
@@ -381,7 +401,28 @@ public final class GUI {
         cmbBx.setEnabled(enabled);
         return cmbBx;
 	}
+	
+	public static <AC,E> JList<E> createList( ListModel<E> listModel, AC actionCommand, Disabler<AC> disabler, ActionListener listener ) {
+		return createList( listModel, true, actionCommand, disabler, listener );
+	}
+	public static <AC,E> JList<E> createList( ListModel<E> listModel, boolean ignoreAdjusting, AC actionCommand, Disabler<AC> disabler, ActionListener listener ) {
+		JList<E> list = new JList<E>(listModel);
+		list.addListSelectionListener(new ListSelectionListener() {
+			@Override public void valueChanged(ListSelectionEvent e) {
+				if (ignoreAdjusting && e.getValueIsAdjusting()) return;
+				listener.actionPerformed(new ActionEvent(e.getSource(), ActionEvent.ACTION_PERFORMED, actionCommand.toString()));
+			}
+		});
+		disabler.add(actionCommand, list);
+		return list;
+	}
 
+    public static <AC> JCheckBox createCheckBox( String title, boolean preselected, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
+    	return addToDisabler(disabler, actionCommand, createCheckBox( title, preselected, actionCommand.toString(), actionListener ) );
+	}
+    public static JCheckBox createCheckBox( String title, boolean preselected, String commandStr, ActionListener actionListener ) {
+    	return createCheckBox( title, preselected, commandStr, SwingConstants.RIGHT, true, actionListener );
+	}
     public static JCheckBox createCheckBox( String title, boolean preselected, String commandStr, int alignment, boolean enabled, ActionListener actionListener ) {
         JCheckBox checkBox = new JCheckBox(title,preselected);
         checkBox.setActionCommand( commandStr );
@@ -534,6 +575,11 @@ public final class GUI {
     public static JTextField createTextField( String commandStr, ActionListener actionListener, String value, boolean observeFocusEvents ) {
     	if (observeFocusEvents) return createTextField(commandStr, actionListener, value, true, null);
     	else                    return createTextField(commandStr, actionListener, value);
+    }
+
+    public static <AC> JTextField createTextField( AC actionCommand, Disabler<AC> disabler, ActionListener actionListener, String value, boolean observeFocusEvents ) {
+    	if (observeFocusEvents) return addToDisabler(disabler, actionCommand, createTextField(actionCommand.toString(), actionListener, value, true, null) );
+    	else                    return addToDisabler(disabler, actionCommand, createTextField(actionCommand.toString(), actionListener, value) );
     }
 
     public static JTextField createTextField( String commandStr, ActionListener actionListener,               boolean editable,              FocusListener focusListener ) {
