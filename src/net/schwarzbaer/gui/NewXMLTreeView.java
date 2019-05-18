@@ -78,6 +78,7 @@ public class NewXMLTreeView extends JTree {
 	private DefaultTreeModel treeModel;
 	private boolean ignoreEmptyTextNodes;
 	private TreeNodeFactory treeNodeFactory;
+	private NodeContextMenu contextMenu;
 	
 	public NewXMLTreeView() { this(true,null); }
 	public NewXMLTreeView(boolean ignoreEmptyTextNodes) { this(ignoreEmptyTextNodes,null); }
@@ -88,11 +89,23 @@ public class NewXMLTreeView extends JTree {
 		this.treeNodeFactory = treeNodeFactory==null?DOMTreeNode::new:treeNodeFactory;
 		this.treeModel = new DefaultTreeModel(null);
 		setModel(treeModel);
-		addMouseListener(new NodeContextMenu());
+		contextMenu = new NodeContextMenu();
+		addMouseListener(contextMenu);
 	}
 	
+	public NodeContextMenu getContextMenu() {
+		return contextMenu;
+	}
+
+	public void setRoot(TreeNode root) {
+		treeModel.setRoot(root);
+	}
 	public void setDocument(Document document) {
 		treeModel.setRoot(document==null?null:treeNodeFactory.create(null, document, ignoreEmptyTextNodes));
+	}
+	public void setDocument(Document document,TreeNodeFactory treeNodeFactory) {
+		this.treeNodeFactory = treeNodeFactory;
+		setDocument(document);
 	}
 	
 	private static boolean copyToClipBoard(String str) {
@@ -106,11 +119,11 @@ public class NewXMLTreeView extends JTree {
 		return true;
 	}
 	
-	private class NodeContextMenu extends JPopupMenu implements MouseListener {
+	public class NodeContextMenu extends JPopupMenu implements MouseListener {
 		private static final long serialVersionUID = -6877543437500214909L;
 		
-		private TreePath clickedTreePath = null;
-		private DOMTreeNode clickedNode = null;
+		public TreePath clickedTreePath = null;
+		public DOMTreeNode clickedNode = null;
 
 		public NodeContextMenu() {
 			add(createMenuItem("Collapse remaining tree",e->{
@@ -153,7 +166,7 @@ public class NewXMLTreeView extends JTree {
 		}
 	}
 	
-	private static interface TreeNodeFactory {
+	public static interface TreeNodeFactory {
 		DOMTreeNode create(DOMTreeNode parent, Node node, boolean ignoreEmptyTextNodes);
 	}
 	
@@ -162,11 +175,11 @@ public class NewXMLTreeView extends JTree {
 		protected final DOMTreeNode parent;
 		protected final Node node;
 		protected Vector<DOMTreeNode> children;
-		String singleTextValue;
+		protected String singleTextValue;
 		private boolean ignoreEmptyTextNodes;
 		private TreeNodeFactory factory;
 		
-		private DOMTreeNode(DOMTreeNode parent, Node node, boolean ignoreEmptyTextNodes) {
+		public DOMTreeNode(DOMTreeNode parent, Node node, boolean ignoreEmptyTextNodes) {
 			this(parent, node, ignoreEmptyTextNodes, DOMTreeNode::new);
 		}
 		protected DOMTreeNode(DOMTreeNode parent, Node node, boolean ignoreEmptyTextNodes, TreeNodeFactory factory) {
