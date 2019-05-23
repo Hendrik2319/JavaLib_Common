@@ -23,8 +23,7 @@ import javax.swing.SwingConstants;
 import net.schwarzbaer.gui.ColorSlider.ColorChangeListener;
 import net.schwarzbaer.gui.ColorSlider.SliderType;
 
-
-public final class HSColorChooser implements ActionListener, ColorChangeListener {
+public final class HSColorChooser {
 	
 	public static final StandardDialog.Position PARENT_CENTER   = StandardDialog.Position.PARENT_CENTER;
 	public static final StandardDialog.Position LEFT_OF_PARENT  = StandardDialog.Position.LEFT_OF_PARENT;
@@ -32,203 +31,250 @@ public final class HSColorChooser implements ActionListener, ColorChangeListener
 	public static final StandardDialog.Position RIGHT_OF_PARENT = StandardDialog.Position.RIGHT_OF_PARENT;
 	public static final StandardDialog.Position BELOW_PARENT    = StandardDialog.Position.BELOW_PARENT;
 	
-	private static Color[] userdefinedColors = new Color[] { null,null,null,null,null,null,null,null }; 
-	private ColorButton[] userColorButtons; 
-	
 	public static Color showDialog(Window parent, String title, Color color, StandardDialog.Position position) {
-		HSColorChooser dialog = new HSColorChooser();
-		dialog.createGUI(parent,title);
-		return dialog.showDialog(color, position);
-	}
-
-	private StandardDialog dlgFenster;
-	private JLabel oldColorField;
-	private JLabel colForegrField;
-	private JLabel colBackgrFieldB;
-	private JLabel colForegrFieldW;
-	private JLabel colBackgrFieldW;
-	private ColorCompSlider sliderR;
-	private ColorCompSlider sliderG;
-	private ColorCompSlider sliderB;
-	private ColorCompSlider sliderH;
-	private ColorCompSlider sliderS;
-	private ColorCompSlider sliderV;
-	private ColorCompSlider sliderDual;
-	private Color oldColor;
-	private Color newColor;
-
-	private Color showDialog(Color color, StandardDialog.Position position) {
-		setColor(color);
-		this.oldColor = color;
-		oldColorField.setBackground(this.oldColor);
-		dlgFenster.showDialog(position);
-		return newColor;
-	}
-
-	private void setColor(Color color) {
-		this.newColor = color;
-		colForegrField.setForeground(color);
-		colForegrFieldW.setForeground(color);
-		colBackgrFieldB.setBackground(color);
-		colBackgrFieldW.setBackground(color);
-		int blue  = color.getBlue();
-		int green = color.getGreen();
-		int red   = color.getRed();
-		float[] hsb = Color.RGBtoHSB(red, green, blue, null);
-		sliderR.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderG.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderB.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderH.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderS.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderV.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-		sliderDual.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
-	}
-
-	private void createGUI(Window parent, String title) {
-		
-		JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
-		buttonPanel.add(GUI.createButton("OK", "ok", this));
-		buttonPanel.add(GUI.createButton("Abbrechen", "abbrechen", this));
-		buttonPanel.add(GUI.createButton("Zurück", "zurücksetzen", this));
-		
-		JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
-		rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
-		rgbPanel.add(createSliderPanel( "R",sliderR = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_RED,this) ));
-		rgbPanel.add(createSliderPanel( "G",sliderG = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_GRN,this) ));
-		rgbPanel.add(createSliderPanel( "B",sliderB = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BLU,this) ));
-		
-		JPanel hsvPanel = new JPanel(new GridLayout(1,0,3,3));
-		hsvPanel.setBorder(BorderFactory.createTitledBorder(""));
-		hsvPanel.add(createSliderPanel( "H",sliderH = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_HUE,this) ));
-		hsvPanel.add(createSliderPanel( "S",sliderS = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_SAT,this) ));
-		hsvPanel.add(createSliderPanel( "B",sliderV = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BRT,this) ));
-		
-		JPanel singleSliderPanel = new JPanel(new GridLayout(1,0,3,3));
-		singleSliderPanel.add(rgbPanel);
-		singleSliderPanel.add(hsvPanel);
-		
-		ButtonGroup buttonGroup_panelType = new ButtonGroup();
-		JPanel dualTypePanel = new JPanel(new GridLayout(1,0,3,3));
-		dualTypePanel.add(GUI.createRadioButton("RG", "dualRG", this, buttonGroup_panelType, true, true));
-		dualTypePanel.add(GUI.createRadioButton("GB", "dualGB", this, buttonGroup_panelType, true, true));
-		dualTypePanel.add(GUI.createRadioButton("RB", "dualRB", this, buttonGroup_panelType, true, true));
-		dualTypePanel.add(GUI.createRadioButton("HS", "dualHS", this, buttonGroup_panelType, true, true));
-		dualTypePanel.add(GUI.createRadioButton("SB", "dualSB", this, buttonGroup_panelType, true, true));
-		dualTypePanel.add(GUI.createRadioButton("HB", "dualHB", this, buttonGroup_panelType, true, true));
-		
-		JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
-//		dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
-		dualSliderPanel.add(GUI.createTitlePanel("", sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this)), BorderLayout.CENTER);
-		dualSliderPanel.add(dualTypePanel, BorderLayout.SOUTH);
-		
-		JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
-		examplePanel.setBorder(BorderFactory.createTitledBorder(""));
-		examplePanel.add(oldColorField = new JLabel("   ")); oldColorField.setOpaque(true); oldColorField.setPreferredSize(new Dimension(30,15));
-		examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
-		examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
-		examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
-		examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
-		
-		userColorButtons = new ColorButton[userdefinedColors.length];
-		ButtonGroup buttonGroup_colorList = new ButtonGroup();
-		JPanel userColorListPanel = new JPanel(new GridLayout(1,0,3,3));
-		//userColorListPanel.setBorder(BorderFactory.createLoweredBevelBorder());
-		for (int i=0; i<userdefinedColors.length; i++) {
-			userColorButtons[i] = new ColorButton(userdefinedColors[i]);
-			buttonGroup_colorList.add(userColorButtons[i]);
-			userColorListPanel.add(userColorButtons[i]);
-		}
-		
-		JPanel userColorButtonPanel = new JPanel(new GridLayout(1,0,3,3));
-		userColorButtonPanel.add(GUI.createButton("set", "set user color", this));
-		userColorButtonPanel.add(GUI.createButton("read", "read user color", this));
-		
-		JPanel userColorPanel = GUI.createLeftAlignedPanel(userColorButtonPanel,userColorListPanel,3);
-		userColorPanel.setBorder(BorderFactory.createEtchedBorder());
-		
-		JPanel lowerPanel = new JPanel(new GridLayout(0,1,3,3));
-		lowerPanel.add(GUI.createRightAlignedPanel(buttonPanel,examplePanel));
-		lowerPanel.add(userColorPanel);
-		
-		JPanel contentPane = new JPanel(new BorderLayout(3,3));
-		contentPane.setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
-		contentPane.add(dualSliderPanel,BorderLayout.CENTER);
-		contentPane.add(singleSliderPanel,BorderLayout.EAST);
-		contentPane.add(lowerPanel,BorderLayout.SOUTH);
-		
-		dlgFenster = new StandardDialog(parent, title);
-		dlgFenster.createGUI(contentPane);
+		StandardDialog dlgFenster = new StandardDialog(parent, title);
+		MainPanel mainPanel = new MainPanel(color, dlgFenster, null);
+		dlgFenster.createGUI(mainPanel);
 		dlgFenster.setSizeAsMinSize();
+		dlgFenster.showDialog(position);
+		return mainPanel.newColor;
+	}
+	
+	public static MainPanel createPanel(Color color, ColorReceiver colorReceiver) {
+		return new MainPanel(color, null, colorReceiver);
+	}
+	
+	public interface ColorReceiver {
+		public void colorChanged(Color color);
 	}
 
-	private JPanel createSliderPanel(String title, ColorCompSlider colorSlider) {
-//		JPanel panel = new JPanel(new BorderLayout(3,3));
-//		panel.add(new JLabel("+",JLabel.CENTER),BorderLayout.NORTH);
-//		panel.add(new JLabel("-",JLabel.CENTER),BorderLayout.SOUTH);
-//		panel.add(colorSlider,BorderLayout.CENTER);
-//		return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), panel, 3);
-		return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), colorSlider, 3);
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if ("ok".equals(e.getActionCommand())) {
-			dlgFenster.closeDialog();
-			return;
-		}
-		if ("abbrechen".equals(e.getActionCommand())) {
-			newColor = null;
-			dlgFenster.closeDialog();
-			return;
+	public static class MainPanel extends JPanel implements ActionListener, ColorChangeListener {
+		private static final long serialVersionUID = 1065328530214691959L;
+		
+		private Disabler<ActionCommands> disabler;
+		private JLabel oldColorField;
+		private JLabel colForegrField;
+		private JLabel colBackgrFieldB;
+		private JLabel colForegrFieldW;
+		private JLabel colBackgrFieldW;
+		private ColorCompSlider sliderR;
+		private ColorCompSlider sliderG;
+		private ColorCompSlider sliderB;
+		private ColorCompSlider sliderH;
+		private ColorCompSlider sliderS;
+		private ColorCompSlider sliderV;
+		private ColorCompSlider sliderDual;
+		private Color oldColor;
+		private Color newColor;
+		
+		private Color[] userdefinedColors = new Color[] { null,null,null,null,null,null,null,null }; 
+		private ColorButton[] userColorButtons; 
+		
+		private ColorReceiver colorReceiver;
+		private StandardDialog dialog;
+	
+		private MainPanel(Color color, StandardDialog dlgFenster, ColorReceiver colorReceiver) {
+			super(new BorderLayout(3,3));
+			this.dialog = dlgFenster;
+			this.colorReceiver = colorReceiver;
+			createPanel();
+			setInitialColor(color);
 		}
 		
-		if ("zurücksetzen".equals(e.getActionCommand())) {
-			setColor(oldColor);
-			return;
+		@Override
+		public void setEnabled(boolean enabled) {
+			super.setEnabled(enabled);
+			disabler.setEnableAll(enabled);
 		}
-		if ("set user color".equals(e.getActionCommand())) {
-			int i = getSelectedColorButton();
-			if (i>=0) {
-				userdefinedColors[i] = newColor;
-				userColorButtons[i].setColor(newColor);
+
+		public void setInitialColor(Color color) {
+			setColor(color);
+			setOldColor(color);
+		}
+		
+		private void setOldColor(Color color) {
+			this.oldColor = color;
+			oldColorField.setBackground(color);
+		}
+	
+		private void setColor(Color color) {
+			if (colorReceiver!=null) colorReceiver.colorChanged(color);
+			this.newColor = color;
+			colForegrField.setForeground(color);
+			colForegrFieldW.setForeground(color);
+			colBackgrFieldB.setBackground(color);
+			colBackgrFieldW.setBackground(color);
+			int blue  = color.getBlue();
+			int green = color.getGreen();
+			int red   = color.getRed();
+			float[] hsb = Color.RGBtoHSB(red, green, blue, null);
+			sliderR.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderG.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderB.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderH.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderS.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderV.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+			sliderDual.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+		}
+		
+		private static enum ActionCommands {
+			other,
+			SetDual2RG, SetDual2GB, SetDual2RB,
+			SetDual2HS, SetDual2SB, SetDual2HB,
+			Ok, Cancel, ResetColor, SetUserColor, ReadUserColor,
+		}
+		
+		private void createPanel() {
+			disabler = new Disabler<ActionCommands>();
+			disabler.setCareFor(ActionCommands.values());
+			
+			JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
+			if (dialog!=null) {
+				buttonPanel.add(GUI.createButton("OK", ActionCommands.Ok, disabler, this));
+				buttonPanel.add(GUI.createButton("Abbrechen", ActionCommands.Cancel, disabler, this));
 			}
-			return;
-		}
-		if ("read user color".equals(e.getActionCommand())) {
-			int i = getSelectedColorButton();
-			if ( (i>=0) && (userdefinedColors[i]!=null) ) {
-				setColor(userdefinedColors[i]);
-				userColorButtons[i].setColor(newColor);
+			String labelBack = dialog==null?"Zurücksetzen":"Zurück";
+			buttonPanel.add(GUI.createButton(labelBack, ActionCommands.ResetColor, disabler, this));
+			
+			JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
+			rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
+			rgbPanel.add(createSliderPanel( "R",sliderR = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_RED,this) ));
+			rgbPanel.add(createSliderPanel( "G",sliderG = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_GRN,this) ));
+			rgbPanel.add(createSliderPanel( "B",sliderB = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BLU,this) ));
+			
+			JPanel hsvPanel = new JPanel(new GridLayout(1,0,3,3));
+			hsvPanel.setBorder(BorderFactory.createTitledBorder(""));
+			hsvPanel.add(createSliderPanel( "H",sliderH = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_HUE,this) ));
+			hsvPanel.add(createSliderPanel( "S",sliderS = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_SAT,this) ));
+			hsvPanel.add(createSliderPanel( "V",sliderV = new ColorCompSlider(SliderType.VERTICAL,Color.YELLOW,ColorCompSlider.COMP_BRT,this) ));
+			
+			JPanel singleSliderPanel = new JPanel(new GridLayout(1,0,3,3));
+			singleSliderPanel.add(rgbPanel);
+			singleSliderPanel.add(hsvPanel);
+			
+			ButtonGroup buttonGroup_panelType = new ButtonGroup();
+			JPanel dualTypePanel = new JPanel(new GridLayout(1,0,3,3));
+			dualTypePanel.add(GUI.createRadioButton("RG", ActionCommands.SetDual2RG, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(GUI.createRadioButton("GB", ActionCommands.SetDual2GB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(GUI.createRadioButton("RB", ActionCommands.SetDual2RB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(GUI.createRadioButton("HS", ActionCommands.SetDual2HS, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(GUI.createRadioButton("SB", ActionCommands.SetDual2SB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(GUI.createRadioButton("HB", ActionCommands.SetDual2HB, disabler, this, buttonGroup_panelType, true, true));
+			
+			JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
+	//		dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
+			dualSliderPanel.add(GUI.createTitlePanel("", sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this)), BorderLayout.CENTER);
+			dualSliderPanel.add(dualTypePanel, BorderLayout.SOUTH);
+			disabler.add(ActionCommands.other, sliderDual);
+			
+			JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
+			examplePanel.setBorder(BorderFactory.createTitledBorder(""));
+			examplePanel.add(oldColorField   = new JLabel("   ")); oldColorField.setOpaque(true); oldColorField.setPreferredSize(new Dimension(30,15));
+			examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
+			examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
+			examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
+			examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
+			
+			userColorButtons = new ColorButton[userdefinedColors.length];
+			ButtonGroup buttonGroup_colorList = new ButtonGroup();
+			JPanel userColorListPanel = new JPanel(new GridLayout(1,0,3,3));
+			//userColorListPanel.setBorder(BorderFactory.createLoweredBevelBorder());
+			for (int i=0; i<userdefinedColors.length; i++) {
+				userColorButtons[i] = new ColorButton(userdefinedColors[i]);
+				buttonGroup_colorList.add(userColorButtons[i]);
+				userColorListPanel.add(userColorButtons[i]);
+				disabler.add(ActionCommands.other, userColorButtons[i]);
 			}
-			return;
+			
+			JPanel userColorButtonPanel = new JPanel(new GridLayout(1,0,3,3));
+			userColorButtonPanel.add(GUI.createButton("set" , ActionCommands.SetUserColor , disabler, this));
+			userColorButtonPanel.add(GUI.createButton("read", ActionCommands.ReadUserColor, disabler, this));
+			
+			JPanel userColorPanel = GUI.createLeftAlignedPanel(userColorButtonPanel,userColorListPanel,3);
+			userColorPanel.setBorder(BorderFactory.createEtchedBorder());
+			
+			JPanel lowerPanel = new JPanel(new GridLayout(0,1,3,3));
+			lowerPanel.add(userColorPanel);
+			lowerPanel.add(GUI.createRightAlignedPanel(buttonPanel,examplePanel));
+			
+			setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
+			add(dualSliderPanel,BorderLayout.CENTER);
+			add(singleSliderPanel,BorderLayout.EAST);
+			add(lowerPanel,BorderLayout.SOUTH);
 		}
-		if (e.getActionCommand().startsWith("dual")) {
-			if ("dualRG".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN); else
-			if ("dualGB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_GRN,ColorCompSlider.COMP_BLU); else
-			if ("dualRB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_BLU); else
-			if ("dualHS".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_SAT); else
-			if ("dualSB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_SAT,ColorCompSlider.COMP_BRT); else
-			if ("dualHB".equals(e.getActionCommand())) sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_BRT);
-			sliderDual.repaint(); 
-			return;
+	
+		private JPanel createSliderPanel(String title, ColorCompSlider colorSlider) {
+	//		JPanel panel = new JPanel(new BorderLayout(3,3));
+	//		panel.add(new JLabel("+",JLabel.CENTER),BorderLayout.NORTH);
+	//		panel.add(new JLabel("-",JLabel.CENTER),BorderLayout.SOUTH);
+	//		panel.add(colorSlider,BorderLayout.CENTER);
+	//		return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), panel, 3);
+			disabler.add(ActionCommands.other, colorSlider);
+			return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), colorSlider, 3);
 		}
-	}
-
-	private int getSelectedColorButton() {
-		for (int i=0; i<userColorButtons.length; i++) {
-			if (userColorButtons[i].isSelected()) return i;
+	
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			ActionCommands actionCommand;
+			try { actionCommand = ActionCommands.valueOf(e.getActionCommand()); }
+			catch (Exception e1) { e1.printStackTrace(); return; }
+			
+			switch(actionCommand) {
+			case Ok:
+				if (dialog!=null) {
+					dialog.closeDialog();
+				}
+				break;
+			case Cancel:
+				if (dialog!=null) {
+					newColor = null;
+					dialog.closeDialog();
+				}
+				break;
+			case ResetColor:
+				setColor(oldColor);
+				break;
+			case SetUserColor: {
+				int i = getSelectedColorButton();
+				if (i>=0) {
+					userdefinedColors[i] = newColor;
+					userColorButtons[i].setColor(newColor);
+				}
+			} break;
+			case ReadUserColor: {
+				int i = getSelectedColorButton();
+				if ( (i>=0) && (userdefinedColors[i]!=null) ) {
+					setColor(userdefinedColors[i]);
+					userColorButtons[i].setColor(newColor);
+				}
+			} break;
+			case SetDual2RG: sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN); sliderDual.repaint(); break;
+			case SetDual2GB: sliderDual.setColorComps(ColorCompSlider.COMP_GRN,ColorCompSlider.COMP_BLU); sliderDual.repaint(); break;
+			case SetDual2RB: sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_BLU); sliderDual.repaint(); break;
+			case SetDual2HS: sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_SAT); sliderDual.repaint(); break;
+			case SetDual2SB: sliderDual.setColorComps(ColorCompSlider.COMP_SAT,ColorCompSlider.COMP_BRT); sliderDual.repaint(); break;
+			case SetDual2HB: sliderDual.setColorComps(ColorCompSlider.COMP_HUE,ColorCompSlider.COMP_BRT); sliderDual.repaint(); break;
+			
+			case other:break;
+			}
 		}
-		return -1;
-	}
-
-	@Override
-	public void colorChanged(Color color, float f) {
-		setColor(color);
-	}
-
-	@Override
-	public void colorChanged(Color color, float fH, float fV) {
-		setColor(color);
+	
+		private int getSelectedColorButton() {
+			for (int i=0; i<userColorButtons.length; i++) {
+				if (userColorButtons[i].isSelected()) return i;
+			}
+			return -1;
+		}
+	
+		@Override
+		public void colorChanged(Color color, float f) {
+			setColor(color);
+		}
+	
+		@Override
+		public void colorChanged(Color color, float fH, float fV) {
+			setColor(color);
+		}
 	}
 	
 	private static class ColorButton extends JToggleButton {

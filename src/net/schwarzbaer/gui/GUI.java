@@ -329,6 +329,9 @@ public final class GUI {
         return button;
     }
 
+	public static <AC> JRadioButton createRadioButton( String title, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+		return addToDisabler(disabler, actionCommand, createRadioButton( title, actionCommand.toString(), actionListener, buttonGroup, isSelected, isEnabled ) );
+	}
 	public static JRadioButton createRadioButton( String title, String commandStr, ActionListener actionListener, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
     	JRadioButton button = new JRadioButton( title );
         button.addActionListener(actionListener);

@@ -49,28 +49,28 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	private void paintV(Graphics g, int width, int height) {
 		if (!isEnabled()) {
 			g.setColor(Color.GRAY);
-			g.fillRect(0, 0, width, height);
+			g.fillRect(3, 0, width-7, height);
 		} else
 			for (int y=0; y<height; y++) {
 				g.setColor(model.calcColor(calcFraction(height-1,y,0)));
 				g.drawLine(3,y,width-4,y);
 			}
 		int y = Math.round((1-model.getValue())*(height-1));
-		g.setColor(Color.BLACK);
+		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
 		g.drawLine(0,y,width-1,y);
 	}
 
 	private void paintH(Graphics g, int width, int height) {
 		if (!isEnabled()) {
 			g.setColor(Color.GRAY);
-			g.fillRect(0, 0, width, height);
+			g.fillRect(0, 3, width, height-7);
 		} else
 			for (int x=0; x<width; x++) {
 				g.setColor(model.calcColor(calcFraction(0,x,width-1)));
 				g.drawLine(x,3,x,height-4);
 			}
 		int x = Math.round(model.getValue()*(width-1));
-		g.setColor(Color.BLACK);
+		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
 		g.drawLine(x,0,x,height-1);
 	}
 
@@ -88,7 +88,7 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 			}
 		int x = Math.round(   model.getValueH() *(width -7))+3;
 		int y = Math.round((1-model.getValueV())*(height-7))+3;
-		g.setColor(Color.BLACK);
+		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
 		g.drawOval(x-3, y-3, 6, 6);
 	}
 
@@ -123,13 +123,13 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 		repaint();
 	}
 	
-	@Override public void mouseDragged (MouseEvent e) { userChangedValue(e.getX(),e.getY()); }
+	@Override public void mouseDragged (MouseEvent e) { if (isEnabled()) userChangedValue(e.getX(),e.getY()); }
 	@Override public void mouseMoved   (MouseEvent e) {}
 	@Override public void mouseClicked (MouseEvent e) {}
 	@Override public void mouseEntered (MouseEvent e) {}
 	@Override public void mouseExited  (MouseEvent e) {}
-	@Override public void mousePressed (MouseEvent e) { userChangedValue(e.getX(),e.getY()); }
-	@Override public void mouseReleased(MouseEvent e) { userChangedValue(e.getX(),e.getY()); }
+	@Override public void mousePressed (MouseEvent e) { if (isEnabled()) userChangedValue(e.getX(),e.getY()); }
+	@Override public void mouseReleased(MouseEvent e) { if (isEnabled()) userChangedValue(e.getX(),e.getY()); }
 
 
 	public static interface ColorChangeListener {
