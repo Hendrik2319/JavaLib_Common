@@ -54,7 +54,7 @@ public final class HSColorChooser {
 		private Disabler<ActionCommands> disabler;
 		private JLabel oldColorField;
 		private JLabel colForegrField;
-		private JLabel colBackgrFieldB;
+		private JLabel colBackgrField;
 		private JLabel colForegrFieldW;
 		private JLabel colBackgrFieldW;
 		private ColorCompSlider sliderR;
@@ -85,6 +85,7 @@ public final class HSColorChooser {
 		public void setEnabled(boolean enabled) {
 			super.setEnabled(enabled);
 			disabler.setEnableAll(enabled);
+			setExamples();
 		}
 
 		public void setInitialColor(Color color) {
@@ -100,10 +101,7 @@ public final class HSColorChooser {
 		private void setColor(Color color) {
 			if (colorReceiver!=null) colorReceiver.colorChanged(color);
 			this.newColor = color;
-			colForegrField.setForeground(color);
-			colForegrFieldW.setForeground(color);
-			colBackgrFieldB.setBackground(color);
-			colBackgrFieldW.setBackground(color);
+			setExamples();
 			int blue  = color.getBlue();
 			int green = color.getGreen();
 			int red   = color.getRed();
@@ -115,6 +113,16 @@ public final class HSColorChooser {
 			sliderS.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
 			sliderV.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
 			sliderDual.setValues(red,green,blue,hsb[0],hsb[1],hsb[2]);
+		}
+
+		private void setExamples() {
+			oldColorField  .setBackground(isEnabled()?oldColor:null);
+			colForegrField .setForeground(isEnabled()?newColor:null);
+			colForegrFieldW.setForeground(isEnabled()?newColor:null);
+			colForegrFieldW.setBackground(isEnabled()?Color.WHITE:null);
+			colBackgrField .setBackground(isEnabled()?newColor:null);
+			colBackgrFieldW.setBackground(isEnabled()?newColor:null);
+			colBackgrFieldW.setForeground(isEnabled()?Color.WHITE:null);
 		}
 		
 		private static enum ActionCommands {
@@ -190,9 +198,14 @@ public final class HSColorChooser {
 			JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
 			examplePanel.setBorder(BorderFactory.createTitledBorder(""));
 			examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
-			examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
-			examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
-			examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
+			examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true );
+			examplePanel.add(colBackgrField  = new JLabel("Text",SwingConstants.CENTER)); colBackgrField .setOpaque(true );
+			examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true );
+			disabler.add(ActionCommands.other, oldColorField  );
+			disabler.add(ActionCommands.other, colForegrField );
+			disabler.add(ActionCommands.other, colForegrFieldW);
+			disabler.add(ActionCommands.other, colBackgrField );
+			disabler.add(ActionCommands.other, colBackgrFieldW);
 			
 			JPanel lowerButtonPanel = new JPanel( new BorderLayout(3,3) );
 			lowerButtonPanel.add(oldColorField, BorderLayout.WEST);
@@ -293,6 +306,7 @@ public final class HSColorChooser {
 	
 	private static class ColorButton extends JToggleButton {
 		private static final long serialVersionUID = 7759027446832437901L;
+		private static final Color BORDER_COLOR = new Color(128,128,128);
 		
 		private ColorButtonIcon icon;
 
@@ -311,9 +325,8 @@ public final class HSColorChooser {
 		@Override public void setSize  (Dimension d                        ) { icon.setMastersSize(d.width, d.height); super.setSize  (d                  ); }
 		@Override public void setSize  (              int width, int height) { icon.setMastersSize(  width,   height); super.setSize  (      width, height); }
 
-		private static class ColorButtonIcon implements Icon {
+		private class ColorButtonIcon implements Icon {
 
-			private static final Color BORDER_COLOR = new Color(128,128,128);
 			private int fakeWidth;
 			private int fakeHeight;
 			private int realWidth;
@@ -344,11 +357,11 @@ public final class HSColorChooser {
 			public void paintIcon(Component c, Graphics g, int x, int y) {
 				int realX = x+(fakeWidth -realWidth )/2;
 				int realY = y+(fakeHeight-realHeight)/2;
-				if (color != null) {
+				if (color!=null && isEnabled()) {
 					g.setColor(color);
 					g.fillRect(realX, realY, realWidth, realHeight);
 				}
-				g.setColor(BORDER_COLOR);
+				g.setColor(isEnabled()?BORDER_COLOR:Color.GRAY);
 				g.drawRect(realX, realY, realWidth-1, realHeight-1);
 			}
 			
