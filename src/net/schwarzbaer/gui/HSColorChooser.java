@@ -236,8 +236,9 @@ public final class HSColorChooser {
 	//		panel.add(new JLabel("-",JLabel.CENTER),BorderLayout.SOUTH);
 	//		panel.add(colorSlider,BorderLayout.CENTER);
 	//		return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), panel, 3);
-			disabler.add(ActionCommands.other, colorSlider);
-			return GUI.createTopAlignedPanel(new JLabel(title,JLabel.CENTER), colorSlider, 3);
+			JLabel label = new JLabel(title,JLabel.CENTER);
+			disabler.addAll(ActionCommands.other, colorSlider, label);
+			return GUI.createTopAlignedPanel(label, colorSlider, 3);
 		}
 	
 		@Override

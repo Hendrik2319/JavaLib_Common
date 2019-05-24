@@ -40,6 +40,11 @@ public class Disabler<ActionCommands> {
 		}
 	}
 
+	public void addAll(ActionCommands actionCommand, JComponent... comps) {
+		for (JComponent comp:comps)
+			add(actionCommand,comp);
+	}
+
 	public JComponent add(ActionCommands actionCommand, JComponent comp) {
 		Vector<JComponent> list = map.get(actionCommand);
 		if (list==null) throw new UnsupportedOperationException("Disabler: Can't add components for unregistered ActionCommand "+actionCommand+". Please register it with disabler.setCareFor.");
