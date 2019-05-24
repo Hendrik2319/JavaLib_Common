@@ -131,10 +131,9 @@ public final class HSColorChooser {
 			JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
 			if (dialog!=null) {
 				buttonPanel.add(GUI.createButton("OK", ActionCommands.Ok, disabler, this));
-				buttonPanel.add(GUI.createButton("Abbrechen", ActionCommands.Cancel, disabler, this));
+				buttonPanel.add(GUI.createButton("Cancel", ActionCommands.Cancel, disabler, this));
 			}
-			String labelBack = dialog==null?"Zurücksetzen":"Zurück";
-			buttonPanel.add(GUI.createButton(labelBack, ActionCommands.ResetColor, disabler, this));
+			buttonPanel.add(GUI.createButton("Reset", ActionCommands.ResetColor, disabler, this));
 			
 			JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
 			rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
@@ -162,45 +161,60 @@ public final class HSColorChooser {
 			dualTypePanel.add(GUI.createRadioButton("HB", ActionCommands.SetDual2HB, disabler, this, buttonGroup_panelType, true, true));
 			
 			JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
-	//		dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
-			dualSliderPanel.add(GUI.createTitlePanel("", sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this)), BorderLayout.CENTER);
+			dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
+			dualSliderPanel.add(sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this), BorderLayout.CENTER);
 			dualSliderPanel.add(dualTypePanel, BorderLayout.SOUTH);
 			disabler.add(ActionCommands.other, sliderDual);
-			
-			JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
-			examplePanel.setBorder(BorderFactory.createTitledBorder(""));
-			examplePanel.add(oldColorField   = new JLabel("   ")); oldColorField.setOpaque(true); oldColorField.setPreferredSize(new Dimension(30,15));
-			examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
-			examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
-			examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
-			examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
 			
 			userColorButtons = new ColorButton[userdefinedColors.length];
 			ButtonGroup buttonGroup_colorList = new ButtonGroup();
 			JPanel userColorListPanel = new JPanel(new GridLayout(1,0,3,3));
 			//userColorListPanel.setBorder(BorderFactory.createLoweredBevelBorder());
+			Dimension prefSize = new Dimension(20,20);
 			for (int i=0; i<userdefinedColors.length; i++) {
-				userColorButtons[i] = new ColorButton(userdefinedColors[i]);
-				buttonGroup_colorList.add(userColorButtons[i]);
-				userColorListPanel.add(userColorButtons[i]);
-				disabler.add(ActionCommands.other, userColorButtons[i]);
+				userColorListPanel.add( userColorButtons[i] = createColorButton(userdefinedColors[i], buttonGroup_colorList, prefSize) );
 			}
 			
-			JPanel userColorButtonPanel = new JPanel(new GridLayout(1,0,3,3));
-			userColorButtonPanel.add(GUI.createButton("set" , ActionCommands.SetUserColor , disabler, this));
-			userColorButtonPanel.add(GUI.createButton("read", ActionCommands.ReadUserColor, disabler, this));
+			JPanel userColorSetButtonPanel = new JPanel(new GridLayout(1,0,3,3));
+			userColorSetButtonPanel.add(GUI.createButton("set" , ActionCommands.SetUserColor , disabler, this));
+			userColorSetButtonPanel.add(GUI.createButton("read", ActionCommands.ReadUserColor, disabler, this));
 			
-			JPanel userColorPanel = GUI.createLeftAlignedPanel(userColorButtonPanel,userColorListPanel,3);
-			userColorPanel.setBorder(BorderFactory.createEtchedBorder());
+			JPanel userColorPanel = GUI.createLeftAlignedPanel(userColorSetButtonPanel,userColorListPanel,3);
+			userColorPanel.setBorder(BorderFactory.createTitledBorder(""));
+			
+			oldColorField = new JLabel("   ");
+			oldColorField.setBorder(BorderFactory.createTitledBorder(""));
+			oldColorField.setOpaque(true);
+			oldColorField.setPreferredSize(new Dimension(30,15));
+			
+			JPanel examplePanel = new JPanel(new GridLayout(1,0,3,3));
+			examplePanel.setBorder(BorderFactory.createTitledBorder(""));
+			examplePanel.add(colForegrField  = new JLabel("Text",SwingConstants.CENTER)); colForegrField .setOpaque(false);
+			examplePanel.add(colForegrFieldW = new JLabel("Text",SwingConstants.CENTER)); colForegrFieldW.setOpaque(true ); colForegrFieldW.setBackground(Color.WHITE);
+			examplePanel.add(colBackgrFieldB = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldB.setOpaque(true );
+			examplePanel.add(colBackgrFieldW = new JLabel("Text",SwingConstants.CENTER)); colBackgrFieldW.setOpaque(true ); colBackgrFieldW.setForeground(Color.WHITE);
+			
+			JPanel lowerButtonPanel = new JPanel( new BorderLayout(3,3) );
+			lowerButtonPanel.add(oldColorField, BorderLayout.WEST);
+			lowerButtonPanel.add(examplePanel, BorderLayout.CENTER);
+			lowerButtonPanel.add(buttonPanel, BorderLayout.EAST);
 			
 			JPanel lowerPanel = new JPanel(new GridLayout(0,1,3,3));
 			lowerPanel.add(userColorPanel);
-			lowerPanel.add(GUI.createRightAlignedPanel(buttonPanel,examplePanel));
+			lowerPanel.add(lowerButtonPanel);
 			
 			setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
 			add(dualSliderPanel,BorderLayout.CENTER);
 			add(singleSliderPanel,BorderLayout.EAST);
 			add(lowerPanel,BorderLayout.SOUTH);
+		}
+
+		private ColorButton createColorButton(Color color, ButtonGroup buttonGroup, Dimension prefSize) {
+			ColorButton colorButton = new ColorButton(color);
+			colorButton.setPreferredSize(prefSize);
+			buttonGroup.add(colorButton);
+			disabler.add(ActionCommands.other, colorButton);
+			return colorButton;
 		}
 	
 		private JPanel createSliderPanel(String title, ColorCompSlider colorSlider) {
@@ -308,10 +322,10 @@ public final class HSColorChooser {
 
 			public ColorButtonIcon(Color color) {
 				this.color = color;
-				this.realWidth = 5;
-				this.realHeight = 5;
-				this.fakeWidth = 5;
-				this.fakeHeight = 5;
+				this.realWidth = 10;
+				this.realHeight = 10;
+				this.fakeWidth = 10;
+				this.fakeHeight = 10;
 			}
 
 			public void setColor(Color color) {
@@ -319,8 +333,8 @@ public final class HSColorChooser {
 			}
 
 			public void setMastersSize(int masterWidth, int masterHeight) {
-				this.realWidth  = masterWidth -10;
-				this.realHeight = masterHeight-10;
+				this.realWidth  = masterWidth -8;
+				this.realHeight = masterHeight-8;
 			}
 
 			@Override public int getIconWidth () { return fakeWidth; }
@@ -328,17 +342,14 @@ public final class HSColorChooser {
 
 			@Override
 			public void paintIcon(Component c, Graphics g, int x, int y) {
-				int realX = x-(realWidth-fakeWidth)/2;
-				int realY = y-(realHeight-fakeHeight)/2;
-				if (color==null) {
-					g.setColor(BORDER_COLOR);
-					g.drawRect(realX, realY, realWidth, realHeight);
-				} else {
+				int realX = x+(fakeWidth -realWidth )/2;
+				int realY = y+(fakeHeight-realHeight)/2;
+				if (color != null) {
 					g.setColor(color);
 					g.fillRect(realX, realY, realWidth, realHeight);
-					g.setColor(BORDER_COLOR);
-					g.drawRect(realX, realY, realWidth, realHeight);
 				}
+				g.setColor(BORDER_COLOR);
+				g.drawRect(realX, realY, realWidth-1, realHeight-1);
 			}
 			
 		}
