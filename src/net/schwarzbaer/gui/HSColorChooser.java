@@ -172,6 +172,7 @@ public final class HSColorChooser {
 			dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
 			dualSliderPanel.add(sliderDual = new ColorCompSlider(SliderType.DUAL,Color.YELLOW,ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN,this), BorderLayout.CENTER);
 			dualSliderPanel.add(dualTypePanel, BorderLayout.SOUTH);
+			sliderDual.setMinimumSize(new Dimension(100,100));
 			disabler.add(ActionCommands.other, sliderDual);
 			
 			userColorButtons = new ColorButton[userdefinedColors.length];

@@ -5,9 +5,6 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -17,12 +14,10 @@ import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -108,7 +103,7 @@ public class NewXMLTreeView extends JTree {
 		setDocument(document);
 	}
 	
-	private static boolean copyToClipBoard(String str) {
+	public static boolean copyToClipBoard(String str) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		if (toolkit==null) { return false; }
 		Clipboard clipboard = toolkit.getSystemClipboard();
@@ -119,51 +114,45 @@ public class NewXMLTreeView extends JTree {
 		return true;
 	}
 	
-	public class NodeContextMenu extends JPopupMenu implements MouseListener {
+	public class NodeContextMenu extends TreeContextMenu<DOMTreeNode> {
 		private static final long serialVersionUID = -6877543437500214909L;
-		
-		public TreePath clickedTreePath = null;
-		public DOMTreeNode clickedNode = null;
+
+		private JMenuItem collapseRemainingTree;
+		private JMenuItem copyNodeString;
+		private JMenuItem copyXMLPath;
 
 		public NodeContextMenu() {
-			add(createMenuItem("Collapse remaining tree",e->{
-				for (int row=getRowCount()-1; row>=0; --row)
-				collapseRow(row);
+			super(NewXMLTreeView.this);
+			
+			add(collapseRemainingTree = createMenuItem("Collapse remaining tree",e->{
+				for (int row=getRowCount()-1; row>=0; --row) collapseRow(row);
 				if (clickedTreePath!=null)
 					expandPath(clickedTreePath);
 			}));
-			add(createMenuItem("Copy Node String",e->{
+			add(copyNodeString =  createMenuItem("Copy Node String",e->{
 				if (clickedNode!=null)
 					copyToClipBoard(clickedNode.toString());
 			}));
-			add(createMenuItem("Copy XML Path",e->{
+			add(copyXMLPath = createMenuItem("Copy XML Path",e->{
 				if (clickedNode!=null)
 					copyToClipBoard(clickedNode.getXmlPath());
 			}));
 		}
 		
-		private JMenuItem createMenuItem(String title, ActionListener al) {
-			JMenuItem comp = new JMenuItem(title);
-			if (al!=null) comp.addActionListener(al);
-			return comp;
+		@Override
+		protected void updateMenuItems() {
+			collapseRemainingTree.setEnabled(clickedTreePath!=null);
+			copyNodeString.setEnabled(clickedNode!=null);
+			copyXMLPath.setEnabled(clickedNode!=null);
+		}
+
+		@Override
+		protected DOMTreeNode castToTreeNodeType(TreeNode treeNode) {
+			if (treeNode instanceof DOMTreeNode)
+				return (DOMTreeNode) treeNode;
+			return null;
 		}
 		
-		@Override public void mousePressed(MouseEvent e) {}
-		@Override public void mouseReleased(MouseEvent e) {}
-		@Override public void mouseEntered(MouseEvent e) {}
-		@Override public void mouseExited(MouseEvent e) {}
-		@Override public void mouseClicked(MouseEvent e) {
-			clickedTreePath = getPathForLocation(e.getX(), e.getY());
-			clickedNode = null;
-			if (clickedTreePath!=null) {
-				Object object = clickedTreePath.getLastPathComponent();
-				if (object instanceof DOMTreeNode)
-					clickedNode = (DOMTreeNode)object;
-			}
-			
-			if (e.getButton() == MouseEvent.BUTTON3)
-				show(NewXMLTreeView.this, e.getX(), e.getY());
-		}
 	}
 	
 	public static interface TreeNodeFactory {

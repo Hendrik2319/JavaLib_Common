@@ -419,7 +419,12 @@ public final class GUI {
 		disabler.add(actionCommand, list);
 		return list;
 	}
-
+	 
+    public static <AC> JCheckBox createCheckBox( String title, boolean preselected, ButtonGroup buttonGroup, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
+    	JCheckBox checkBox = createCheckBox( title, preselected, actionCommand, disabler, actionListener );
+    	if (buttonGroup!=null) buttonGroup.add(checkBox);
+    	return checkBox;
+    }
     public static <AC> JCheckBox createCheckBox( String title, boolean preselected, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
     	return addToDisabler(disabler, actionCommand, createCheckBox( title, preselected, actionCommand.toString(), actionListener ) );
 	}
