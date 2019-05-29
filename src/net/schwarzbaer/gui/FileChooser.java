@@ -21,7 +21,7 @@ public class FileChooser extends JFileChooser {
 		super("./");
 		this.fileTypeExt = fileTypeExt;
 		selectedFile = null;
-		setFileFilter( new FileNameExtensionFilter(fileTypeName+" (*."+fileTypeExt+")",fileTypeExt));
+		setFileFilter( new FileNameExtensionFilter(fileTypeName+" (*."+this.fileTypeExt+")",this.fileTypeExt));
 		setFileSelectionMode(JFileChooser.FILES_ONLY);
 		setMultiSelectionEnabled(false);
 	}
@@ -50,8 +50,8 @@ public class FileChooser extends JFileChooser {
 		selectedFile = super.getSelectedFile();
 		if (result==APPROVE_OPTION && selectedFile!=null) {
 			
-			if (addCorrectExt && !selectedFile.getName().endsWith("."+fileTypeExt))
-				selectedFile = new File( selectedFile.getParentFile(), selectedFile.getName()+"."+fileTypeExt );
+			if (addCorrectExt && !hasCorrectExt(selectedFile.getName()))
+				selectedFile = new File( selectedFile.getParentFile(), addCorrectExt(selectedFile.getName()) );
 			
 			if (selectedFile.exists() && !disableOverwriteWaring) {
 				if (selectedFile.isDirectory()) {
@@ -81,6 +81,18 @@ public class FileChooser extends JFileChooser {
 	
 	private boolean confirm(Component parent, String title, String message) {
 		return JOptionPane.showConfirmDialog(parent, message, title, JOptionPane.YES_NO_CANCEL_OPTION)==JOptionPane.YES_OPTION;
+	}
+	
+	public void suggestFileName(String fileName) {
+		if (addCorrectExt && hasCorrectExt(fileName))
+			fileName = addCorrectExt(fileName);
+		setSelectedFile(new File(getCurrentDirectory(),fileName));
+	}
+	private boolean hasCorrectExt(String fileName) {
+		return fileName.endsWith("."+fileTypeExt);
+	}
+	private String addCorrectExt(String fileName) {
+		return fileName+"."+fileTypeExt;
 	}
 	
 }
