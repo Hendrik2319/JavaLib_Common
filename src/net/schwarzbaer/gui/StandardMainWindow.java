@@ -51,8 +51,10 @@ public class StandardMainWindow extends JFrame implements WindowListener {
     
     public enum DefaultCloseOperation {
     	DO_NOTHING_ON_CLOSE(JFrame.DO_NOTHING_ON_CLOSE),
-    	DISPOSE_ON_CLOSE(JFrame.DISPOSE_ON_CLOSE),
-    	EXIT_ON_CLOSE(JFrame.EXIT_ON_CLOSE);
+    	HIDE_ON_CLOSE(JFrame.HIDE_ON_CLOSE), // (the default for JDialog and JFrame)  --> https://docs.oracle.com/javase/tutorial/uiswing/components/frame.html#windowevents
+    	DISPOSE_ON_CLOSE(JFrame.DISPOSE_ON_CLOSE), // (the default for JInternalFrame)  --> https://docs.oracle.com/javase/tutorial/uiswing/components/frame.html#windowevents
+    	EXIT_ON_CLOSE(JFrame.EXIT_ON_CLOSE),
+    	;
     	
     	public int operationID;
 		private DefaultCloseOperation(int operationID) {
