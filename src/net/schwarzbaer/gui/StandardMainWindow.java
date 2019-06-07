@@ -15,6 +15,7 @@ public class StandardMainWindow extends JFrame implements WindowListener {
 	
 	private final CloseListener closeListener;
 	private final DefaultCloseOperation defaultCloseOperation;
+	private boolean startHidden = false;
 
     public StandardMainWindow(String title, CloseListener closeListener, DefaultCloseOperation defaultCloseOperation ) throws HeadlessException {
         super(title);
@@ -25,7 +26,11 @@ public class StandardMainWindow extends JFrame implements WindowListener {
     public StandardMainWindow(String title, DefaultCloseOperation defaultCloseOperation ) throws HeadlessException { this(title,null,defaultCloseOperation); }
     public StandardMainWindow(String title) throws HeadlessException { this(title,null,DefaultCloseOperation.EXIT_ON_CLOSE); }
     public StandardMainWindow(            ) throws HeadlessException { this(""); }
-
+    
+    public void setStartHidden(boolean startHidden) {
+		this.startHidden = startHidden;
+    }
+    
     public void startGUI( JComponent contentPane ) {
         startGUI( contentPane, null, null );
     }
@@ -74,7 +79,7 @@ public class StandardMainWindow extends JFrame implements WindowListener {
 		pack();
         if (size!=null) setSize(size); else size = getSize();
         setLocationToScreenCenter(size, getGraphicsConfiguration().getBounds());
-        setVisible( true );
+        setVisible( !startHidden );
 	}
 	private void setLocationToScreenCenter(Dimension size, Rectangle screen) {
 		setLocation(
