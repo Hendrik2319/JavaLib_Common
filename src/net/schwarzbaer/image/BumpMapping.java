@@ -35,6 +35,10 @@ public class BumpMapping {
 		this.faceF = getF(new Vector3D(0,0,1));
 	}
 
+	public void setSun(double x, double y, double z) {
+		sun = new Vector3D(x,y,z).normalize();
+	}
+	
 	public Image renderBumpImage(int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
@@ -93,7 +97,7 @@ public class BumpMapping {
 	}
 	
 	public static class Vector3D {
-		double x,y,z;
+		public double x,y,z;
 
 		public Vector3D() { this(0,0,0); }
 		public Vector3D(double x, double y, double z) {
