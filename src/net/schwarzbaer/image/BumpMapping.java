@@ -6,63 +6,178 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 
 public class BumpMapping {
-	
-	private Vector3D sun;
-	private Color highlightColor;
-	private Color faceColor;
-	private Color lowlightColor;
-	private TransferFunction getNormal;
-	private double faceF;
 
-	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction getNormal) {
-		this(sun, highlightColor, faceColor, lowlightColor, (x,y,width,height)->getNormal.getNormal(x,y));
+	private static void Assert(boolean condition) {
+		if (!condition) throw new IllegalStateException();
+	}
+	
+	private Shading shading;
+	private TransferFunction normalFunction;
+	private ImageCache<Image> imageCache;
+
+	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
+		setShading(sun, highlightColor, faceColor, lowlightColor);
+		setNormalFunction(getNormal);
 	}
 	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionPolar getNormal) {
-		this(sun, highlightColor, faceColor, lowlightColor, (x,y,width,height)->{
+		setShading(sun, highlightColor, faceColor, lowlightColor);
+		setNormalFunction(getNormal);
+	}
+	public BumpMapping(boolean cachedImage) {
+		imageCache = !cachedImage?null:new ImageCache<Image>(this::renderImageUncached);
+	}
+
+	public void setNormalFunction(NormalFunctionCart normalFunction) {
+		setNormalFunction((x,y,width,height)->{
+			return normalFunction.getNormal(x,y);
+		});
+	}
+	public void setNormalFunction(NormalFunctionPolar normalFunction) {
+		setNormalFunction((x,y,width,height)->{
 			double y1 = y-height/2.0;
 			double x1 = x-width/2.0;
 			double w = Math.atan2(y1,x1);
 			double r = Math.sqrt(x1*x1+y1*y1);
-			return getNormal.getNormal(w,r);
+			return normalFunction.getNormal(w,r);
 		});
 	}
-	private BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, TransferFunction getNormal) {
-		this.sun = sun.normalize();
-		this.highlightColor = highlightColor;
-		this.faceColor = faceColor;
-		this.lowlightColor = lowlightColor;
-		this.getNormal = getNormal;
-		this.faceF = getF(new Vector3D(0,0,1));
+	public void setNormalFunction(TransferFunction normalFunction) {
+		this.normalFunction = normalFunction;
+		if (imageCache!=null) imageCache.resetImage();
+	}
+	public void setSun(double x, double y, double z) {
+		shading.setSun(x,y,z);
+		if (imageCache!=null) imageCache.resetImage();
+	}
+	public void setShading(Shading shading) {
+		this.shading = shading;
+		if (imageCache!=null) imageCache.resetImage();
+	}
+	public void setShading(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor) {
+		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 	}
 
-	public void setSun(double x, double y, double z) {
-		sun = new Vector3D(x,y,z).normalize();
+	public void setNormalImageShading() {
+		setShading(new Shading.NormalImage());
 	}
 	
-	public Image renderBumpImage(int width, int height) {
+	public Image renderImage(int width, int height) {
+		if (imageCache!=null) return imageCache.getImage(width, height);
+		return renderImageUncached(width, height);
+	}
+	public Image renderImageUncached(int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
-		int[] color = new int[4];
-		color[3] = 255;
 		for (int x=0; x<width; x++)
 			for (int y=0; y<height; y++) {
-				Vector3D normal = getNormal.getNormal(x,y,width,height);
-				color[0] = (int) Math.round(((normal.x+1)/2)*255);
-				color[1] = (int) Math.round(((normal.y+1)/2)*255);;
-				color[2] = (int) Math.round(((normal.z+1)/2)*255);;
-				raster.setPixel(x, y, color);
+				raster.setPixel(x, y, shading.getColor(normalFunction.getNormal(x,y,width,height)));
 			}
 		return image;
 	}
+	
+	public static abstract class Shading {
+		protected int[] color;
+		protected Vector3D sun;
+		
+		private Shading(Vector3D sun) {
+			this.sun = sun.normalize();
+			this.color = new int[4];
+		}
+		
+		public void setSun(double x, double y, double z) {
+			sun = new Vector3D(x,y,z).normalize();
+		}
 
-	public Image renderImage(int width, int height) {
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		WritableRaster raster = image.getRaster();
-		int[] color = new int[4];
-		color[3] = 255;
-		for (int x=0; x<width; x++)
-			for (int y=0; y<height; y++) {
-				double f = getF(getNormal.getNormal(x,y,width,height));
+		public abstract int[] getColor(Vector3D normal);
+		
+		public static class NormalImage extends Shading {
+			
+			public NormalImage() {
+				super(new Vector3D(0,0,1));
+			}
+
+			@Override
+			public int[] getColor(Vector3D normal) {
+				color[0] = (int) Math.round(((normal.x+1)/2)*255); Assert(0<=color[0] && color[0]<=255);
+				color[1] = (int) Math.round(((normal.y+1)/2)*255); Assert(0<=color[1] && color[1]<=255);
+				color[2] = (int) Math.round(((normal.z+1)/2)*255); Assert(0<=color[2] && color[2]<=255);
+				color[3] = 255;
+				return color;
+			}
+			
+		}
+		
+		public static class MaterialShading extends Shading {
+			
+			private Color diffuseColor;
+			private double minIntensity;
+			private Vector3D maxRefl;
+			private double phongExp;
+
+			public MaterialShading(Vector3D sun, Color diffuseColor, double minIntensity, double phongExp) {
+				super(sun);
+				this.diffuseColor = diffuseColor;
+				this.minIntensity = Math.max(0,Math.min(minIntensity,1));
+				this.phongExp = Math.max(0,phongExp);
+				maxRefl = new Vector3D(0,0,1).add(sun).normalize();
+			}
+			
+			@Override
+			public void setSun(double x, double y, double z) {
+				super.setSun(x, y, z);
+				maxRefl = new Vector3D(0,0,1).add(sun).normalize();
+				//System.out.println("maxRefl = "+maxRefl);
+			}
+			
+			@Override
+			public int[] getColor(Vector3D normal) {
+				color[3] = 255;
+				double intensityDiff = Math.max( minIntensity, getF(sun,normal) );
+				double intensityRefl = getF(maxRefl,normal);
+				intensityRefl = Math.max(0,Math.min(intensityRefl,1));
+				intensityRefl = Math.pow(intensityRefl,phongExp);
+				
+				color[0] = (int) Math.round(diffuseColor.getRed  ()*intensityDiff);
+				color[1] = (int) Math.round(diffuseColor.getGreen()*intensityDiff);
+				color[2] = (int) Math.round(diffuseColor.getBlue ()*intensityDiff);
+				
+				color[0] = (int) Math.round(255-(255-color[0])*(1-intensityRefl));
+				color[1] = (int) Math.round(255-(255-color[1])*(1-intensityRefl));
+				color[2] = (int) Math.round(255-(255-color[2])*(1-intensityRefl));
+				
+				return color;
+			}
+			
+			private double getF(Vector3D v1, Vector3D v2) {
+				return Math.max(0,v1.dotP(v2));
+			}
+			
+		}
+		
+		public static class GUISurfaceShading extends Shading {
+			private Color highlightColor;
+			private Color faceColor;
+			private Color lowlightColor;
+			private double faceF;
+			
+			public GUISurfaceShading(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor) {
+				super(sun);
+				this.highlightColor = highlightColor;
+				this.faceColor = faceColor;
+				this.lowlightColor = lowlightColor;
+				this.faceF = getF(new Vector3D(0,0,1));
+			}
+			
+			@Override
+			public void setSun(double x, double y, double z) {
+				super.setSun(x, y, z);
+				faceF = getF(new Vector3D(0,0,1));
+			}
+
+			@Override
+			public int[] getColor(Vector3D normal) {
+				color[3] = 255;
+				double f = getF(normal);
 				if (faceF<=f && f<=1) {
 					f = (f-faceF)/(1-faceF);
 					color[0] = (int) Math.round(highlightColor.getRed  ()*f + faceColor.getRed  ()*(1-f));
@@ -78,15 +193,16 @@ public class BumpMapping {
 					color[1] = 0;
 					color[2] = 0;
 				}
-				raster.setPixel(x, y, color);
+				return color;
 			}
-		return image;
-	}
-	private double getF(Vector3D normal) {
-		return Math.max(0,sun.dotP(normal));
+			
+			private double getF(Vector3D normal) {
+				return Math.max(0,sun.dotP(normal));
+			}
+		}
 	}
 	
-	public static interface NormalFunction {
+	public static interface NormalFunctionCart {
 		public Vector3D getNormal(int x, int y);
 	}
 	public static interface NormalFunctionPolar {
@@ -100,12 +216,16 @@ public class BumpMapping {
 		public double x,y,z;
 
 		public Vector3D() { this(0,0,0); }
-		public Vector3D(double x, double y, double z) {
+		public Vector3D(double x, double y, double z) { set(x,y,z); }
+		
+		public Vector3D add(Vector3D v) {
+			return new Vector3D(x+v.x,y+v.y,z+v.z);
+		}
+		public void set(double x, double y, double z) {
 			this.x = x;
 			this.y = y;
 			this.z = z;
 		}
-		
 		public double dotP(Vector3D v) {
 			return x*v.x+y*v.y+z*v.z;
 		}
@@ -129,5 +249,10 @@ public class BumpMapping {
 					vmax.z*f+vmin.z*(1-f)
 				);
 		}
+		@Override
+		public String toString() {
+			return "Vector3D [x=" + x + ", y=" + y + ", z=" + z + "]";
+		}
+		
 	}
 }
