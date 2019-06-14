@@ -16,11 +16,13 @@ public class BumpMapping {
 	private ImageCache<Image> imageCache;
 
 	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
-		setShading(sun, highlightColor, faceColor, lowlightColor);
+		this(false);
+		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
 	}
 	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionPolar getNormal) {
-		setShading(sun, highlightColor, faceColor, lowlightColor);
+		this(false);
+		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
 	}
 	public BumpMapping(boolean cachedImage) {
@@ -41,7 +43,7 @@ public class BumpMapping {
 			return normalFunction.getNormal(w,r);
 		});
 	}
-	public void setNormalFunction(TransferFunction normalFunction) {
+	private void setNormalFunction(TransferFunction normalFunction) {
 		this.normalFunction = normalFunction;
 		if (imageCache!=null) imageCache.resetImage();
 	}
@@ -53,13 +55,10 @@ public class BumpMapping {
 		this.shading = shading;
 		if (imageCache!=null) imageCache.resetImage();
 	}
-	public void setShading(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor) {
-		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
+	public void resetImage() {
+		if (imageCache!=null) imageCache.resetImage();
 	}
 
-	public void setNormalImageShading() {
-		setShading(new Shading.NormalImage());
-	}
 	
 	public Image renderImage(int width, int height) {
 		if (imageCache!=null) return imageCache.getImage(width, height);
@@ -109,19 +108,27 @@ public class BumpMapping {
 		
 		public static class MaterialShading extends Shading {
 			
-			private Color diffuseColor;
+			private Color materialColor;
 			private double minIntensity;
-			private Vector3D maxRefl;
 			private double phongExp;
+			private Vector3D maxRefl;
 
-			public MaterialShading(Vector3D sun, Color diffuseColor, double minIntensity, double phongExp) {
+			public MaterialShading(Vector3D sun, Color materialColor, double minIntensity, double phongExp) {
 				super(sun);
-				this.diffuseColor = diffuseColor;
+				this.materialColor = materialColor;
 				this.minIntensity = Math.max(0,Math.min(minIntensity,1));
 				this.phongExp = Math.max(0,phongExp);
 				maxRefl = new Vector3D(0,0,1).add(sun).normalize();
 			}
 			
+			public Color getMaterialColor() { return materialColor; }
+			public void  setMaterialColor(Color color) { this.materialColor = color; }
+
+			public double getMinIntensity() { return minIntensity; }
+			public double getPhongExp    () { return phongExp    ; }
+			public void setMinIntensity(double minIntensity) { this.minIntensity = minIntensity; }
+			public void setPhongExp    (double phongExp    ) { this.phongExp     = phongExp    ; }
+
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
@@ -137,9 +144,9 @@ public class BumpMapping {
 				intensityRefl = Math.max(0,Math.min(intensityRefl,1));
 				intensityRefl = Math.pow(intensityRefl,phongExp);
 				
-				color[0] = (int) Math.round(diffuseColor.getRed  ()*intensityDiff);
-				color[1] = (int) Math.round(diffuseColor.getGreen()*intensityDiff);
-				color[2] = (int) Math.round(diffuseColor.getBlue ()*intensityDiff);
+				color[0] = (int) Math.round(materialColor.getRed  ()*intensityDiff);
+				color[1] = (int) Math.round(materialColor.getGreen()*intensityDiff);
+				color[2] = (int) Math.round(materialColor.getBlue ()*intensityDiff);
 				
 				color[0] = (int) Math.round(255-(255-color[0])*(1-intensityRefl));
 				color[1] = (int) Math.round(255-(255-color[1])*(1-intensityRefl));
@@ -157,17 +164,25 @@ public class BumpMapping {
 		public static class GUISurfaceShading extends Shading {
 			private Color highlightColor;
 			private Color faceColor;
-			private Color lowlightColor;
+			private Color shadowColor;
 			private double faceF;
 			
-			public GUISurfaceShading(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor) {
+			public GUISurfaceShading(Vector3D sun, Color highlightColor, Color faceColor, Color shadowColor) {
 				super(sun);
 				this.highlightColor = highlightColor;
 				this.faceColor = faceColor;
-				this.lowlightColor = lowlightColor;
+				this.shadowColor = shadowColor;
 				this.faceF = getF(new Vector3D(0,0,1));
 			}
 			
+			public Color getHighlightColor() { return highlightColor; }
+			public Color getFaceColor     () { return faceColor; }
+			public Color getShadowColor   () { return shadowColor; }
+
+			public void setHighlightColor(Color color) { this.highlightColor = color; }
+			public void setFaceColor     (Color color) { this.faceColor      = color; }
+			public void setShadowColor   (Color color) { this.shadowColor    = color; }
+
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
@@ -185,9 +200,9 @@ public class BumpMapping {
 					color[2] = (int) Math.round(highlightColor.getBlue ()*f + faceColor.getBlue ()*(1-f));
 				} else if (0<=f && f<faceF) {
 					f = f/faceF;
-					color[0] = (int) Math.round(faceColor.getRed  ()*f + lowlightColor.getRed  ()*(1-f));
-					color[1] = (int) Math.round(faceColor.getGreen()*f + lowlightColor.getGreen()*(1-f));
-					color[2] = (int) Math.round(faceColor.getBlue ()*f + lowlightColor.getBlue ()*(1-f));
+					color[0] = (int) Math.round(faceColor.getRed  ()*f + shadowColor.getRed  ()*(1-f));
+					color[1] = (int) Math.round(faceColor.getGreen()*f + shadowColor.getGreen()*(1-f));
+					color[2] = (int) Math.round(faceColor.getBlue ()*f + shadowColor.getBlue ()*(1-f));
 				} else {
 					color[0] = 255;
 					color[1] = 0;
