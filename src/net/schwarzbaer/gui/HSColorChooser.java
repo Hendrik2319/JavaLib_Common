@@ -15,6 +15,7 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.Icon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
@@ -31,6 +32,17 @@ public final class HSColorChooser {
 	public static final StandardDialog.Position RIGHT_OF_PARENT = StandardDialog.Position.RIGHT_OF_PARENT;
 	public static final StandardDialog.Position BELOW_PARENT    = StandardDialog.Position.BELOW_PARENT;
 	
+	public static JButton createColorbutton(Color initialColor, Window dialogParent, String dialogTitle, StandardDialog.Position dialogPosition, ColorReceiver colorReceiver) {
+		ColorButton button = new ColorButton(initialColor);
+		button.addActionListener(e->{
+			Color color = showDialog(dialogParent, dialogTitle, button.getColor(), dialogPosition);
+			if (color!=null) {
+				button.setColor(color);
+				colorReceiver.colorChanged(color);
+			}
+		});
+		return button;
+	}
 	public static Color showDialog(Window parent, String title, Color color, StandardDialog.Position position) {
 		StandardDialog dlgFenster = new StandardDialog(parent, title);
 		MainPanel mainPanel = new MainPanel(color, dlgFenster, null);
@@ -68,7 +80,7 @@ public final class HSColorChooser {
 		private Color newColor;
 		
 		private Color[] userdefinedColors = new Color[] { null,null,null,null,null,null,null,null }; 
-		private ColorButton[] userColorButtons; 
+		private ColorToggleButton[] userColorButtons; 
 		
 		private ColorReceiver colorReceiver;
 		private StandardDialog dialog;
@@ -175,7 +187,7 @@ public final class HSColorChooser {
 			sliderDual.setMinimumSize(new Dimension(100,100));
 			disabler.add(ActionCommands.other, sliderDual);
 			
-			userColorButtons = new ColorButton[userdefinedColors.length];
+			userColorButtons = new ColorToggleButton[userdefinedColors.length];
 			ButtonGroup buttonGroup_colorList = new ButtonGroup();
 			JPanel userColorListPanel = new JPanel(new GridLayout(1,0,3,3));
 			//userColorListPanel.setBorder(BorderFactory.createLoweredBevelBorder());
@@ -223,8 +235,8 @@ public final class HSColorChooser {
 			add(lowerPanel,BorderLayout.SOUTH);
 		}
 
-		private ColorButton createColorButton(Color color, ButtonGroup buttonGroup, Dimension prefSize) {
-			ColorButton colorButton = new ColorButton(color);
+		private ColorToggleButton createColorButton(Color color, ButtonGroup buttonGroup, Dimension prefSize) {
+			ColorToggleButton colorButton = new ColorToggleButton(color);
 			colorButton.setPreferredSize(prefSize);
 			buttonGroup.add(colorButton);
 			disabler.add(ActionCommands.other, colorButton);
@@ -306,13 +318,78 @@ public final class HSColorChooser {
 		}
 	}
 	
-	private static class ColorButton extends JToggleButton {
-		private static final long serialVersionUID = 7759027446832437901L;
+	private static class ColorButtonIcon implements Icon {
 		private static final Color BORDER_COLOR = new Color(128,128,128);
+
+		private int fakeWidth;
+		private int fakeHeight;
+		private int realWidth;
+		private int realHeight;
+		private Color color;
+	
+		public ColorButtonIcon(Color color) {
+			this.color = color;
+			this.realWidth = 10;
+			this.realHeight = 10;
+			this.fakeWidth = 10;
+			this.fakeHeight = 10;
+		}
+	
+		public void  setColor(Color color) { this.color = color; }
+		public Color getColor()            { return color; }
+
+		public void setMastersSize(int masterWidth, int masterHeight) {
+			this.realWidth  = masterWidth -8;
+			this.realHeight = masterHeight-8;
+		}
+	
+		@Override public int getIconWidth () { return fakeWidth; }
+		@Override public int getIconHeight() { return fakeHeight; }
+	
+		@Override
+		public void paintIcon(Component c, Graphics g, int x, int y) {
+			int realX = x+(fakeWidth -realWidth )/2;
+			int realY = y+(fakeHeight-realHeight)/2;
+			if (color!=null && c.isEnabled()) {
+				g.setColor(color);
+				g.fillRect(realX, realY, realWidth, realHeight);
+			}
+			g.setColor(c.isEnabled()?BORDER_COLOR:Color.GRAY);
+			g.drawRect(realX, realY, realWidth-1, realHeight-1);
+		}
+		
+	}
+
+	private static class ColorButton extends JButton {
+		private static final long serialVersionUID = -9038988600993272882L;
 		
 		private ColorButtonIcon icon;
 
 		public ColorButton(Color color) {
+			icon = new ColorButtonIcon(color);
+			setIcon(icon);
+		}
+		
+		public Color getColor() {
+			return icon.getColor();
+		}
+		public void setColor(Color color) {
+			icon.setColor(color);
+			repaint();
+		}
+
+		@Override public void setBounds(int x, int y, int width, int height) { icon.setMastersSize(  width,   height); super.setBounds(x, y, width, height); }
+		@Override public void setBounds(Rectangle r                        ) { icon.setMastersSize(r.width, r.height); super.setBounds(r                  ); }
+		@Override public void setSize  (Dimension d                        ) { icon.setMastersSize(d.width, d.height); super.setSize  (d                  ); }
+		@Override public void setSize  (              int width, int height) { icon.setMastersSize(  width,   height); super.setSize  (      width, height); }
+	}
+
+	private static class ColorToggleButton extends JToggleButton {
+		private static final long serialVersionUID = 7759027446832437901L;
+		
+		private ColorButtonIcon icon;
+
+		public ColorToggleButton(Color color) {
 			icon = new ColorButtonIcon(color);
 			setIcon(icon);
 		}
@@ -326,47 +403,5 @@ public final class HSColorChooser {
 		@Override public void setBounds(Rectangle r                        ) { icon.setMastersSize(r.width, r.height); super.setBounds(r                  ); }
 		@Override public void setSize  (Dimension d                        ) { icon.setMastersSize(d.width, d.height); super.setSize  (d                  ); }
 		@Override public void setSize  (              int width, int height) { icon.setMastersSize(  width,   height); super.setSize  (      width, height); }
-
-		private class ColorButtonIcon implements Icon {
-
-			private int fakeWidth;
-			private int fakeHeight;
-			private int realWidth;
-			private int realHeight;
-			private Color color;
-
-			public ColorButtonIcon(Color color) {
-				this.color = color;
-				this.realWidth = 10;
-				this.realHeight = 10;
-				this.fakeWidth = 10;
-				this.fakeHeight = 10;
-			}
-
-			public void setColor(Color color) {
-				this.color = color;
-			}
-
-			public void setMastersSize(int masterWidth, int masterHeight) {
-				this.realWidth  = masterWidth -8;
-				this.realHeight = masterHeight-8;
-			}
-
-			@Override public int getIconWidth () { return fakeWidth; }
-			@Override public int getIconHeight() { return fakeHeight; }
-
-			@Override
-			public void paintIcon(Component c, Graphics g, int x, int y) {
-				int realX = x+(fakeWidth -realWidth )/2;
-				int realY = y+(fakeHeight-realHeight)/2;
-				if (color!=null && isEnabled()) {
-					g.setColor(color);
-					g.fillRect(realX, realY, realWidth, realHeight);
-				}
-				g.setColor(isEnabled()?BORDER_COLOR:Color.GRAY);
-				g.drawRect(realX, realY, realWidth-1, realHeight-1);
-			}
-			
-		}
 	}
 }
