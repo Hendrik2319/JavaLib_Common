@@ -2,8 +2,10 @@ package net.schwarzbaer.gui;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Insets;
 import java.awt.Rectangle;
 import javax.swing.JComponent;
+import javax.swing.border.Border;
 
 /**
  *
@@ -28,11 +30,23 @@ public abstract class Canvas extends JComponent {
         this.withDebugOutput = false;
     }
     protected void sizeChanged( int width, int height ) {}
-    protected abstract void paintCanvas(Graphics g, int width, int height );
+    protected abstract void paintCanvas(Graphics g, int x, int y, int width, int height );
 
     @Override protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        paintCanvas( g, width, height );
+		int x = 0;
+		int y = 0;
+		int canvasWidth = width;
+		int canvasHeight = height;
+		Border border = getBorder();
+		if (border!=null) {
+			Insets borderInsets = border.getBorderInsets(this);
+			x = borderInsets.left;
+			y = borderInsets.top;
+			canvasWidth  -= borderInsets.left+borderInsets.right ;
+			canvasHeight -= borderInsets.top +borderInsets.bottom;
+		}
+        paintCanvas( g, x,y, canvasWidth,canvasHeight );
     }
     
     public void setPreferredSize( int preferredWidth, int preferredHeight ) {
