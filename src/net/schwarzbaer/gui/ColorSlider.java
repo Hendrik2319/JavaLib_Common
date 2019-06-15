@@ -35,61 +35,61 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	public void setValue( float fH, float fV ) { model.setValue(fH, fV); repaint(); }
 	
 	@Override
-	protected void paintCanvas(Graphics g, int width, int height) {
+	protected void paintCanvas(Graphics g, int x, int y, int width, int height) {
 		switch (type) {
-		case VERTICAL  : paintV(g,width,height); break;
-		case HORIZONTAL: paintH(g,width,height); break;
-		case DUAL      : paintD(g,width,height); break;
+		case VERTICAL  : paintV(g,x,y,width,height); break;
+		case HORIZONTAL: paintH(g,x,y,width,height); break;
+		case DUAL      : paintD(g,x,y,width,height); break;
 		default:
 			g.setColor(Color.GREEN);
-			g.fillRect(0, 0, width, height);
+			g.fillRect(x, y, width, height);
 		}
 	}
 
-	private void paintV(Graphics g, int width, int height) {
+	private void paintV(Graphics g, int x, int y, int width, int height) {
 		if (!isEnabled()) {
 			g.setColor(Color.GRAY);
-			g.fillRect(3, 0, width-7, height);
+			g.fillRect(x+3, y+0, width-7, height);
 		} else
-			for (int y=0; y<height; y++) {
-				g.setColor(model.calcColor(calcFraction(height-1,y,0)));
-				g.drawLine(3,y,width-4,y);
+			for (int y1=0; y1<height; y1++) {
+				g.setColor(model.calcColor(calcFraction(height-1,y1,0)));
+				g.drawLine(x+3,y+y1,x+width-4,y+y1);
 			}
-		int y = Math.round((1-model.getValue())*(height-1));
+		int y1 = Math.round((1-model.getValue())*(height-1));
 		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
-		g.drawLine(0,y,width-1,y);
+		g.drawLine(x,y+y1,x+width-1,y+y1);
 	}
 
-	private void paintH(Graphics g, int width, int height) {
+	private void paintH(Graphics g, int x, int y, int width, int height) {
 		if (!isEnabled()) {
 			g.setColor(Color.GRAY);
-			g.fillRect(0, 3, width, height-7);
+			g.fillRect(x, y+3, width, height-7);
 		} else
-			for (int x=0; x<width; x++) {
-				g.setColor(model.calcColor(calcFraction(0,x,width-1)));
-				g.drawLine(x,3,x,height-4);
+			for (int x1=0; x1<width; x1++) {
+				g.setColor(model.calcColor(calcFraction(0,x1,width-1)));
+				g.drawLine(x+x1,y+3,x+x1,y+height-4);
 			}
-		int x = Math.round(model.getValue()*(width-1));
+		int x1 = Math.round(model.getValue()*(width-1));
 		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
-		g.drawLine(x,0,x,height-1);
+		g.drawLine(x+x1,y,x+x1,y+height-1);
 	}
 
-	private void paintD(Graphics g, int width, int height) {
+	private void paintD(Graphics g, int x, int y, int width, int height) {
 		if (!isEnabled()) {
 			g.setColor(Color.GRAY);
-			g.fillRect(3, 3, width-6, height-6);
+			g.fillRect(x+3, y+3, width-6, height-6);
 		} else
-			for (int x=3; x<width-3; x++) {
-				model.prepareColorH(calcFraction(3,x,width-4));
-				for (int y=3; y<height-3; y++) {
-					g.setColor(model.calcColorVFromPreparedColor(calcFraction(height-4,y,3)));
-					g.drawLine(x,y,x,y);
+			for (int x1=3; x1<width-3; x1++) {
+				model.prepareColorH(calcFraction(3,x1,width-4));
+				for (int y1=3; y1<height-3; y1++) {
+					g.setColor(model.calcColorVFromPreparedColor(calcFraction(height-4,y1,3)));
+					g.drawLine(x+x1,y+y1,x+x1,y+y1);
 				}
 			}
-		int x = Math.round(   model.getValueH() *(width -7))+3;
-		int y = Math.round((1-model.getValueV())*(height-7))+3;
+		int x1 = Math.round(   model.getValueH() *(width -7))+3;
+		int y1 = Math.round((1-model.getValueV())*(height-7))+3;
 		g.setColor(isEnabled()?Color.BLACK:Color.DARK_GRAY);
-		g.drawOval(x-3, y-3, 6, 6);
+		g.drawOval(x+x1-3, y+y1-3, 6, 6);
 	}
 
 	private float calcFraction(int minV, int v, int maxV) {
