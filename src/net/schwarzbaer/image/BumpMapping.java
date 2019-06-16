@@ -12,15 +12,15 @@ public class BumpMapping {
 	}
 	
 	private Shading shading;
-	private TransferFunction normalFunction;
+	private NormalFunction normalFunction;
 	private ImageCache<Image> imageCache;
 
-	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
+	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
 		this(false);
 		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
 	}
-	public BumpMapping(Vector3D sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionPolar getNormal) {
+	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionPolar getNormal) {
 		this(false);
 		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
@@ -43,7 +43,7 @@ public class BumpMapping {
 			return normalFunction.getNormal(w,r);
 		});
 	}
-	private void setNormalFunction(TransferFunction normalFunction) {
+	public void setNormalFunction(NormalFunction normalFunction) {
 		this.normalFunction = normalFunction;
 		if (imageCache!=null) imageCache.resetImage();
 	}
@@ -76,27 +76,27 @@ public class BumpMapping {
 	
 	public static abstract class Shading {
 		protected int[] color;
-		protected Vector3D sun;
+		protected Normal sun;
 		
-		private Shading(Vector3D sun) {
+		private Shading(Normal sun) {
 			this.sun = sun.normalize();
 			this.color = new int[4];
 		}
 		
 		public void setSun(double x, double y, double z) {
-			sun = new Vector3D(x,y,z).normalize();
+			sun = new Normal(x,y,z).normalize();
 		}
 
-		public abstract int[] getColor(Vector3D normal);
+		public abstract int[] getColor(Normal normal);
 		
 		public static class NormalImage extends Shading {
 			
 			public NormalImage() {
-				super(new Vector3D(0,0,1));
+				super(new Normal(0,0,1));
 			}
 
 			@Override
-			public int[] getColor(Vector3D normal) {
+			public int[] getColor(Normal normal) {
 				color[0] = (int) Math.round(((normal.x+1)/2)*255); Assert(0<=color[0] && color[0]<=255);
 				color[1] = (int) Math.round(((normal.y+1)/2)*255); Assert(0<=color[1] && color[1]<=255);
 				color[2] = (int) Math.round(((normal.z+1)/2)*255); Assert(0<=color[2] && color[2]<=255);
@@ -111,14 +111,14 @@ public class BumpMapping {
 			private Color materialColor;
 			private double minIntensity;
 			private double phongExp;
-			private Vector3D maxRefl;
+			private Normal maxRefl;
 
-			public MaterialShading(Vector3D sun, Color materialColor, double minIntensity, double phongExp) {
+			public MaterialShading(Normal sun, Color materialColor, double minIntensity, double phongExp) {
 				super(sun);
 				this.materialColor = materialColor;
 				this.minIntensity = Math.max(0,Math.min(minIntensity,1));
 				this.phongExp = Math.max(0,phongExp);
-				maxRefl = new Vector3D(0,0,1).add(sun).normalize();
+				maxRefl = new Normal(0,0,1).add(sun).normalize();
 			}
 			
 			public Color getMaterialColor() { return materialColor; }
@@ -132,21 +132,22 @@ public class BumpMapping {
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
-				maxRefl = new Vector3D(0,0,1).add(sun).normalize();
+				maxRefl = new Normal(0,0,1).add(sun).normalize();
 				//System.out.println("maxRefl = "+maxRefl);
 			}
 			
 			@Override
-			public int[] getColor(Vector3D normal) {
+			public int[] getColor(Normal normal) {
 				color[3] = 255;
 				double intensityDiff = Math.max( minIntensity, getF(sun,normal) );
 				double intensityRefl = getF(maxRefl,normal);
 				intensityRefl = Math.max(0,Math.min(intensityRefl,1));
 				intensityRefl = Math.pow(intensityRefl,phongExp);
 				
-				color[0] = (int) Math.round(materialColor.getRed  ()*intensityDiff);
-				color[1] = (int) Math.round(materialColor.getGreen()*intensityDiff);
-				color[2] = (int) Math.round(materialColor.getBlue ()*intensityDiff);
+				Color c = normal.color==null?materialColor:normal.color;
+				color[0] = (int) Math.round(c.getRed  ()*intensityDiff);
+				color[1] = (int) Math.round(c.getGreen()*intensityDiff);
+				color[2] = (int) Math.round(c.getBlue ()*intensityDiff);
 				
 				color[0] = (int) Math.round(255-(255-color[0])*(1-intensityRefl));
 				color[1] = (int) Math.round(255-(255-color[1])*(1-intensityRefl));
@@ -155,7 +156,7 @@ public class BumpMapping {
 				return color;
 			}
 			
-			private double getF(Vector3D v1, Vector3D v2) {
+			private double getF(Normal v1, Normal v2) {
 				return Math.max(0,v1.dotP(v2));
 			}
 			
@@ -167,12 +168,12 @@ public class BumpMapping {
 			private Color shadowColor;
 			private double faceF;
 			
-			public GUISurfaceShading(Vector3D sun, Color highlightColor, Color faceColor, Color shadowColor) {
+			public GUISurfaceShading(Normal sun, Color highlightColor, Color faceColor, Color shadowColor) {
 				super(sun);
 				this.highlightColor = highlightColor;
 				this.faceColor = faceColor;
 				this.shadowColor = shadowColor;
-				this.faceF = getF(new Vector3D(0,0,1));
+				this.faceF = getF(new Normal(0,0,1));
 			}
 			
 			public Color getHighlightColor() { return highlightColor; }
@@ -186,11 +187,11 @@ public class BumpMapping {
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
-				faceF = getF(new Vector3D(0,0,1));
+				faceF = getF(new Normal(0,0,1));
 			}
 
 			@Override
-			public int[] getColor(Vector3D normal) {
+			public int[] getColor(Normal normal) {
 				color[3] = 255;
 				double f = getF(normal);
 				if (faceF<=f && f<=1) {
@@ -211,54 +212,57 @@ public class BumpMapping {
 				return color;
 			}
 			
-			private double getF(Vector3D normal) {
+			private double getF(Normal normal) {
 				return Math.max(0,sun.dotP(normal));
 			}
 		}
 	}
 	
 	public static interface NormalFunctionCart {
-		public Vector3D getNormal(int x, int y);
+		public Normal getNormal(int x, int y);
 	}
 	public static interface NormalFunctionPolar {
-		public Vector3D getNormal(double w, double r);
+		public Normal getNormal(double w, double r);
 	}
-	private static interface TransferFunction {
-		public Vector3D getNormal(int x, int y, int width, int height);
+	public static interface NormalFunction {
+		public Normal getNormal(int x, int y, int width, int height);
 	}
 	
-	public static class Vector3D {
+	public static class Normal {
 		public double x,y,z;
+		public final Color color;
 
-		public Vector3D() { this(0,0,0); }
-		public Vector3D(double x, double y, double z) { set(x,y,z); }
+		public Normal() { this(0,0,0); }
+		public Normal(double x, double y, double z) { this(x,y,z,null); }
+		public Normal(double x, double y, double z, Color color) { this.color=color; set(x,y,z);  }
 		
-		public Vector3D add(Vector3D v) {
-			return new Vector3D(x+v.x,y+v.y,z+v.z);
+		public Normal add(Normal v) {
+			return new Normal(x+v.x,y+v.y,z+v.z,color);
 		}
 		public void set(double x, double y, double z) {
 			this.x = x;
 			this.y = y;
 			this.z = z;
 		}
-		public double dotP(Vector3D v) {
+		public double dotP(Normal v) {
 			return x*v.x+y*v.y+z*v.z;
 		}
-		public Vector3D normalize() { return mul(1/getLength()); }
-		public Vector3D mul(double d) { return new Vector3D(x*d,y*d,z*d); }
+		public Normal normalize() { return mul(1/getLength()); }
+		public Normal mul(double d) { return new Normal(x*d,y*d,z*d,color); }
 		public double getLength() { return Math.sqrt(x*x+y*y+z*z); }
 		
-		public Vector3D rotateZ(double w) {
-			return new Vector3D(
+		public Normal rotateZ(double w) {
+			return new Normal(
 					x*Math.cos(w)-y*Math.sin(w),
 					x*Math.sin(w)+y*Math.cos(w),
-					z
+					z,
+					color
 			);
 		}
 		
-		public static Vector3D blend(double f, double fmin, double fmax, Vector3D vmin, Vector3D vmax) {
+		public static Normal blend(double f, double fmin, double fmax, Normal vmin, Normal vmax) {
 			f = (f-fmin)/(fmax-fmin); 
-			return new Vector3D(
+			return new Normal(
 					vmax.x*f+vmin.x*(1-f),
 					vmax.y*f+vmin.y*(1-f),
 					vmax.z*f+vmin.z*(1-f)
