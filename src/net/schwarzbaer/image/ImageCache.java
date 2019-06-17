@@ -29,11 +29,15 @@ public class ImageCache<I extends Image> {
 	}
 
 	public I getImage(int width, int height) {
-		if (image==null || this.width!=width || this.height!=height) {
-			image = imageSource.getImage(width, height);
+		if (!hasImage(width, height)) {
+			this.image = imageSource.getImage(width, height);
 			this.width = width;
 			this.height = height;
 		}
 		return image;
+	}
+
+	public boolean hasImage(int width, int height) {
+		return image!=null && this.width==width && this.height==height;
 	}
 }

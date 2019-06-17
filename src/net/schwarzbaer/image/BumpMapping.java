@@ -1,7 +1,6 @@
 package net.schwarzbaer.image;
 
 import java.awt.Color;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 
@@ -13,7 +12,7 @@ public class BumpMapping {
 	
 	private Shading shading;
 	private NormalFunction normalFunction;
-	private ImageCache<Image> imageCache;
+	private ImageCache<BufferedImage> imageCache;
 
 	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
 		this(false);
@@ -26,7 +25,7 @@ public class BumpMapping {
 		setNormalFunction(getNormal);
 	}
 	public BumpMapping(boolean cachedImage) {
-		imageCache = !cachedImage?null:new ImageCache<Image>(this::renderImageUncached);
+		imageCache = !cachedImage?null:new ImageCache<>(this::renderImageUncached);
 	}
 
 	public void setNormalFunction(NormalFunctionCart normalFunction) {
@@ -60,11 +59,11 @@ public class BumpMapping {
 	}
 
 	
-	public Image renderImage(int width, int height) {
+	public BufferedImage renderImage(int width, int height) {
 		if (imageCache!=null) return imageCache.getImage(width, height);
 		return renderImageUncached(width, height);
 	}
-	public Image renderImageUncached(int width, int height) {
+	public BufferedImage renderImageUncached(int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
 		for (int x=0; x<width; x++)
