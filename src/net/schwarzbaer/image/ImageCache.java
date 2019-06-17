@@ -24,6 +24,14 @@ public class ImageCache<I extends Image> {
 		this.image = null;
 	}
 
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
 	public static interface ImageSource<I> {
 		public I getImage(int width, int height);
 	}

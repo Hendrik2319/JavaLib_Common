@@ -28,6 +28,13 @@ public class BumpMapping {
 		imageCache = !cachedImage?null:new ImageCache<>(this::renderImageUncached);
 	}
 
+	public void setNormalMap(Normal[][] normalMap) {
+		setNormalFunction((x,y,width,height)->{
+			if (x<0 || x>=normalMap   .length) return new Normal(0,0,1);
+			if (y<0 || y>=normalMap[x].length) return new Normal(0,0,1);
+			return normalMap[x][y];
+		});
+	}
 	public void setNormalFunction(NormalFunctionCart normalFunction) {
 		setNormalFunction((x,y,width,height)->{
 			return normalFunction.getNormal(x,y);
@@ -49,6 +56,11 @@ public class BumpMapping {
 	public void setSun(double x, double y, double z) {
 		shading.setSun(x,y,z);
 		if (imageCache!=null) imageCache.resetImage();
+	}
+	public void getSun(Normal sunOut) {
+		sunOut.x = shading.sun.x;
+		sunOut.y = shading.sun.y;
+		sunOut.z = shading.sun.z;
 	}
 	public void setShading(Shading shading) {
 		this.shading = shading;
