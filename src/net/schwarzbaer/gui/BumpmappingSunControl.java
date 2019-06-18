@@ -122,7 +122,7 @@ public class BumpmappingSunControl extends Canvas implements MouseInputListener 
 	
 	@Override public void mouseClicked (MouseEvent e) {}
 	@Override public void mousePressed (MouseEvent e) { setPoint(e.getX(),e.getY()); }
-	@Override public void mouseReleased(MouseEvent e) { isAdjusting=false; }
+	@Override public void mouseReleased(MouseEvent e) { isAdjusting=false; setPoint(e.getX(),e.getY()); }
 	@Override public void mouseEntered (MouseEvent e) {}
 	@Override public void mouseExited  (MouseEvent e) {}
 	
