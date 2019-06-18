@@ -23,11 +23,13 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 
 	public static void runWithProgressDialog(Window parent, String title, int minWidth, Consumer<ProgressDialog> useProgressDialog) {
 		ProgressDialog pd = new ProgressDialog(parent,title,minWidth);
-		new Thread(()->{
+		Thread thread = new Thread(()->{
 			pd.waitUntilDialogIsVisible();
 			useProgressDialog.accept(pd);
 			pd.closeDialog();
-		}).start();
+		});
+		pd.addCancelListener(thread::interrupt);
+		thread.start();
 		pd.showDialog();
 	}
 	
