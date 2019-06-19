@@ -388,7 +388,7 @@ public class Tables {
 	
 		private void setColumnWidth(TableColumn column, int min, int max, int preferred, int width) {
 			if (min>=0) column.setMinWidth(min);
-			if (max>=0) column.setMinWidth(max);
+			if (max>=0) column.setMaxWidth(max);
 			if (preferred>=0) column.setPreferredWidth(preferred);
 			if (width    >=0) column.setWidth(width);
 		}
