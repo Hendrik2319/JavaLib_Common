@@ -43,13 +43,28 @@ public final class HSColorChooser {
 		});
 		return button;
 	}
+	
+	public static class ColorDialog extends StandardDialog {
+		private static final long serialVersionUID = 8813919228546598198L;
+		
+		private MainPanel mainPanel;
+
+		public ColorDialog(Window parent, String title, Color color) {
+			super(parent, title);
+			mainPanel = new MainPanel(color, this, null);
+			createGUI(mainPanel);
+			setSizeAsMinSize();
+		}
+		
+		public Color getColor() {
+			return mainPanel.dlgResultColor;
+		}
+	}
+	
 	public static Color showDialog(Window parent, String title, Color color, StandardDialog.Position position) {
-		StandardDialog dlgFenster = new StandardDialog(parent, title);
-		MainPanel mainPanel = new MainPanel(color, dlgFenster, null);
-		dlgFenster.createGUI(mainPanel);
-		dlgFenster.setSizeAsMinSize();
+		ColorDialog dlgFenster = new ColorDialog(parent, title, color);
 		dlgFenster.showDialog(position);
-		return mainPanel.newColor;
+		return dlgFenster.getColor();
 	}
 	
 	public static MainPanel createPanel(Color color, ColorReceiver colorReceiver) {
@@ -77,7 +92,8 @@ public final class HSColorChooser {
 		private ColorCompSlider sliderV;
 		private ColorCompSlider sliderDual;
 		private Color oldColor;
-		private Color newColor;
+		private Color currentColor;
+		private Color dlgResultColor;
 		
 		private Color[] userdefinedColors = new Color[] { null,null,null,null,null,null,null,null }; 
 		private ColorToggleButton[] userColorButtons; 
@@ -102,17 +118,14 @@ public final class HSColorChooser {
 
 		public void setInitialColor(Color color) {
 			setColor(color);
-			setOldColor(color);
-		}
-		
-		private void setOldColor(Color color) {
 			this.oldColor = color;
+			this.dlgResultColor = null;
 			oldColorField.setBackground(color);
 		}
-	
+		
 		private void setColor(Color color) {
 			if (colorReceiver!=null) colorReceiver.colorChanged(color);
-			this.newColor = color;
+			this.currentColor = color;
 			setExamples();
 			int blue  = color.getBlue();
 			int green = color.getGreen();
@@ -129,11 +142,11 @@ public final class HSColorChooser {
 
 		private void setExamples() {
 			oldColorField  .setBackground(isEnabled()?oldColor:null);
-			colForegrField .setForeground(isEnabled()?newColor:null);
-			colForegrFieldW.setForeground(isEnabled()?newColor:null);
+			colForegrField .setForeground(isEnabled()?currentColor:null);
+			colForegrFieldW.setForeground(isEnabled()?currentColor:null);
 			colForegrFieldW.setBackground(isEnabled()?Color.WHITE:null);
-			colBackgrField .setBackground(isEnabled()?newColor:null);
-			colBackgrFieldW.setBackground(isEnabled()?newColor:null);
+			colBackgrField .setBackground(isEnabled()?currentColor:null);
+			colBackgrFieldW.setBackground(isEnabled()?currentColor:null);
 			colBackgrFieldW.setForeground(isEnabled()?Color.WHITE:null);
 		}
 		
@@ -263,12 +276,13 @@ public final class HSColorChooser {
 			switch(actionCommand) {
 			case Ok:
 				if (dialog!=null) {
+					dlgResultColor = currentColor;
 					dialog.closeDialog();
 				}
 				break;
 			case Cancel:
 				if (dialog!=null) {
-					newColor = null;
+					dlgResultColor = null;
 					dialog.closeDialog();
 				}
 				break;
@@ -278,15 +292,15 @@ public final class HSColorChooser {
 			case SetUserColor: {
 				int i = getSelectedColorButton();
 				if (i>=0) {
-					userdefinedColors[i] = newColor;
-					userColorButtons[i].setColor(newColor);
+					userdefinedColors[i] = currentColor;
+					userColorButtons[i].setColor(currentColor);
 				}
 			} break;
 			case ReadUserColor: {
 				int i = getSelectedColorButton();
 				if ( (i>=0) && (userdefinedColors[i]!=null) ) {
 					setColor(userdefinedColors[i]);
-					userColorButtons[i].setColor(newColor);
+					userColorButtons[i].setColor(currentColor);
 				}
 			} break;
 			case SetDual2RG: sliderDual.setColorComps(ColorCompSlider.COMP_RED,ColorCompSlider.COMP_GRN); sliderDual.repaint(); break;

@@ -61,8 +61,8 @@ public class StandardDialog extends JDialog implements WindowListener {
         setContentPane( contentPane );
         if (preferredSize!=null) setPreferredSize(preferredSize);
         pack();
-        if (position==null) setPosition(Position.PARENT_CENTER);
-        else                setPosition(position);
+        if (position==null) position = Position.PARENT_CENTER;
+        setPosition(position);
         
     }
 
