@@ -148,6 +148,7 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 	}
 	
 	public void setValue(int min, int value, int max) {
+		progressbar.setMinimum(min);
 		progressbar.setValue(value);
 		progressbar.setMaximum(max);
 		if (progressbar.isIndeterminate())
