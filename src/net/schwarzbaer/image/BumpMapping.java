@@ -184,7 +184,7 @@ public class BumpMapping {
 				this.highlightColor = highlightColor;
 				this.faceColor = faceColor;
 				this.shadowColor = shadowColor;
-				this.faceF = getF(new Normal(0,0,1));
+				this.faceF = getAbsF(new Normal(0,0,1));
 			}
 			
 			public Color getHighlightColor() { return highlightColor; }
@@ -198,23 +198,29 @@ public class BumpMapping {
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
-				faceF = getF(new Normal(0,0,1));
+				faceF = getAbsF(new Normal(0,0,1));
 			}
 
 			@Override
 			public int[] getColor(Normal normal) {
 				color[3] = 255;
-				double f = getF(normal);
-				if (faceF<=f && f<=1) {
-					f = (f-faceF)/(1-faceF);
+				double f1 = getF(normal);
+				double f = Math.max(0,f1);
+				
+				if ( (faceF<f && f<=1) || (faceF>0 && f==faceF)) {
+					if (faceF==1) f = 0;
+					else f = (f-faceF)/(1-faceF);
 					color[0] = (int) Math.round(highlightColor.getRed  ()*f + faceColor.getRed  ()*(1-f));
 					color[1] = (int) Math.round(highlightColor.getGreen()*f + faceColor.getGreen()*(1-f));
 					color[2] = (int) Math.round(highlightColor.getBlue ()*f + faceColor.getBlue ()*(1-f));
-				} else if (0<=f && f<faceF) {
-					f = f/faceF;
+					
+				} else if ( (0<=f && f<faceF) || (faceF==0 && f==faceF) ) {
+					if (faceF==0) { if (f1==0) f=1; else f=0; }
+					else f = f/faceF;
 					color[0] = (int) Math.round(faceColor.getRed  ()*f + shadowColor.getRed  ()*(1-f));
 					color[1] = (int) Math.round(faceColor.getGreen()*f + shadowColor.getGreen()*(1-f));
 					color[2] = (int) Math.round(faceColor.getBlue ()*f + shadowColor.getBlue ()*(1-f));
+					
 				} else {
 					color[0] = 255;
 					color[1] = 0;
@@ -223,8 +229,12 @@ public class BumpMapping {
 				return color;
 			}
 			
+			private double getAbsF(Normal normal) {
+				return Math.max(0,getF(normal));
+			}
+
 			private double getF(Normal normal) {
-				return Math.max(0,sun.dotP(normal));
+				return sun.dotP(normal);
 			}
 		}
 	}
