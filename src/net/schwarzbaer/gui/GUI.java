@@ -461,7 +461,7 @@ public final class GUI {
 	private static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition) {
 		return createAlignedPanel(comp,center_comp,layoutPosition,0);
 	}
-	private static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition, int spacing) {
+	static JPanel createAlignedPanel(Component comp, Component center_comp, String layoutPosition, int spacing) {
 		JPanel panel = new JPanel( new BorderLayout(spacing,spacing) );
 		panel.add(center_comp, BorderLayout.CENTER);
 		panel.add(comp, layoutPosition);

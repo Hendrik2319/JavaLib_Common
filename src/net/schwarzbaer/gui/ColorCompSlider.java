@@ -3,24 +3,32 @@ package net.schwarzbaer.gui;
 import java.awt.Color;
 
 public class ColorCompSlider extends ColorSlider {
-
 	private static final long serialVersionUID = -9018785440106166371L;
-	public static final int COMP_RED = 1;
-	public static final int COMP_GRN = 2;
-	public static final int COMP_BLU = 3;
-	public static final int COMP_HUE = 4;
-	public static final int COMP_SAT = 5;
-	public static final int COMP_BRT = 6;
 	
-	public ColorCompSlider(SliderType type, Color color, int colorComp, ColorChangeListener colorChangeListener) {
+	public enum ColorComp {
+		COMP_RED,
+		COMP_GRN,
+		COMP_BLU,
+		COMP_HUE,
+		COMP_SAT,
+		COMP_BRT,
+	}
+//	public static final int COMP_RED = 1;
+//	public static final int COMP_GRN = 2;
+//	public static final int COMP_BLU = 3;
+//	public static final int COMP_HUE = 4;
+//	public static final int COMP_SAT = 5;
+//	public static final int COMP_BRT = 6;
+	
+	public ColorCompSlider(SliderType type, Color color, ColorComp colorComp, ColorChangeListener colorChangeListener) {
 		this(type,color,colorComp, colorComp, colorChangeListener);
 	}
 
-	public ColorCompSlider(SliderType type, Color color, int colorCompH, int colorCompV, ColorChangeListener colorChangeListener) {
+	public ColorCompSlider(SliderType type, Color color, ColorComp colorCompH, ColorComp colorCompV, ColorChangeListener colorChangeListener) {
 		super(type,new MyColorSliderModel(type,color,colorCompH,colorCompV),colorChangeListener);
 	}
 
-	public void setColorComps(int colorCompH, int colorCompV) {
+	public void setColorComps(ColorComp colorCompH, ColorComp colorCompV) {
 		((MyColorSliderModel)model).setColorComps(colorCompH,colorCompV);
 	}
 
@@ -29,10 +37,10 @@ public class ColorCompSlider extends ColorSlider {
 		repaint();
 	}
 	
-	private static class MyColorSliderModel implements ColorSliderModel {
+	static class MyColorSliderModel implements ColorSliderModel {
 		
-		private int colorCompH; 
-		private int colorCompV;
+		private ColorComp colorCompH; 
+		private ColorComp colorCompV;
 		
 		private int colorRED;
 		private int colorGRN;
@@ -45,14 +53,14 @@ public class ColorCompSlider extends ColorSlider {
 		private float[] colorH_hsb;
 		private SliderType type;
 		
-		public MyColorSliderModel(SliderType type, Color color, int colorCompH, int colorCompV) {
+		public MyColorSliderModel(SliderType type, Color color, ColorComp colorCompH, ColorComp colorCompV) {
 			this.type = type;
 			this.colorCompH = colorCompH;
 			this.colorCompV = colorCompV;
 			setColor(color);
 		}
 
-		public void setColorComps(int colorCompH, int colorCompV) {
+		public void setColorComps(ColorComp colorCompH, ColorComp colorCompV) {
 			this.colorCompH = colorCompH;
 			this.colorCompV = colorCompV;
 		}
@@ -119,8 +127,8 @@ public class ColorCompSlider extends ColorSlider {
 			setValue( colorCompV, fV );
 		}
 		
-		private Color getColor(int colorComp, float f, Color baseColor, float[] hsb) {
-			if ( (colorComp==COMP_RED) || (colorComp==COMP_GRN) || (colorComp==COMP_BLU) ) {
+		private Color getColor(ColorComp colorComp, float f, Color baseColor, float[] hsb) {
+			if ( (colorComp==ColorComp.COMP_RED) || (colorComp==ColorComp.COMP_GRN) || (colorComp==ColorComp.COMP_BLU) ) {
 				int RGBval = Math.round(f*255);
 				if (RGBval>255) RGBval=255;
 				
@@ -129,12 +137,14 @@ public class ColorCompSlider extends ColorSlider {
 					case COMP_RED: return new Color(     RGBval       ,baseColor.getGreen(),baseColor.getBlue());
 					case COMP_GRN: return new Color(baseColor.getRed(),       RGBval       ,baseColor.getBlue());
 					case COMP_BLU: return new Color(baseColor.getRed(),baseColor.getGreen(),      RGBval       );
+					default: throw new IllegalStateException();
 					}
 				else
 					switch (colorComp) {
 					case COMP_RED: return new Color( RGBval ,colorGRN,colorBLU);
 					case COMP_GRN: return new Color(colorRED, RGBval ,colorBLU);
 					case COMP_BLU: return new Color(colorRED,colorGRN, RGBval );
+					default: throw new IllegalStateException();
 					}
 			} else {
 				if (hsb!=null) {
@@ -142,18 +152,19 @@ public class ColorCompSlider extends ColorSlider {
 					case COMP_HUE: return Color.getHSBColor(  f   ,hsb[1],hsb[2]);
 					case COMP_SAT: return Color.getHSBColor(hsb[0],  f   ,hsb[2]);
 					case COMP_BRT: return Color.getHSBColor(hsb[0],hsb[1],  f   );
+					default: throw new IllegalStateException();
 					}
 				} else
 					switch (colorComp) {
 					case COMP_HUE: return Color.getHSBColor(   f    , colorSAT, colorBRT);
 					case COMP_SAT: return Color.getHSBColor(colorHUE,    f    , colorBRT);
 					case COMP_BRT: return Color.getHSBColor(colorHUE, colorSAT,    f    );
+					default: throw new IllegalStateException();
 					}
 			}
-			return null;
 		}
 
-		private float getValue(int colorComp) {
+		private float getValue(ColorComp colorComp) {
 			switch (colorComp) {
 			case COMP_RED: return (colorRED/255f);
 			case COMP_GRN: return (colorGRN/255f);
@@ -164,7 +175,7 @@ public class ColorCompSlider extends ColorSlider {
 			}
 			return Float.NaN;
 		}
-		private void setValue( int colorComp, float f ) {
+		private void setValue( ColorComp colorComp, float f ) {
 			switch (colorComp) {
 			case COMP_RED: colorRED = Math.round(f*255); updateHSB(); break;
 			case COMP_GRN: colorGRN = Math.round(f*255); updateHSB(); break;
