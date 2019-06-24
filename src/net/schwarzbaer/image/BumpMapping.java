@@ -35,6 +35,45 @@ public class BumpMapping {
 			return normalMap[x][y];
 		});
 	}
+	
+	public void setHeightMap(float[][] heightMap, double cornerScale) {
+		setHeightMap(heightMap,null,cornerScale);
+	}
+	public void setHeightMap(float[][] heightMap, Color[][] colorMap, double cornerScale) {
+		int width = heightMap.length;
+		int height = heightMap[0].length;;
+		Normal[][] normalMap = new Normal[width][height];
+		for (int x1=0; x1<width; ++x1)
+			for (int y1=0; y1<height; ++y1) {
+				Normal base = new Normal(0,0,0,colorMap==null?null:colorMap[x1][y1]);
+				addNormal(base,computeNormal(heightMap,x1,y1,+1, 0),1); 
+				addNormal(base,computeNormal(heightMap,x1,y1, 0,+1),1); 
+				addNormal(base,computeNormal(heightMap,x1,y1,-1, 0),1); 
+				addNormal(base,computeNormal(heightMap,x1,y1, 0,-1),1);
+				addNormal(base,computeNormal(heightMap,x1,y1,+1,-1),cornerScale);
+				addNormal(base,computeNormal(heightMap,x1,y1,+1,+1),cornerScale); 
+				addNormal(base,computeNormal(heightMap,x1,y1,-1,+1),cornerScale); 
+				addNormal(base,computeNormal(heightMap,x1,y1,-1,-1),cornerScale); 
+				normalMap[x1][y1] = base.normalize();
+			}
+		setNormalMap(normalMap);
+	}
+	private void addNormal(Normal base, Normal n, double scale) {
+		if (n != null) {
+			base.x += n.x*scale;
+			base.y += n.y*scale;
+			base.z += n.z*scale;
+		}
+	}
+	private Normal computeNormal(float[][] heightMap, int x, int y, int dx, int dy) {
+		if (x+dx<0 || x+dx>=heightMap   .length) return null;
+		if (y+dy<0 || y+dy>=heightMap[0].length) return null;
+		float dh = heightMap[x][y]-heightMap[x+dx][y+dy];
+		if (dx!=0) return new Normal(dh*dx,0,Math.abs(dx)).normalize();
+		if (dy!=0) return new Normal(0,dh*dy,Math.abs(dy)).normalize();
+		return null;
+	}
+	
 	public void setNormalFunction(NormalFunctionCart normalFunction) {
 		setNormalFunction((x,y,width,height)->{
 			return normalFunction.getNormal(x,y);
