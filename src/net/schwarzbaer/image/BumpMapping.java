@@ -50,10 +50,12 @@ public class BumpMapping {
 				addNormal(base,computeNormal(heightMap,x1,y1, 0,+1),1); 
 				addNormal(base,computeNormal(heightMap,x1,y1,-1, 0),1); 
 				addNormal(base,computeNormal(heightMap,x1,y1, 0,-1),1);
-				addNormal(base,computeNormal(heightMap,x1,y1,+1,-1),cornerScale);
-				addNormal(base,computeNormal(heightMap,x1,y1,+1,+1),cornerScale); 
-				addNormal(base,computeNormal(heightMap,x1,y1,-1,+1),cornerScale); 
-				addNormal(base,computeNormal(heightMap,x1,y1,-1,-1),cornerScale); 
+				if (cornerScale>0) {
+					addNormal(base,computeNormal(heightMap,x1,y1,+1,-1),cornerScale);
+					addNormal(base,computeNormal(heightMap,x1,y1,+1,+1),cornerScale); 
+					addNormal(base,computeNormal(heightMap,x1,y1,-1,+1),cornerScale); 
+					addNormal(base,computeNormal(heightMap,x1,y1,-1,-1),cornerScale); 
+				}
 				normalMap[x1][y1] = base.normalize();
 			}
 		setNormalMap(normalMap);
@@ -69,6 +71,11 @@ public class BumpMapping {
 		if (x+dx<0 || x+dx>=heightMap   .length) return null;
 		if (y+dy<0 || y+dy>=heightMap[0].length) return null;
 		float dh = heightMap[x][y]-heightMap[x+dx][y+dy];
+		if ( (dx!=0) && (dy!=0) ) {
+			double w = Math.atan2(dy, dx);
+			double r = Math.sqrt(dx*dx+dy*dy);
+			return new Normal(dh,0,r).normalize().rotateZ(w);
+		}
 		if (dx!=0) return new Normal(dh*dx,0,Math.abs(dx)).normalize();
 		if (dy!=0) return new Normal(0,dh*dy,Math.abs(dy)).normalize();
 		return null;
