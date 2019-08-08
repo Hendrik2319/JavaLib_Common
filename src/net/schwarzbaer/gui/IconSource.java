@@ -170,6 +170,12 @@ public class IconSource<E extends Enum<E>> {
 		return new ImageIcon(bufferedImage);
 	}
 
+	public static <E extends Enum<E>> CachedIcons<E> createCachedIcons(int iconWidth, int iconHeight, String resourcePath, E[] keys) {
+		IconSource<E> source = new IconSource<E>(iconWidth,iconHeight);
+		source.readIconsFromResource(resourcePath);
+		return source.cacheIcons(keys);
+	}
+
 	private enum Dummy {}
 	
 	public static class IndexOnlyIconSource extends IconSource<Dummy> {
