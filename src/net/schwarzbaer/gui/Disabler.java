@@ -81,8 +81,10 @@ public class Disabler<ActionCommands> {
 	}
 
 	public void setEnable(Function<ActionCommands,Boolean> shouldEnable) {
-		for (ActionCommands key:map.keySet())
-			setEnable(key, shouldEnable.apply(key));
+		for (ActionCommands key:map.keySet()) {
+			Boolean enabled = shouldEnable.apply(key);
+			if (enabled!=null) setEnable(key, enabled);
+		}
 	}
 
 	public void setEnable(ActionCommands[] actionCommands, boolean enabled) {
