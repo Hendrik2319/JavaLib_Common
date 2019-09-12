@@ -26,7 +26,7 @@ public class StandardDialog extends JDialog implements WindowListener {
 	}
 	
 	public StandardDialog( Window parent, String title, ModalityType modality ) {
-		this(parent, title, Dialog.ModalityType.APPLICATION_MODAL, true);
+		this(parent, title, modality, true);
 	}
 	
 	public StandardDialog( Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject ) {
