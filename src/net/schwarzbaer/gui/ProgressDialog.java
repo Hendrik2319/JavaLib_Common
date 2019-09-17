@@ -40,6 +40,7 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 	private boolean wasOpened;
 	private String monitorObj;
 	private int minWidth;
+	private ProgressDisplay progressDisplay;
 	
 	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality) {
 		super(parent, title, modality);
@@ -49,6 +50,7 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		this.canceled = false;
 		this.wasOpened = false;
 		this.monitorObj = "";
+		this.progressDisplay = ProgressDisplay.None;
 	}
 
 	public ProgressDialog(Window parent, String title, ModalityType modality) {
@@ -61,6 +63,15 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 
 	public ProgressDialog(Window parent, String title) {
 		this(parent, title, -1, Dialog.ModalityType.APPLICATION_MODAL);
+	}
+	
+	public enum ProgressDisplay {
+		Percentage, Number, None
+	}
+	public void displayProgressString(ProgressDisplay progressDisplay) {
+		this.progressDisplay = progressDisplay;
+		progressbar.setStringPainted(this.progressDisplay!=ProgressDisplay.None);
+		progressbar.setString(this.progressDisplay==ProgressDisplay.None?null:"");
 	}
 	
 	private void createGUI() {
@@ -153,6 +164,7 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		progressbar.setMaximum(max);
 		if (progressbar.isIndeterminate())
 			progressbar.setIndeterminate(false);
+		displayProgressString();
 	}
 	public void setValue(int value, int max) {
 		setValue(0,value,max);
@@ -161,6 +173,19 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		if (progressbar.isIndeterminate())
 			throw new IllegalStateException("Can't set value of progress without setting min and max.");
 		progressbar.setValue(value);
+		displayProgressString();
+	}
+
+	private void displayProgressString() {
+		if (progressDisplay==ProgressDisplay.None) return;
+		int minimum = progressbar.getMinimum();
+		int maximum = progressbar.getMaximum()-minimum;
+		int value   = progressbar.getValue()-minimum;
+		switch (progressDisplay) {
+		case None      : break;
+		case Number    : progressbar.setString(String.format("%d / %d", value, maximum)); break;
+		case Percentage: progressbar.setString(String.format("%1.2f%%", value/(float)maximum)); break;
+		}
 	}
 
 	public void addCancelListener(CancelListener cancelListener) {
