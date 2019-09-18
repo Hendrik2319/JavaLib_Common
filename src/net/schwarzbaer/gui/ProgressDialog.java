@@ -5,8 +5,6 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Vector;
@@ -18,7 +16,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 
-public class ProgressDialog extends StandardDialog implements ActionListener {
+public class ProgressDialog extends StandardDialog {
 	private static final long serialVersionUID = 1401683964054921965L;
 
 	public static void runWithProgressDialog(Window parent, String title, int minWidth, Consumer<ProgressDialog> useProgressDialog) {
@@ -82,6 +80,9 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 					monitorObj.notifyAll();
 				}
 			}
+			@Override public void windowClosed(WindowEvent e) {
+				cancel();
+			}
 		});
 		
 		JPanel progressbarPane = new JPanel(new BorderLayout(3,3));
@@ -90,8 +91,10 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		progressbarPane.add(progressbar = new JProgressBar(JProgressBar.HORIZONTAL), BorderLayout.CENTER);
 		
 		JButton cancelButton = new JButton("Cancel");
-		cancelButton.setActionCommand("Cancel");
-		cancelButton.addActionListener(this);
+		cancelButton.addActionListener(e->{
+			cancel();
+			closeDialog();
+		});
 		
 		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,5,5));
 		southPanel.add(cancelButton);
@@ -109,17 +112,7 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		super.setSizeAsMinSize();
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		if (e.getActionCommand().equals("Cancel")) {
-			for (CancelListener cl:cancelListeners) cl.cancelTask();
-			canceled = true;
-			this.closeDialog();
-			return;
-		}
-	}
-	
-//	@Override
+	//	@Override
 //	public void showDialog(final Position position) {
 //		new Thread(new Runnable() {
 //			@Override public void run() {
@@ -188,15 +181,20 @@ public class ProgressDialog extends StandardDialog implements ActionListener {
 		}
 	}
 
-	public void addCancelListener(CancelListener cancelListener) {
-		cancelListeners.add(cancelListener);
+	private void cancel() {
+		for (CancelListener cl:cancelListeners) cl.cancelTask();
+		canceled = true;
 	}
-	
+
 	public boolean wasCanceled() {
 		return canceled;
 	}
 
 	public static interface CancelListener {
 		public void cancelTask();
+	}
+
+	public void addCancelListener(CancelListener cancelListener) {
+		cancelListeners.add(cancelListener);
 	}
 }
