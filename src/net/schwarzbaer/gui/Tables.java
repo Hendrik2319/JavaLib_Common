@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import javax.swing.AbstractCellEditor;
+import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -21,6 +22,7 @@ import javax.swing.JTable;
 import javax.swing.ListCellRenderer;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
+import javax.swing.border.Border;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
@@ -480,26 +482,30 @@ public class Tables {
 		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 			Color bgColor   = isSelected ? table.getSelectionBackground() : table.getBackground();
 			Color textColor = isSelected ? table.getSelectionForeground() : table.getForeground();
-			comp.set(converter.apply(value),bgColor,textColor);
+			comp.set(converter.apply(value),bgColor,textColor,hasFocus);
 			return comp;
 		}
 
 		@Override
-		public Component getListCellRendererComponent(JList<? extends T> list, T value, int index, boolean isSelected, boolean cellHasFocus) {
+		public Component getListCellRendererComponent(JList<? extends T> list, T value, int index, boolean isSelected, boolean hasFocus) {
 			Color bgColor   = isSelected ? list.getSelectionBackground() : null; //list.getBackground();
 			Color textColor = isSelected ? list.getSelectionForeground() : list.getForeground();
-			comp.set(converter.apply(value),bgColor,textColor);
+			comp.set(converter.apply(value),bgColor,textColor,hasFocus);
 			return comp;
 		}
 
 		public static class RendererComponent extends LabelRendererComponent {
 			private static final long serialVersionUID = 6214683201455907406L;
-
+			
+			private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
+			private static final Border EMPTY_BORDER = BorderFactory.createEmptyBorder(1,1,1,1);
+			
 			private RendererComponent() {
 				//setOpaque(true);
 			}
 
-			public void set(String value, Color bgColor, Color textColor) {
+			public void set(String value, Color bgColor, Color textColor, boolean hasFocus) {
+				setBorder(!hasFocus?EMPTY_BORDER:DASHED_BORDER);
 				setOpaque(bgColor!=null);
 				setBackground(bgColor);
 				setForeground(textColor);
