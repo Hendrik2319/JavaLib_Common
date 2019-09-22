@@ -273,12 +273,17 @@ public class Tables {
 		
 		protected ColumnID[] columns;
 		private Vector<TableModelListener> tableModelListeners;
+		protected JTable table = null;
 	
 		protected SimplifiedTableModel(ColumnID[] columns) {
 			this.columns = columns;
 			tableModelListeners = new Vector<>();
 		}
 	
+		public void setTable(JTable table) {
+			this.table = table;
+		}
+
 		@Override public void addTableModelListener(TableModelListener l) { tableModelListeners.add(l); }
 		@Override public void removeTableModelListener(TableModelListener l) { tableModelListeners.remove(l); }
 		
