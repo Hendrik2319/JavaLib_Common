@@ -269,7 +269,7 @@ public class Tables {
 		public SimplifiedColumnConfig getColumnConfig();
 	}
 
-	public static abstract class SimplifiedTableModel<ColumnID extends Enum<ColumnID> & SimplifiedColumnIDInterface> implements TableModel {
+	public static abstract class SimplifiedTableModel<ColumnID extends SimplifiedColumnIDInterface> implements TableModel {
 		
 		protected ColumnID[] columns;
 		private Vector<TableModelListener> tableModelListeners;
