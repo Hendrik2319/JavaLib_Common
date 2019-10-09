@@ -421,24 +421,45 @@ public class Tables {
 		private static final long serialVersionUID = 8936989376730045132L;
 
 		private Object currentValue;
-		private T[] values;
+		private Vector<T> valueVector;
+		private T[] valueArray;
 		private ListCellRenderer<? super T> renderer;
 		
+		public ComboboxCellEditor(Vector<T> values) {
+			this(values,null);
+			if (values==null) throw new IllegalArgumentException("Parameter \"values\" must not be null.");
+		}
 		public ComboboxCellEditor(T[] values) {
-			this.values = values;
+			this(null,values);
+			if (values==null) throw new IllegalArgumentException("Parameter \"values\" must not be null.");
+		}
+		private ComboboxCellEditor(Vector<T> valueVector, T[] valueArray) {
+			this.valueVector = valueVector;
+			this.valueArray = valueArray;
+			if (valueVector==null && valueArray==null) throw new IllegalArgumentException();
 			this.currentValue = null;
 			this.renderer = null;
 		}
-		
 		public void addValue(T newValue) {
 			stopCellEditing();
-			values = Arrays.copyOf(values, values.length+1);
-			values[values.length-1] = newValue;
+			if (valueArray!=null) {
+				valueArray = Arrays.copyOf(valueArray, valueArray.length+1);
+				valueArray[valueArray.length-1] = newValue;
+			}
+			if (valueVector!=null)
+				valueVector.add(newValue);
 		}
 
 		public void setValues(T[] newValues) {
 			stopCellEditing();
-			values = newValues;
+			valueArray = newValues;
+			valueVector = null;
+		}
+
+		public void setValues(Vector<T> newValues) {
+			stopCellEditing();
+			valueArray = null;
+			valueVector = newValues;
 		}
 
 		public void setRenderer(ListCellRenderer<? super T> renderer) {
@@ -458,7 +479,11 @@ public class Tables {
 		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
 			this.currentValue = value;
 			
-			JComboBox<T> cmbbx = new JComboBox<T>(values);
+			JComboBox<T> cmbbx;
+			if      (valueArray !=null) cmbbx = new JComboBox<T>(valueArray);
+			else if (valueVector!=null) cmbbx = new JComboBox<T>(valueVector);
+			else                        cmbbx = null;
+			
 			if (renderer!=null) cmbbx.setRenderer(renderer);
 			cmbbx.setSelectedItem(currentValue);
 			cmbbx.setBackground(isSelected?table.getSelectionBackground():table.getBackground());
