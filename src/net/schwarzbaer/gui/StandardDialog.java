@@ -15,6 +15,7 @@ import java.awt.Window;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -64,6 +65,7 @@ public class StandardDialog extends JDialog implements WindowListener {
 			buttonPanel.add(btn,c);
 		
 		JPanel dlgContentPane = new JPanel(new BorderLayout(3,3));
+		dlgContentPane.setBorder(BorderFactory.createEmptyBorder(5,5,5,5));
 		dlgContentPane.add(contentPane,BorderLayout.CENTER);
 		dlgContentPane.add(buttonPanel,BorderLayout.SOUTH);
 		
