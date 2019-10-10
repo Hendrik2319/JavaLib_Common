@@ -268,39 +268,37 @@ public final class GUI {
         return menuItem;
 	}
 
-	public static JButton createButton( String commandStr, ActionListener actionListener ) {
-        JButton btn = new JButton();
-        btn.addActionListener(actionListener);
-        btn.setActionCommand( commandStr );
-        return btn;
-    }
+	public static JButton setComp( JButton comp, String commandStr, ActionListener actionListener, boolean enabled ) {
+		comp.setEnabled(enabled);
+		if (actionListener!=null) comp.addActionListener(actionListener);
+		if (commandStr    !=null) comp.setActionCommand( commandStr );
+		return comp;
+	}
+
+	public static <AC> JButton setComp( JButton comp, ActionListener actionListener, Disabler<AC> disabler, AC actionCommand, boolean enabled) {
+		setComp( comp, actionCommand==null ? null : actionCommand.toString(), actionListener, enabled );
+		if (disabler!=null) disabler.add(actionCommand,comp);
+		return comp;
+	}
 
     public static <AC> JButton createButton( String title, AC actionCommand, Disabler<AC> disabler, ActionListener actionListener ) {
     	return addToDisabler(disabler, actionCommand, createButton( title, actionCommand.toString(), actionListener ));
     }
 
     public static JButton createButton( String title, String commandStr, ActionListener actionListener ) {
-        JButton btn = createButton( commandStr, actionListener );
-        btn.setText(title);
-        return btn;
+		return setComp( new JButton(title), commandStr, actionListener, true );
     }
 
     public static JButton createButton( String title, String commandStr, ActionListener actionListener, Icon icon ) {
-        JButton btn = createButton( title, commandStr, actionListener );
-        btn.setIcon(icon);
-        return btn;
+		return setComp( new JButton(title,icon), commandStr, actionListener, true );
 	}
 
     public static JButton createButton( Icon icon, String commandStr, ActionListener actionListener ) {
-        JButton btn = createButton( commandStr, actionListener );
-        btn.setIcon(icon);
-        return btn;
+		return setComp( new JButton(icon), commandStr, actionListener, true );
 	}
 
 	public static JButton createButton(String title, String commandStr, ActionListener actionListener, boolean enabled) {
-        JButton btn = createButton( title, commandStr, actionListener );
-        btn.setEnabled(enabled);
-        return btn;
+		return setComp( new JButton(title), commandStr, actionListener, enabled );
 	}
 
 	public static JButton createButton( String title, String commandStr, ActionListener actionListener, String toolTipText ) {
