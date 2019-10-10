@@ -327,7 +327,7 @@ public class Tables {
 		
 		public int getUnsortedRowsCount() { return 0; }
 		
-		protected ColumnID getColumnID(int columnIndex) {
+		public ColumnID getColumnID(int columnIndex) {
 			if (columnIndex<0) return null;
 			if (columnIndex<columns.length) return columns[columnIndex];
 			return null;
