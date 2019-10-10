@@ -385,10 +385,10 @@ public class Tables {
 		public void setColumnWidths(JTable table) {
 			TableColumnModel columnModel = table.getColumnModel();
 			for (int i=0; i<columnModel.getColumnCount(); ++i) {
-				ColumnID columnID = getColumnID(i);
+				ColumnID columnID = getColumnID(table.convertColumnIndexToModel(i));
 				if (columnID!=null) {
 					SimplifiedColumnConfig config = columnID.getColumnConfig();
-					setColumnWidth(columnModel.getColumn(table.convertColumnIndexToView(i)), config.minWidth, config.maxWidth, config.prefWidth, config.currentWidth);
+					setColumnWidth(columnModel.getColumn(i), config.minWidth, config.maxWidth, config.prefWidth, config.currentWidth);
 				}
 			}
 		}
