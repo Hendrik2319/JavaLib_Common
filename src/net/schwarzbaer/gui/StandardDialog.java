@@ -5,15 +5,21 @@
 
 package net.schwarzbaer.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Dialog;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 public class StandardDialog extends JDialog implements WindowListener {
 	private static final long serialVersionUID = -2236026007551538954L;
@@ -45,6 +51,24 @@ public class StandardDialog extends JDialog implements WindowListener {
 	@Override public void windowActivated   (WindowEvent e) { /*System.out.printf("[%08X] dialogActivated  \r\n", this.hashCode());*/ }
 	@Override public void windowDeactivated (WindowEvent e) { /*System.out.printf("[%08X] dialogDeactivated\r\n", this.hashCode());*/ }
 
+	public void createGUI( JComponent contentPane, JButton... buttons ) {
+		
+		JPanel buttonPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.BOTH;
+		c.weighty = 1;
+		c.weightx = 1;
+		buttonPanel.add(new JLabel(),c);
+		c.weightx = 0;
+		for (JButton btn:buttons)
+			buttonPanel.add(btn,c);
+		
+		JPanel dlgContentPane = new JPanel(new BorderLayout(3,3));
+		dlgContentPane.add(contentPane,BorderLayout.CENTER);
+		dlgContentPane.add(buttonPanel,BorderLayout.SOUTH);
+		
+    	createGUI( dlgContentPane, null, null );
+	}
 	public void createGUI( JComponent contentPane ) {
     	createGUI( contentPane, null, null );
 	}
