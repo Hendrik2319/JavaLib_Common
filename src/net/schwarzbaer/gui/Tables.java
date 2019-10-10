@@ -388,7 +388,7 @@ public class Tables {
 				ColumnID columnID = getColumnID(i);
 				if (columnID!=null) {
 					SimplifiedColumnConfig config = columnID.getColumnConfig();
-					setColumnWidth(columnModel.getColumn(i), config.minWidth, config.maxWidth, config.prefWidth, config.currentWidth);
+					setColumnWidth(columnModel.getColumn(table.convertColumnIndexToView(i)), config.minWidth, config.maxWidth, config.prefWidth, config.currentWidth);
 				}
 			}
 		}
