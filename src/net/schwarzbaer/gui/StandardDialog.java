@@ -25,7 +25,7 @@ import javax.swing.JPanel;
 public class StandardDialog extends JDialog implements WindowListener {
 	private static final long serialVersionUID = -2236026007551538954L;
 	
-	protected Window parent;
+	private Window parent;
 	private boolean repeatedUseOfDialogObject; 
 	
 	public StandardDialog( Window parent, String title ) {
