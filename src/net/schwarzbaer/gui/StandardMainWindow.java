@@ -82,6 +82,7 @@ public class StandardMainWindow extends JFrame implements WindowListener {
         setVisible( !startHidden );
 	}
     public void setSizeCenteredOnScreen(Dimension size) {
+    	setSize(size);
         setLocationToScreenCenter(size, getGraphicsConfiguration().getBounds());
 	}
 	private void setLocationToScreenCenter(Dimension size, Rectangle screen) {
