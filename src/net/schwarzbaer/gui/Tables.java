@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EventObject;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -23,6 +24,7 @@ import javax.swing.ListCellRenderer;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.border.Border;
+import javax.swing.event.CellEditorListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
@@ -590,5 +592,52 @@ public class Tables {
 		@Override public void firePropertyChange(String propertyName, double oldValue, double newValue) {}
 	}
 
+	public static class CellwiseCellEditor implements TableCellEditor {
+		
+		public interface CellEditorSelector {
+			TableCellEditor getCellEditor(int row, int column);
+		}
+		
+		private TableCellEditor currentCellEditor;
+		private CellEditorSelector cellEditorSelector;
+
+		public CellwiseCellEditor(CellEditorSelector cellEditorSelector) {
+			this.cellEditorSelector = cellEditorSelector;
+			currentCellEditor = null;
+		}
+
+		@Override public boolean isCellEditable  (EventObject anEvent) { return true; }
+		@Override public boolean shouldSelectCell(EventObject anEvent) { return true; }
+
+		@Override public Object getCellEditorValue() {
+			if (currentCellEditor!=null)
+				return currentCellEditor.getCellEditorValue();
+			return null;
+		}
+
+		@Override public boolean stopCellEditing() {
+			if (currentCellEditor!=null)
+				return currentCellEditor.stopCellEditing();
+			return false;
+		}
+		@Override public void cancelCellEditing() {
+			if (currentCellEditor!=null)
+				currentCellEditor.cancelCellEditing();
+		}
+
+		@Override public void addCellEditorListener(CellEditorListener l) {
+			if (currentCellEditor!=null)
+				currentCellEditor.addCellEditorListener(l);
+		}
+		@Override public void removeCellEditorListener(CellEditorListener l) {
+			if (currentCellEditor!=null)
+				currentCellEditor.removeCellEditorListener(l);
+		}
+
+		@Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+			currentCellEditor = cellEditorSelector.getCellEditor(row, column);
+			return currentCellEditor.getTableCellEditorComponent(table, value, isSelected, row, column);
+		}
+	}
 
 }
