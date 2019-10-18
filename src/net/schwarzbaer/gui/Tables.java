@@ -423,8 +423,8 @@ public class Tables {
 		private static final long serialVersionUID = 8936989376730045132L;
 
 		private Object currentValue;
-		private Vector<T> valueVector;
-		private T[] valueArray;
+		protected Vector<T> valueVector;
+		protected T[] valueArray;
 		private ListCellRenderer<? super T> renderer;
 		
 		public ComboboxCellEditor(Vector<T> values) {
