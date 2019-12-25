@@ -5,6 +5,8 @@ import java.util.Random;
 
 public class UniqueIdPool {
 	
+	public final static long NO_ID = -1;
+	
 	static UniqueIdPool instance = null;
 	static UniqueIdPool getInstance() {
 		if (instance==null)
@@ -15,7 +17,7 @@ public class UniqueIdPool {
 	private HashSet<Long> pool;
 	private Random rnd;
 	
-	UniqueIdPool() {
+	public UniqueIdPool() {
 		pool = new HashSet<>();
 		rnd = new Random();
 	}
