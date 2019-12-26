@@ -419,6 +419,69 @@ public class Tables {
 		}
 	}
 	
+	public static abstract class PopupTableCellEditorAndRenderer extends AbstractCellEditor implements TableCellEditor, TableCellRenderer {
+		private static final long serialVersionUID = 4397569745226506250L;
+		
+		private LabelRendererComponent renderComp;
+		
+		PopupTableCellEditorAndRenderer() {
+			renderComp = new LabelRendererComponent();
+		}
+		
+		protected abstract String getValueStr(int row, int column);
+		
+		@Override
+		public Object getCellEditorValue() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public boolean isCellEditable(EventObject e) {
+			// TODO Auto-generated method stub
+			return super.isCellEditable(e);
+		}
+
+		@Override
+		public boolean shouldSelectCell(EventObject anEvent) {
+			// TODO Auto-generated method stub
+			return super.shouldSelectCell(anEvent);
+		}
+
+		@Override
+		public boolean stopCellEditing() {
+			// TODO Auto-generated method stub
+			return super.stopCellEditing();
+		}
+
+		@Override
+		public void cancelCellEditing() {
+			// TODO Auto-generated method stub
+			super.cancelCellEditing();
+		}
+
+		@Override
+		protected void fireEditingStopped() {
+			// TODO Auto-generated method stub
+			super.fireEditingStopped();
+		}
+
+		@Override
+		protected void fireEditingCanceled() {
+			// TODO Auto-generated method stub
+			super.fireEditingCanceled();
+		}
+
+		@Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			renderComp.configureAsTableCellRendererComponent(getValueStr(row, column), table, isSelected, hasFocus);
+			return renderComp;
+		}
+		@Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+			renderComp.configureAsTableCellRendererComponent(getValueStr(row, column), table, isSelected, false);
+			return renderComp;
+		}
+	}
+	
 	public static class ComboboxCellEditor<T> extends AbstractCellEditor implements TableCellEditor {
 		private static final long serialVersionUID = 8936989376730045132L;
 
@@ -571,7 +634,16 @@ public class Tables {
 
 	public static class LabelRendererComponent extends JLabel {
 		private static final long serialVersionUID = -4524101782848184348L;
+		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
+		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
 		
+		public void configureAsTableCellRendererComponent(String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
+			setText(valueStr);
+			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		}
+
 		@Override public void revalidate() {}
 		@Override public void invalidate() {}
 		@Override public void validate() {}
