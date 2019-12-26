@@ -1,9 +1,23 @@
 package net.schwarzbaer.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.ContainerEvent;
+import java.awt.event.ContainerListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.HierarchyBoundsListener;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EventObject;
@@ -15,15 +29,21 @@ import java.util.function.Predicate;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.ListCellRenderer;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
 import javax.swing.border.Border;
+import javax.swing.event.AncestorEvent;
+import javax.swing.event.AncestorListener;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
@@ -423,13 +443,127 @@ public class Tables {
 		private static final long serialVersionUID = 4397569745226506250L;
 		
 		private LabelRendererComponent renderComp;
+		private EditorComp editorComp;
+		private JPanel popupContent;
+		private Popup popup;
+		private Component owner;
 		
-		PopupTableCellEditorAndRenderer() {
+		public PopupTableCellEditorAndRenderer(Component owner) {
+			this.owner = owner;
 			renderComp = new LabelRendererComponent();
+			editorComp = new EditorComp();
+			popup = null;
+			
+			JButton button = new JButton("Close");
+			button.addActionListener(e->deactivatePopup());
+			
+			JPanel center = new JPanel();
+			center.setPreferredSize(new Dimension(100,150));
+			
+			popupContent = new JPanel(new BorderLayout());
+			popupContent.setBorder(BorderFactory.createTitledBorder("PopupContent"));
+			popupContent.add(center,BorderLayout.CENTER);
+			popupContent.add(button,BorderLayout.SOUTH);
+		}
+		
+		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
+		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
+
+		public void configure(JLabel comp, String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
+			comp.setText(valueStr);
+			comp.setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			comp.setOpaque(true);
+			comp.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+			comp.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		}
+		
+		private class EditorComp extends JLabel {
+			private static final long serialVersionUID = 2786411238866454826L;
+			private boolean activateOnPaint = false;
+
+			EditorComp() {
+				addMouseListener(new MouseListener() {
+					@Override public void mouseReleased(MouseEvent e) {}
+					@Override public void mousePressed (MouseEvent e) {}
+					@Override public void mouseExited  (MouseEvent e) {}
+					@Override public void mouseEntered (MouseEvent e) {}
+					@Override public void mouseClicked (MouseEvent e) { activatePopup(); }
+				});
+				addFocusListener(new FocusListener() {
+					@Override public void focusLost  (FocusEvent e) { show("focusLost  "); }
+					@Override public void focusGained(FocusEvent e) { show("focusGained"); }
+				});
+				addComponentListener(new ComponentListener() {
+					@Override public void componentShown  (ComponentEvent e) { show("componentShown  "); }
+					@Override public void componentResized(ComponentEvent e) { show("componentResized"); }
+					@Override public void componentMoved  (ComponentEvent e) { show("componentMoved  "); }
+					@Override public void componentHidden (ComponentEvent e) { show("componentHidden "); }
+				});
+				addAncestorListener(new AncestorListener() {
+					@Override public void ancestorRemoved(AncestorEvent event) { show("AncestorListener.ancestorRemoved"); }
+					@Override public void ancestorMoved  (AncestorEvent event) { show("AncestorListener.ancestorMoved  "); }
+					@Override public void ancestorAdded  (AncestorEvent event) { show("AncestorListener.ancestorAdded  "); }
+				});
+				addHierarchyListener(new HierarchyListener() {
+					
+					@Override
+					public void hierarchyChanged(HierarchyEvent e) {
+						String extra = "";
+						switch(e.getID()) {
+						case HierarchyEvent.ANCESTOR_RESIZED: extra += ".ANCESTOR_RESIZED";
+						}
+						show("hierarchyChanged"+extra);
+					}
+				});
+				addHierarchyBoundsListener(new HierarchyBoundsListener() {
+					@Override public void ancestorResized(HierarchyEvent e) { show("HierarchyBoundsListener.ancestorResized"); deactivatePopup(); }
+					@Override public void ancestorMoved  (HierarchyEvent e) { show("HierarchyBoundsListener.ancestorMoved  "); deactivatePopup(); }
+				});
+			}
+			
+			private void show(String str) {
+				System.out.printf("EditorComp.%s: %s%n", str, isVisible() ? "Visible" : "");
+			}
+			
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				if (activateOnPaint) {
+					activatePopup();
+					activateOnPaint = false;
+				}
+			}
+
+			public void activateOnPaint(boolean activateOnPaint) {
+				this.activateOnPaint = activateOnPaint;
+			}
 		}
 		
 		protected abstract String getValueStr(int row, int column);
 		
+		public void activatePopup() {
+			System.out.printf("activatePopup%n");
+			
+			if (popup!=null) {
+				System.out.printf("   Popup already exists%n");
+				return;
+			}
+			
+			Point p = editorComp.getLocationOnScreen();
+			int h = editorComp.getHeight();
+			popup = PopupFactory.getSharedInstance().getPopup(owner/*renderComp*/, popupContent, p.x, p.y+h+2);
+			popup.show();
+			// TODO
+		}
+
+		private void deactivatePopup() {
+			System.out.printf("deactivatePopup:%n");
+			if (popup!=null) {
+				popup.hide();
+				popup = null;
+			}
+		}
+
 		@Override
 		public Object getCellEditorValue() {
 			// TODO Auto-generated method stub
@@ -473,12 +607,13 @@ public class Tables {
 		}
 
 		@Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-			renderComp.configureAsTableCellRendererComponent(getValueStr(row, column), table, isSelected, hasFocus);
+			configure(renderComp,getValueStr(row, column), table, isSelected, hasFocus);
 			return renderComp;
 		}
 		@Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-			renderComp.configureAsTableCellRendererComponent(getValueStr(row, column), table, isSelected, false);
-			return renderComp;
+			configure(editorComp,getValueStr(row, column), table, isSelected, false);
+			editorComp.activateOnPaint(true);
+			return editorComp;
 		}
 	}
 	
@@ -640,6 +775,7 @@ public class Tables {
 		public void configureAsTableCellRendererComponent(String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
 			setText(valueStr);
 			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setOpaque(true);
 			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
 			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 		}
