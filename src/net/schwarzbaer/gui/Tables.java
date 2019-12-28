@@ -1,21 +1,15 @@
 package net.schwarzbaer.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.ContainerEvent;
-import java.awt.event.ContainerListener;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
 import java.awt.event.HierarchyBoundsListener;
 import java.awt.event.HierarchyEvent;
-import java.awt.event.HierarchyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Arrays;
@@ -447,6 +441,7 @@ public class Tables {
 		private JPanel popupContent;
 		private Popup popup;
 		private Component owner;
+		private Component contentComp = null;
 		
 		public PopupTableCellEditorAndRenderer(Component owner) {
 			this.owner = owner;
@@ -454,29 +449,55 @@ public class Tables {
 			editorComp = new EditorComp();
 			popup = null;
 			
-			JButton button = new JButton("Close");
-			button.addActionListener(e->deactivatePopup());
-			
 			JPanel center = new JPanel();
 			center.setPreferredSize(new Dimension(100,150));
+			center.setBorder(BorderFactory.createLoweredBevelBorder());
+			center.setBackground(Color.CYAN);
+			center.setOpaque(true);
 			
-			popupContent = new JPanel(new BorderLayout());
-			popupContent.setBorder(BorderFactory.createTitledBorder("PopupContent"));
-			popupContent.add(center,BorderLayout.CENTER);
-			popupContent.add(button,BorderLayout.SOUTH);
+			JButton btnSet = new JButton("Set");
+			btnSet.addActionListener(e->{
+				fireEditingStopped();
+				deactivatePopup();
+			});
+			
+			JButton btnCancel = new JButton("Cancel");
+			btnCancel.addActionListener(e->{
+				fireEditingCanceled();
+				deactivatePopup();
+			});
+			
+			popupContent = new JPanel(new GridBagLayout());
+			popupContent.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+			GridBagConstraints c = new GridBagConstraints();
+			c.fill = GridBagConstraints.BOTH;
+			c.gridwidth = 1; c.weighty = 0; c.gridy = 1;
+			c.weightx = 1;
+			c.gridx = 0; popupContent.add(new JLabel(),c);
+			c.weightx = 0;
+			c.gridx = 1; popupContent.add(btnSet,c);
+			c.gridx = 2; popupContent.add(btnCancel,c);
+			
+			setContent(center);
+		}
+
+		private GridBagConstraints setContent(Component content) {
+			if (contentComp!=null) popupContent.remove(contentComp);
+			GridBagConstraints c = new GridBagConstraints();
+			c.fill = GridBagConstraints.BOTH;
+			c.gridwidth = 3; c.weighty = 1; c.gridy = 0;
+			c.weightx = 1;
+			c.gridx = 0; popupContent.add(content,c);
+			contentComp = content;
+//			popupContent.repaint();
+//			popupContent.revalidate();
+//			content.revalidate();
+			return c;
 		}
 		
 		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
 		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
 
-		public void configure(JLabel comp, String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
-			comp.setText(valueStr);
-			comp.setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
-			comp.setOpaque(true);
-			comp.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-			comp.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
-		}
-		
 		private class EditorComp extends JLabel {
 			private static final long serialVersionUID = 2786411238866454826L;
 			private boolean activateOnPaint = false;
@@ -489,40 +510,41 @@ public class Tables {
 					@Override public void mouseEntered (MouseEvent e) {}
 					@Override public void mouseClicked (MouseEvent e) { activatePopup(); }
 				});
-				addFocusListener(new FocusListener() {
-					@Override public void focusLost  (FocusEvent e) { show("focusLost  "); }
-					@Override public void focusGained(FocusEvent e) { show("focusGained"); }
-				});
-				addComponentListener(new ComponentListener() {
-					@Override public void componentShown  (ComponentEvent e) { show("componentShown  "); }
-					@Override public void componentResized(ComponentEvent e) { show("componentResized"); }
-					@Override public void componentMoved  (ComponentEvent e) { show("componentMoved  "); }
-					@Override public void componentHidden (ComponentEvent e) { show("componentHidden "); }
-				});
+//				addFocusListener(new FocusListener() {
+//					@Override public void focusLost  (FocusEvent e) { show("FocusListener","focusLost  "); }
+//					@Override public void focusGained(FocusEvent e) { show("FocusListener","focusGained"); }
+//				});
+//				addComponentListener(new ComponentListener() {
+//					@Override public void componentShown  (ComponentEvent e) { show("ComponentListener","componentShown  "); }
+//					@Override public void componentResized(ComponentEvent e) { show("ComponentListener","componentResized"); }
+//					@Override public void componentMoved  (ComponentEvent e) { show("ComponentListener","componentMoved  "); }
+//					@Override public void componentHidden (ComponentEvent e) { show("ComponentListener","componentHidden "); }
+//				});
 				addAncestorListener(new AncestorListener() {
-					@Override public void ancestorRemoved(AncestorEvent event) { show("AncestorListener.ancestorRemoved"); }
-					@Override public void ancestorMoved  (AncestorEvent event) { show("AncestorListener.ancestorMoved  "); }
-					@Override public void ancestorAdded  (AncestorEvent event) { show("AncestorListener.ancestorAdded  "); }
+					@Override public void ancestorRemoved(AncestorEvent event) { show("AncestorListener","ancestorRemoved"); deactivatePopup(); }
+					@Override public void ancestorMoved  (AncestorEvent event) { show("AncestorListener","ancestorMoved  "); }
+					@Override public void ancestorAdded  (AncestorEvent event) { show("AncestorListener","ancestorAdded  "); }
 				});
-				addHierarchyListener(new HierarchyListener() {
-					
-					@Override
-					public void hierarchyChanged(HierarchyEvent e) {
-						String extra = "";
-						switch(e.getID()) {
-						case HierarchyEvent.ANCESTOR_RESIZED: extra += ".ANCESTOR_RESIZED";
-						}
-						show("hierarchyChanged"+extra);
-					}
-				});
+//				addHierarchyListener(new HierarchyListener() {
+//					@Override public void hierarchyChanged(HierarchyEvent e) {
+//						String extra = "";
+//						switch(e.getID()) {
+//						case HierarchyEvent.ANCESTOR_RESIZED: extra += ".ANCESTOR_RESIZED";
+//						}
+//						show("HierarchyListener","hierarchyChanged"+extra);
+//					}
+//				});
 				addHierarchyBoundsListener(new HierarchyBoundsListener() {
-					@Override public void ancestorResized(HierarchyEvent e) { show("HierarchyBoundsListener.ancestorResized"); deactivatePopup(); }
-					@Override public void ancestorMoved  (HierarchyEvent e) { show("HierarchyBoundsListener.ancestorMoved  "); deactivatePopup(); }
+					@Override public void ancestorResized(HierarchyEvent e) { show("HierarchyBoundsListener","ancestorResized"); deactivatePopup(); }
+					@Override public void ancestorMoved  (HierarchyEvent e) { show("HierarchyBoundsListener","ancestorMoved  "); deactivatePopup(); }
 				});
+//				addPropertyChangeListener(new PropertyChangeListener() {
+//					@Override public void propertyChange(PropertyChangeEvent evt) { show("PropertyChangeListener","propertyChange"); }
+//				});
 			}
 			
-			private void show(String str) {
-				System.out.printf("EditorComp.%s: %s%n", str, isVisible() ? "Visible" : "");
+			private void show(String str1, String str2) {
+				//System.out.printf("EditorComp.%-24s.%-20s: %s%n", str1, str2, isVisible() ? "Visible" : "");
 			}
 			
 			@Override
@@ -539,81 +561,92 @@ public class Tables {
 			}
 		}
 		
-		protected abstract String getValueStr(int row, int column);
-		
-		public void activatePopup() {
-			System.out.printf("activatePopup%n");
+		protected abstract String getValueStr(int rowM, int columnM);
+		protected abstract Component getSelectorPanel(int rowM, int columnM, SelectionChangeListener listener);
+		protected abstract void copyCurrentSelectionToModel();
+
+		protected interface SelectionChangeListener {
+			void selectionChanged(String newValueStr);
+		}
+
+		private void activatePopup() {
+//			System.out.printf("activatePopup%n");
 			
 			if (popup!=null) {
-				System.out.printf("   Popup already exists%n");
+//				System.out.printf("   Popup already exists%n");
 				return;
 			}
 			
-			Point p = editorComp.getLocationOnScreen();
-			int h = editorComp.getHeight();
-			popup = PopupFactory.getSharedInstance().getPopup(owner/*renderComp*/, popupContent, p.x, p.y+h+2);
-			popup.show();
-			// TODO
+			if (editorComp.isVisible()) {
+				Point p = editorComp.getLocationOnScreen();
+				int h = editorComp.getHeight();
+				popup = PopupFactory.getSharedInstance().getPopup(owner/*renderComp*/, popupContent, p.x, p.y+h+2);
+				popup.show();
+			}
 		}
 
 		private void deactivatePopup() {
-			System.out.printf("deactivatePopup:%n");
+//			System.out.printf("deactivatePopup:%n");
 			if (popup!=null) {
 				popup.hide();
 				popup = null;
 			}
 		}
 
-		@Override
-		public Object getCellEditorValue() {
-			// TODO Auto-generated method stub
+		@Override public Object getCellEditorValue() {
+			copyCurrentSelectionToModel();
 			return null;
 		}
 
-		@Override
-		public boolean isCellEditable(EventObject e) {
-			// TODO Auto-generated method stub
-			return super.isCellEditable(e);
+		@Override public boolean shouldSelectCell(EventObject anEvent) {
+			return true;
 		}
 
-		@Override
-		public boolean shouldSelectCell(EventObject anEvent) {
-			// TODO Auto-generated method stub
-			return super.shouldSelectCell(anEvent);
-		}
+//		@Override
+//		public boolean stopCellEditing() {
+//			// TODO Auto-generated method stub
+//			return super.stopCellEditing();
+//		}
 
-		@Override
-		public boolean stopCellEditing() {
-			// TODO Auto-generated method stub
-			return super.stopCellEditing();
-		}
+//		@Override
+//		public void cancelCellEditing() {
+//			// TODO Auto-generated method stub
+//			super.cancelCellEditing();
+//		}
 
-		@Override
-		public void cancelCellEditing() {
-			// TODO Auto-generated method stub
-			super.cancelCellEditing();
-		}
+//		@Override
+//		protected void fireEditingStopped() {
+//			// TODO Auto-generated method stub
+//			super.fireEditingStopped();
+//		}
 
-		@Override
-		protected void fireEditingStopped() {
-			// TODO Auto-generated method stub
-			super.fireEditingStopped();
-		}
-
-		@Override
-		protected void fireEditingCanceled() {
-			// TODO Auto-generated method stub
-			super.fireEditingCanceled();
-		}
+//		@Override
+//		protected void fireEditingCanceled() {
+//			// TODO Auto-generated method stub
+//			super.fireEditingCanceled();
+//		}
 
 		@Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-			configure(renderComp,getValueStr(row, column), table, isSelected, hasFocus);
+			int rowM    = table.convertRowIndexToModel   (row   );
+			int columnM = table.convertColumnIndexToModel(column);
+			configure(renderComp,getValueStr(rowM, columnM), table, isSelected, hasFocus);
 			return renderComp;
 		}
 		@Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-			configure(editorComp,getValueStr(row, column), table, isSelected, false);
+			int rowM    = table.convertRowIndexToModel   (row   );
+			int columnM = table.convertColumnIndexToModel(column);
+			configure(editorComp,getValueStr(rowM, columnM), table, isSelected, false);
+			setContent(getSelectorPanel(rowM,columnM,editorComp::setText));
 			editorComp.activateOnPaint(true);
 			return editorComp;
+		}
+
+		public void configure(JLabel comp, String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
+			comp.setText(valueStr);
+			comp.setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			comp.setOpaque(true);
+			comp.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+			comp.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 		}
 	}
 	
