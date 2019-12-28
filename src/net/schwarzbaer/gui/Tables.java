@@ -20,9 +20,11 @@ import java.util.List;
 import java.util.Vector;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -657,23 +659,30 @@ public class Tables {
 		protected Vector<T> valueVector;
 		protected T[] valueArray;
 		private ListCellRenderer<? super T> renderer;
+		private Supplier<Vector<T>> volatileValueSource;
 		
+		public ComboboxCellEditor(Supplier<Vector<T>> volatileValueSource) {
+			this(null,null,volatileValueSource);
+			if (volatileValueSource==null) throw new IllegalArgumentException("Parameter \"volatileValueSource\" must not be null.");
+		}
 		public ComboboxCellEditor(Vector<T> values) {
-			this(values,null);
+			this(values,null,null);
 			if (values==null) throw new IllegalArgumentException("Parameter \"values\" must not be null.");
 		}
 		public ComboboxCellEditor(T[] values) {
-			this(null,values);
+			this(null,values,null);
 			if (values==null) throw new IllegalArgumentException("Parameter \"values\" must not be null.");
 		}
-		private ComboboxCellEditor(Vector<T> valueVector, T[] valueArray) {
+		private ComboboxCellEditor(Vector<T> valueVector, T[] valueArray, Supplier<Vector<T>> volatileValueSource) {
 			this.valueVector = valueVector;
 			this.valueArray = valueArray;
-			if (valueVector==null && valueArray==null) throw new IllegalArgumentException();
+			this.volatileValueSource = volatileValueSource;
+			if (valueVector==null && valueArray==null && volatileValueSource==null) throw new IllegalArgumentException();
 			this.currentValue = null;
 			this.renderer = null;
 		}
 		public void addValue(T newValue) {
+			if (volatileValueSource!=null) throw new UnsupportedOperationException();
 			stopCellEditing();
 			if (valueArray!=null) {
 				valueArray = Arrays.copyOf(valueArray, valueArray.length+1);
@@ -684,12 +693,14 @@ public class Tables {
 		}
 
 		public void setValues(T[] newValues) {
+			if (volatileValueSource!=null) throw new UnsupportedOperationException();
 			stopCellEditing();
 			valueArray = newValues;
 			valueVector = null;
 		}
 
 		public void setValues(Vector<T> newValues) {
+			if (volatileValueSource!=null) throw new UnsupportedOperationException();
 			stopCellEditing();
 			valueArray = null;
 			valueVector = newValues;
@@ -713,8 +724,9 @@ public class Tables {
 			this.currentValue = value;
 			
 			JComboBox<T> cmbbx;
-			if      (valueArray !=null) cmbbx = new JComboBox<T>(valueArray);
-			else if (valueVector!=null) cmbbx = new JComboBox<T>(valueVector);
+			if      (valueArray         !=null) cmbbx = new JComboBox<T>(valueArray);
+			else if (valueVector        !=null) cmbbx = new JComboBox<T>(valueVector);
+			else if (volatileValueSource!=null) cmbbx = new JComboBox<T>(volatileValueSource.get());
 			else                        cmbbx = null;
 			
 			if (renderer!=null) cmbbx.setRenderer(renderer);
@@ -728,6 +740,36 @@ public class Tables {
 			return cmbbx;
 		}
 		
+	}
+	
+	public static abstract class IconTextRenderer<T> implements ListCellRenderer<T>, TableCellRenderer {
+		
+		private LabelRendererComponent comp;
+
+		public IconTextRenderer() {
+			this(new Dimension(1,16));
+		}
+		public IconTextRenderer(int width, int height) {
+			this(new Dimension(width, height));
+		}
+		public IconTextRenderer(Dimension defaultSize) {
+			comp = new LabelRendererComponent();
+			comp.setPreferredSize(defaultSize);
+		}
+		
+		protected abstract String convertToStr (Object value);
+		protected abstract Icon   convertToIcon(Object value);
+		
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+			comp.configureAsTableCellRendererComponent(table, convertToIcon(value), convertToStr(value), isSelected, hasFocus);
+			return comp;
+		}
+		@Override
+		public Component getListCellRendererComponent(JList<? extends T> list, T value, int index, boolean isSelected, boolean hasFocus) {
+			comp.configureAsListCellRendererComponent(list, convertToIcon(value), convertToStr(value), isSelected, hasFocus);
+			return comp;
+		}
 	}
 	
 	public static class NonStringRenderer<T> implements ListCellRenderer<T>, TableCellRenderer {
@@ -805,12 +847,22 @@ public class Tables {
 		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
 		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
 		
-		public void configureAsTableCellRendererComponent(String valueStr, JTable table, boolean isSelected, boolean hasFocus) {
+		public void configureAsTableCellRendererComponent(JTable table, Icon icon, String valueStr, boolean isSelected, boolean hasFocus) {
+			setIcon(icon);
 			setText(valueStr);
 			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
 			setOpaque(true);
 			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
 			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		}
+		
+		public void configureAsListCellRendererComponent(JList<?> list, Icon icon, String valueStr, boolean isSelected, boolean hasFocus) {
+			setIcon(icon);
+			setText(valueStr);
+			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setOpaque(isSelected);
+			setBackground(isSelected ? list.getSelectionBackground() : null);
+			setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
 		}
 
 		@Override public void revalidate() {}
