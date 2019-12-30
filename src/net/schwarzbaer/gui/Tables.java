@@ -604,30 +604,6 @@ public class Tables {
 			return true;
 		}
 
-//		@Override
-//		public boolean stopCellEditing() {
-//			// TODO Auto-generated method stub
-//			return super.stopCellEditing();
-//		}
-
-//		@Override
-//		public void cancelCellEditing() {
-//			// TODO Auto-generated method stub
-//			super.cancelCellEditing();
-//		}
-
-//		@Override
-//		protected void fireEditingStopped() {
-//			// TODO Auto-generated method stub
-//			super.fireEditingStopped();
-//		}
-
-//		@Override
-//		protected void fireEditingCanceled() {
-//			// TODO Auto-generated method stub
-//			super.fireEditingCanceled();
-//		}
-
 		@Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
 			int rowM    = table.convertRowIndexToModel   (row   );
 			int columnM = table.convertColumnIndexToModel(column);
