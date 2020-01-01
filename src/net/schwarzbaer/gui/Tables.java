@@ -442,11 +442,13 @@ public class Tables {
 		private EditorComp editorComp;
 		private JPanel popupContent;
 		private Popup popup;
-		private Component owner;
+		private JTable table;
 		private Component contentComp = null;
+		private Component tableViewport;
 		
-		public PopupTableCellEditorAndRenderer(Component owner) {
-			this.owner = owner;
+		public PopupTableCellEditorAndRenderer(JTable table, Component tableViewport) {
+			this.table = table;
+			this.tableViewport = tableViewport;
 			renderComp = new LabelRendererComponent();
 			editorComp = new EditorComp();
 			popup = null;
@@ -459,6 +461,7 @@ public class Tables {
 			
 			JButton btnSet = new JButton("Set");
 			btnSet.addActionListener(e->{
+				stopSelection();
 				fireEditingStopped();
 				deactivatePopup();
 			});
@@ -483,6 +486,35 @@ public class Tables {
 			setContent(center);
 		}
 
+//		@Override
+//		public boolean stopCellEditing() {
+//			System.out.println("stopCellEditing() START");
+//			boolean b = super.stopCellEditing();
+//			System.out.println("stopCellEditing() END");
+//			return b;
+//		}
+//		@Override
+//		public void cancelCellEditing() {
+//			System.out.println("cancelCellEditing() START");
+//			super.cancelCellEditing();
+//			System.out.println("cancelCellEditing() END");
+//		}
+
+		@Override
+		protected void fireEditingStopped() {
+//			System.out.println("fireEditingStopped() START");
+			cancelSelection();
+			super.fireEditingStopped();
+//			System.out.println("fireEditingStopped() END");
+		}
+		@Override
+		protected void fireEditingCanceled() {
+//			System.out.println("fireEditingCanceled() START");
+			cancelSelection();
+			super.fireEditingCanceled();
+//			System.out.println("fireEditingCanceled() END");
+		}
+
 		private GridBagConstraints setContent(Component content) {
 			if (contentComp!=null) popupContent.remove(contentComp);
 			GridBagConstraints c = new GridBagConstraints();
@@ -503,6 +535,8 @@ public class Tables {
 		private class EditorComp extends JLabel {
 			private static final long serialVersionUID = 2786411238866454826L;
 			private boolean activateOnPaint = false;
+			private int rowM = -1;
+			private int columnM = -1;
 
 			EditorComp() {
 				addMouseListener(new MouseListener() {
@@ -510,7 +544,7 @@ public class Tables {
 					@Override public void mousePressed (MouseEvent e) {}
 					@Override public void mouseExited  (MouseEvent e) {}
 					@Override public void mouseEntered (MouseEvent e) {}
-					@Override public void mouseClicked (MouseEvent e) { activatePopup(); }
+					@Override public void mouseClicked (MouseEvent e) { activatePopup(rowM, columnM); }
 				});
 //				addFocusListener(new FocusListener() {
 //					@Override public void focusLost  (FocusEvent e) { show("FocusListener","focusLost  "); }
@@ -549,11 +583,16 @@ public class Tables {
 				//System.out.printf("EditorComp.%-24s.%-20s: %s%n", str1, str2, isVisible() ? "Visible" : "");
 			}
 			
+			public void set(int rowM, int columnM) {
+				this.rowM = rowM;
+				this.columnM = columnM;
+			}
+
 			@Override
 			protected void paintComponent(Graphics g) {
 				super.paintComponent(g);
 				if (activateOnPaint) {
-					activatePopup();
+					activatePopup(rowM,columnM);
 					activateOnPaint = false;
 				}
 			}
@@ -566,12 +605,14 @@ public class Tables {
 		protected abstract String getValueStr(int rowM, int columnM);
 		protected abstract Component getSelectorPanel(int rowM, int columnM, SelectionChangeListener listener);
 		protected abstract void copyCurrentSelectionToModel();
+		protected abstract void stopSelection();
+		protected abstract void cancelSelection();
 
 		protected interface SelectionChangeListener {
 			void selectionChanged(String newValueStr);
 		}
 
-		private void activatePopup() {
+		private void activatePopup(int rowM, int columnM) {
 //			System.out.printf("activatePopup%n");
 			
 			if (popup!=null) {
@@ -580,11 +621,34 @@ public class Tables {
 			}
 			
 			if (editorComp.isVisible()) {
-				Point p = editorComp.getLocationOnScreen();
-				int h = editorComp.getHeight();
-				popup = PopupFactory.getSharedInstance().getPopup(owner/*renderComp*/, popupContent, p.x, p.y+h+2);
+				Point p = computePopupPos();
+				popup = PopupFactory.getSharedInstance().getPopup(table/*renderComp*/, popupContent, p.x, p.y);
 				popup.show();
 			}
+		}
+
+		private Point computePopupPos() {
+//			System.out.printf("table       :  VisibleRect: %s%n", table.getVisibleRect());
+			Point tp = tableViewport.getLocationOnScreen();
+			//int tw = table.getWidth();
+			int th = tableViewport.getHeight();
+			
+			Point ep = editorComp.getLocationOnScreen();
+			//int ew = editorComp.getWidth();
+			int eh = editorComp.getHeight();
+			
+			Point pp = new Point(ep.x, ep.y+eh+2);
+			//int pw = popupContent.getWidth();
+			int ph = popupContent.getHeight();
+			
+//			System.out.printf("table       :  x:%d  y:%d  h:%d%n", tp.x, tp.y, th);
+//			System.out.printf("editorComp  :  x:%d  y:%d  h:%d%n", ep.x, ep.y, eh);
+//			System.out.printf("popupContent:  x:%d  y:%d  h:%d%n", pp.x, pp.y, ph);
+			
+			if (ph<th && pp.y+ph>=tp.y+th && ep.y-2-ph>tp.y)
+				pp = new Point(ep.x, ep.y-2-ph);
+			
+			return pp;
 		}
 
 		private void deactivatePopup() {
@@ -615,6 +679,7 @@ public class Tables {
 			int columnM = table.convertColumnIndexToModel(column);
 			configure(editorComp,getValueStr(rowM, columnM), table, isSelected, false);
 			setContent(getSelectorPanel(rowM,columnM,editorComp::setText));
+			editorComp.set(rowM, columnM);
 			editorComp.activateOnPaint(true);
 			return editorComp;
 		}
