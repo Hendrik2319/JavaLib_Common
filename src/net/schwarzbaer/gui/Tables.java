@@ -862,6 +862,26 @@ public class Tables {
 
 	public static class CheckBoxRendererComponent extends JCheckBox {
 		private static final long serialVersionUID = -1094682628853018055L;
+		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
+		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
+		
+		public void configureAsTableCellRendererComponent(JTable table, boolean isChecked, String valueStr, boolean isSelected, boolean hasFocus) {
+			setSelected(isChecked);
+			setText(valueStr);
+			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setOpaque(true);
+			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		}
+		
+		public void configureAsListCellRendererComponent(JList<?> list, boolean isChecked, String valueStr, boolean isSelected, boolean hasFocus) {
+			setSelected(isChecked);
+			setText(valueStr);
+			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setOpaque(isSelected);
+			setBackground(isSelected ? list.getSelectionBackground() : null);
+			setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
+		}
 
 		@Override public void revalidate() {}
 		@Override public void invalidate() {}
