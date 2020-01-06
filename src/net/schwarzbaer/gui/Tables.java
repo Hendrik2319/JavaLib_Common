@@ -608,7 +608,7 @@ public class Tables {
 		protected abstract void stopSelection();
 		protected abstract void cancelSelection();
 
-		protected interface SelectionChangeListener {
+		public interface SelectionChangeListener {
 			void selectionChanged(String newValueStr);
 		}
 
