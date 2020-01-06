@@ -18,6 +18,7 @@ import java.util.EventObject;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -344,6 +345,17 @@ public class Tables {
 		public abstract Object getValueAt(int rowIndex, int columnIndex, ColumnID columnID);
 		
 		public int getUnsortedRowsCount() { return 0; }
+		
+		public void forEachColum(BiConsumer<ColumnID,TableColumn> action) {
+			for (int i=0; i<columns.length; ++i) {
+				TableColumn column = null;
+				if (table!=null) {
+					int columnV = table.convertColumnIndexToView(i);
+					column = table.getColumnModel().getColumn(columnV);
+				}
+				action.accept(columns[i],column);
+			}
+		}
 		
 		public ColumnID getColumnID(int columnIndex) {
 			if (columnIndex<0) return null;
