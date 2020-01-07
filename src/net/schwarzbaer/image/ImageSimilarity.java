@@ -9,16 +9,20 @@ public class ImageSimilarity<ImageID> {
 	
 	private RasterSource<ImageID> rasterSource;
 	
-	ImageSimilarity(RasterSource<ImageID> rasterSource) {
+	public ImageSimilarity(RasterSource<ImageID> rasterSource) {
 		this.rasterSource = rasterSource;
 	}
 	
-	public int[] computeOrder(ImageID baseImage_, ImageID[] images_) {
-		ComparableImage baseImage = new ComparableImage(-1,rasterSource.createRaster(baseImage_,0xFFFFFF,256,256));
+	public static <ImageID> int[] computeOrder(ImageID baseImageID, ImageID[] imageIDs, RasterSource<ImageID> rasterSource) {
+		return new ImageSimilarity<ImageID>(rasterSource).computeOrder(baseImageID, imageIDs);
+	}
+	
+	public int[] computeOrder(ImageID baseImageID, ImageID[] imageIDs) {
+		ComparableImage baseImage = new ComparableImage(-1,rasterSource.createRaster(baseImageID,0xFFFFFF,256,256));
 		
-		ComparableImage[] images = new ComparableImage[images_.length];
-		for (int i=0; i<images_.length; i++) {
-			images[i] = new ComparableImage(i,rasterSource.createRaster(images_[i],0xFFFFFF,256,256));
+		ComparableImage[] images = new ComparableImage[imageIDs.length];
+		for (int i=0; i<imageIDs.length; i++) {
+			images[i] = new ComparableImage(i,rasterSource.createRaster(imageIDs[i],0xFFFFFF,256,256));
 			images[i].similarity = images[i].computeSimilarityTo(baseImage);
 		}
 		
