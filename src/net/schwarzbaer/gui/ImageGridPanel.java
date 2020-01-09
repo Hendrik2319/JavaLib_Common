@@ -67,6 +67,10 @@ public class ImageGridPanel extends JPanel {
 		setBackground(COLOR_BACKGROUND);
 	}
 	
+	public void fixVerticalScrolling(JScrollPane imageGridScrollPane) {
+		imageGridScrollPane.getVerticalScrollBar().setUnitIncrement(10);
+	}
+
 	protected void createImageItems(String preselectedImageID, Iterable<ImageData> images, Consumer<Integer> indexOutput) {
 		selectedIndex = -1;
 		imageItems.clear();
@@ -298,13 +302,13 @@ public class ImageGridPanel extends JPanel {
 			
 			MouseInputAdapter m = new MouseInputAdapter() {
 				@Override public void mouseClicked(MouseEvent e) {
-					if (e.getButton()==MouseEvent.BUTTON3) notifyRightClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
-					else if (e.getClickCount()==2) notifyDoubleClickListeners(ID, index, ImageItem.this, e.getX(), e.getY());
-					else setSelectedImage(index);
+					if (e.getButton()==MouseEvent.BUTTON3) notifyRightClickListeners(ImageItem.this.ID, ImageItem.this.index, ImageItem.this, e.getX(), e.getY());
+					else if (e.getClickCount()==2) notifyDoubleClickListeners(ImageItem.this.ID, ImageItem.this.index, ImageItem.this, e.getX(), e.getY());
+					else setSelectedImage(ImageItem.this.index);
 					requestFocusInWindow();
 				}
-				@Override public void mouseEntered(MouseEvent e) { hasFocus=true;  setColors(); notifyFocusListeners(ID, index, hasFocus); }
-				@Override public void mouseExited (MouseEvent e) { hasFocus=false; setColors(); notifyFocusListeners(ID, index, hasFocus); }
+				@Override public void mouseEntered(MouseEvent e) { hasFocus=true;  setColors(); notifyFocusListeners(ImageItem.this.ID, ImageItem.this.index, hasFocus); }
+				@Override public void mouseExited (MouseEvent e) { hasFocus=false; setColors(); notifyFocusListeners(ImageItem.this.ID, ImageItem.this.index, hasFocus); }
 				
 			};
 			
