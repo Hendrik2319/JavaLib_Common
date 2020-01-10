@@ -411,7 +411,14 @@ public class Tables {
 			setValueAt(aValue, rowIndex, columnIndex, columnID);
 		}
 		protected void setValueAt(Object aValue, int rowIndex, int columnIndex, ColumnID columnID) {}
-	
+		
+		public int getSumOfPrefColumnWidths() {
+			int sum = 0;
+			for (ColumnID columnID:columns)
+				sum += columnID.getColumnConfig().prefWidth;
+			return sum;
+		}
+		
 		public void setColumnWidths(JTable table) {
 			TableColumnModel columnModel = table.getColumnModel();
 			for (int i=0; i<columnModel.getColumnCount(); ++i) {
