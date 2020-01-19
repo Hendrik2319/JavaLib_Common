@@ -44,13 +44,18 @@ public class ImageGridPanel extends JPanel {
 	private Vector<SelectionListener> selectionListeners = new Vector<>();
 	private Vector<RightClickListener> rightClickListener = new Vector<>();
 	private Vector<DoubleClickListener> doubleClickListener = new Vector<>();
-	private int prefTxtWidth = 100;
-	private int prefTxtHeight = 60;
+	private int prefTxtWidth;
+	private int prefTxtHeight;
 	
 	public ImageGridPanel(int cols, String preselectedImageID, boolean imageItemFillGridCell, Iterable<ImageData> images) {
+		this(cols, preselectedImageID, imageItemFillGridCell, images, 100, 60);
+	}
+	public ImageGridPanel(int cols, String preselectedImageID, boolean imageItemFillGridCell, Iterable<ImageData> images, int prefTxtWidth, int prefTxtHeight) {
 		super(new GridBagLayout());
 		this.cols = cols;
 		this.imageItemFillGridCell = imageItemFillGridCell;
+		this.prefTxtWidth = prefTxtWidth;
+		this.prefTxtHeight = prefTxtHeight;
 		
 		defaultFont = new JLabel().getFont();
 		JTextArea dummy = new JTextArea();
@@ -112,6 +117,11 @@ public class ImageGridPanel extends JPanel {
 
 	public void setMarkerColors(Color[] colors) {
 		COLOR_BACKGROUND_MARKED = colors;
+	}
+	
+	public void setLabelSize(int width, int height) {
+		prefTxtWidth  = width;
+		prefTxtHeight = height;
 	}
 	
 	public void disableLabelSizePredefinition() {
