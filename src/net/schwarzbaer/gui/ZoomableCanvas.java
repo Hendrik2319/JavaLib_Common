@@ -73,7 +73,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 	}
 
-	protected static abstract class ViewState {
+	public static abstract class ViewState {
 		protected Point tempPanOffset = null;
 
 		protected abstract boolean isOk();
