@@ -164,15 +164,21 @@ public class IconSource<E extends Enum<E>> {
 	}
 
 	public static Icon setSideBySide(Icon icon1, Icon icon2) {
+		return setSideBySide(icon1, icon2, false);
+	}
+
+	public static Icon setSideBySide(Icon icon1, Icon icon2, boolean verticallyCentered) {
 		if (icon1==null) return icon2;
 		if (icon2==null) return icon1;
 		
 		int width  = icon1.getIconWidth() + icon2.getIconWidth();
 		int height = Math.max( icon1.getIconHeight(), icon2.getIconHeight() );
+		int offsetY1 = !verticallyCentered ? 0 : Math.max( 0, (icon2.getIconHeight()-icon1.getIconHeight()) >> 1 );
+		int offsetY2 = !verticallyCentered ? 0 : Math.max( 0, (icon1.getIconHeight()-icon2.getIconHeight()) >> 1 );
 		BufferedImage bufferedImage = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
 		Graphics g = bufferedImage.getGraphics();
-		icon1.paintIcon(null, g, 0,0);
-		icon2.paintIcon(null, g, icon1.getIconWidth(),0);
+		icon1.paintIcon(null, g, 0,                    offsetY1);
+		icon2.paintIcon(null, g, icon1.getIconWidth(), offsetY2);
 		
 		return new ImageIcon(bufferedImage);
 	}
