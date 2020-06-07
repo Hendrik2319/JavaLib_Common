@@ -61,6 +61,10 @@ public final class HSColorChooser {
 			setSizeAsMinSize();
 		}
 		
+		public void setInitialColor(Color color) {
+			mainPanel.setInitialColor(color);
+		}
+		
 		public Color getColor() {
 			return mainPanel.dlgResultColor;
 		}
