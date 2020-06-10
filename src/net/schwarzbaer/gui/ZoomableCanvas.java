@@ -29,18 +29,16 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 
 	private boolean withLeftAxis;
 	
-	protected ZoomableCanvas() { this(null,false,false,false,false,false); }
-	protected ZoomableCanvas(Color COLOR_AXIS, boolean withMapScale) { this(COLOR_AXIS,withMapScale,false,false,false,false); }
-	protected ZoomableCanvas(Color COLOR_AXIS, boolean withMapScale, boolean withTopAxis, boolean withRightAxis, boolean withBottomAxis, boolean withLeftAxis) {
-		this.withTopAxis = withTopAxis;
-		this.withRightAxis = withRightAxis;
-		this.withBottomAxis = withBottomAxis;
-		this.withLeftAxis = withLeftAxis;
+	protected ZoomableCanvas() {
+		this.withTopAxis = false;
+		this.withRightAxis = false;
+		this.withBottomAxis = false;
+		this.withLeftAxis = false;
 		panStart = null;
 		viewState = createViewState();
-		mapScale       = !withMapScale ? null : new Scale(viewState, COLOR_AXIS, "u");
-		verticalAxes   = !this.withLeftAxis && !this.withRightAxis ? null : new Axes (viewState, true , COLOR_AXIS);
-		horizontalAxes = !this.withTopAxis && !this.withBottomAxis ? null : new Axes (viewState, false, COLOR_AXIS);
+		mapScale = null;
+		verticalAxes = null;
+		horizontalAxes = null;
 		
 		MouseInputAdapter mouse = new MouseInputAdapter() {
 			@Override public void mousePressed   (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) startPan  (e.getPoint()); }
@@ -58,6 +56,24 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		addMouseWheelListener(mouse);
 	}
 	protected abstract VS createViewState();
+	
+	protected void activateMapScale(Color color, String unit) {
+		activateMapScale(color, unit, 1);
+	}
+	protected void activateMapScale(Color color, String unit, float unitScaling) {
+		mapScale = new Scale(viewState, color, unit, unitScaling);
+	}
+	protected void activateAxes(Color color, boolean withTopAxis, boolean withRightAxis, boolean withBottomAxis, boolean withLeftAxis) {
+		activateAxes(color, withTopAxis, withRightAxis, withBottomAxis, withLeftAxis, 1);
+	}
+	protected void activateAxes(Color color, boolean withTopAxis, boolean withRightAxis, boolean withBottomAxis, boolean withLeftAxis, float unitScaling) {
+		this.withTopAxis = withTopAxis;
+		this.withRightAxis = withRightAxis;
+		this.withBottomAxis = withBottomAxis;
+		this.withLeftAxis = withLeftAxis;
+		verticalAxes   = !this.withLeftAxis && !this.withRightAxis ? null : new Axes (viewState, true , color, unitScaling);
+		horizontalAxes = !this.withTopAxis && !this.withBottomAxis ? null : new Axes (viewState, false, color, unitScaling);
+	}
 	
 	protected void mouseEntered(MouseEvent e) {}
 	protected void mouseMoved  (MouseEvent e) {}
@@ -201,12 +217,14 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private float scaleLengthPerAngleLong;
 		private float lowerZoomLimit;
 
+		protected boolean debug_showChanges_scalePixelPerLength;
 
 		protected ViewState(ZoomableCanvas<?> canvas, float lowerZoomLimit) {
 			this.canvas = canvas;
 			this.lowerZoomLimit = lowerZoomLimit;
 			tempPanOffset = null;
 			clearValues();
+			debug_showChanges_scalePixelPerLength = false;
 		}
 		
 		protected void clearValues() {
@@ -214,6 +232,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			scaleLengthPerAngleLat  = Float.NaN;
 			scaleLengthPerAngleLong = Float.NaN;
 			scalePixelPerLength     = Float.NaN;
+			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset -> scalePixelPerLength: %f %n", scalePixelPerLength);
 		}
 
 		public boolean haveScalePixelPerLength() {
@@ -256,6 +275,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			float scalePixelPerLengthLat  = (canvas.height-30) / neededHeight;
 			float scalePixelPerLengthLong = (canvas.width -30) / neededWidth;
 			scalePixelPerLength = Math.min(scalePixelPerLengthLat, scalePixelPerLengthLong);
+			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset -> scalePixelPerLength: %f %n", scalePixelPerLength);
 			
 			return true;
 		}
@@ -269,9 +289,15 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			if (scalePixelPerLength*f < lowerZoomLimit) return false;
 			
 			scalePixelPerLength *= f;
+			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "zoom -> scalePixelPerLength: %f %n", scalePixelPerLength);
+			
+			//System.out.printf(Locale.ENGLISH, "zoom( Point[%d,%d], %1.4f) -> MapLatLong[ lat:%1.3f, long:%1.3f ] -> scalePixelPerLength: %1.3f %n", point.x,point.y, f, location.latitude,location.longitude, scalePixelPerLength);
+			//System.out.printf(Locale.ENGLISH, "OLD: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
+			
 			center.latitude  = (centerOld.latitude  - location.latitude ) / f + location.latitude;
 			center.longitude = (centerOld.longitude - location.longitude) * (float) (Math.cos(centerOld.latitude/180*Math.PI) / Math.cos(center.latitude/180*Math.PI) ) / f + location.longitude;
 			updateScaleLengthPerAngle();
+			//System.out.printf(Locale.ENGLISH, "NEW: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
 			
 			return true;
 		}
@@ -292,18 +318,22 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 
 		public Point convertPos_AngleToScreen(MapLatLong location) {
-			if (location.latitude==null || location.longitude==null) return null;
+			if (location==null || location.latitude==null || location.longitude==null) return null;
+			return convertPos_AngleToScreen(location.longitude, location.latitude);
+		}
+		public Point convertPos_AngleToScreen(float longitude_x, float latitude_y) {
 			return new Point(
-				convertPos_AngleToScreen_Long(location.longitude),
-				convertPos_AngleToScreen_Lat (location.latitude )
+				convertPos_AngleToScreen_Long(longitude_x),
+				convertPos_AngleToScreen_Lat (latitude_y )
 			);
 		}
-		public Integer convertPos_AngleToScreen_Long(float longitude) {
+		
+		public int convertPos_AngleToScreen_Long(float longitude) {
 			float x = canvas.width /2f + convertLength_AngleToScreen_Long(longitude - center.longitude);
 			if (tempPanOffset!=null) x += tempPanOffset.x;
 			return Math.round(x);
 		}
-		public Integer convertPos_AngleToScreen_Lat (float latitude) {
+		public int convertPos_AngleToScreen_Lat (float latitude) {
 			float y = canvas.height/2f - convertLength_AngleToScreen_Lat (latitude  - center.latitude );
 			if (tempPanOffset!=null) y += tempPanOffset.y;
 			return Math.round(y);
@@ -317,11 +347,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 				convertPos_ScreenToAngle_Long(point.x)
 			);
 		}
-		public Float convertPos_ScreenToAngle_Long(int x) {
+		public float convertPos_ScreenToAngle_Long(int x) {
 			if (tempPanOffset!=null) x -= tempPanOffset.x;
 			return center.longitude + convertLength_ScreenToAngle_Long(x - canvas.width /2f);
 		}
-		public Float convertPos_ScreenToAngle_Lat(int y) {
+		public float convertPos_ScreenToAngle_Lat(int y) {
 			if (tempPanOffset!=null) y -= tempPanOffset.y;
 			return center.latitude  - convertLength_ScreenToAngle_Lat(y - canvas.height/2f);
 		}
@@ -329,7 +359,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		public float convertLength_ScreenToAngle_Lat (float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLat ; }
 	}
 
-	public static class Axes {
+	private static class Axes {
 		private static final int minMinorTickUnitLength_px = 7;
 		private static final int majorTickLength_px = 10;
 		private static final int minorTickLength_px = 4;
@@ -342,21 +372,25 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private boolean isVertical;
 		private ViewState viewState;
 		private Color axisColor;
+		private float unitScaling;
+		private float unitScaling1;
 		
-		public Axes(ViewState viewState, boolean isVertical, Color axisColor) {
+		Axes(ViewState viewState, boolean isVertical, Color axisColor, float unitScaling) {
 			this.viewState = viewState;
 			this.isVertical = isVertical;
 			this.axisColor = axisColor;
+			this.unitScaling1 = unitScaling;
+			this.unitScaling = 1/this.unitScaling1;
 		}
 		
-		public String toString(float angle) {
+		private String toString(float angle) {
 			return String.format(Locale.ENGLISH, "%1."+precision+"f", angle);
 		}
 		
-		public void updateTicks() {
+		void updateTicks() {
 			float minMinorTickUnitLength_a;
-			if (isVertical) minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Lat (minMinorTickUnitLength_px);
-			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Long(minMinorTickUnitLength_px);
+			if (isVertical) minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Lat (minMinorTickUnitLength_px) / unitScaling;
+			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Long(minMinorTickUnitLength_px) / unitScaling;
 			
 			majorTickUnit_a = 1f;
 			minorTickCount = 5; // minorTickUnit_a = 0.2
@@ -399,16 +433,16 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			minorTickUnit_a = majorTickUnit_a/minorTickCount;
 		}
 	
-		public void drawAxis(Graphics2D g2, int c0, int c1, int width1, boolean labelsRightBottom) {
+		void drawAxis(Graphics2D g2, int c0, int c1, int width1, boolean labelsRightBottom) {
 			//   isVertical:  c0 = x, c1 = y, width1 = height
 			// ! isVertical:  c0 = y, c1 = x, width1 = width
 			if (width1<0) return; // display area too small
 			
 			float minAngle_a,maxAngle_a,angleWidth_a;
-			if (isVertical) minAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1);
-			else            minAngle_a = viewState.convertPos_ScreenToAngle_Long(c1);
-			if (isVertical) maxAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1+width1);
-			else            maxAngle_a = viewState.convertPos_ScreenToAngle_Long(c1+width1);
+			if (isVertical) minAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1) / unitScaling;
+			else            minAngle_a = viewState.convertPos_ScreenToAngle_Long(c1) / unitScaling;
+			if (isVertical) maxAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1+width1) / unitScaling;
+			else            maxAngle_a = viewState.convertPos_ScreenToAngle_Long(c1+width1) / unitScaling;
 			
 			if (maxAngle_a<minAngle_a) {
 				angleWidth_a = minAngle_a; // angleWidth_a  used as temp. storage
@@ -439,8 +473,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//   isVertical:  c0 = x, c1 = y, width1 = height
 			// ! isVertical:  c0 = y, c1 = x, width1 = width
 			int c1;
-			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle);
-			else            c1 = viewState.convertPos_AngleToScreen_Long(angle);
+			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle*unitScaling);
+			else            c1 = viewState.convertPos_AngleToScreen_Long(angle*unitScaling);
 			
 			int halfTick = majorTickLength_px/2;
 			int tickLeft  = halfTick;
@@ -466,8 +500,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//   isVertical:  c0 = x, c1 = y, width1 = height
 			// ! isVertical:  c0 = y, c1 = x, width1 = width
 			int c1;
-			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle);
-			else            c1 = viewState.convertPos_AngleToScreen_Long(angle);
+			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle*unitScaling);
+			else            c1 = viewState.convertPos_AngleToScreen_Long(angle*unitScaling);
 			
 			int tickLeft  = minorTickLength_px/2;
 			int tickRight = minorTickLength_px/2;
@@ -478,58 +512,62 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 	}
 
-	public static class Scale {
+	private static class Scale {
 		
 		private static final int minScaleLength_px = 50;
 	
+		private ViewState viewState;
+
 		private float scaleLength_u;
 		private int   scaleLength_px;
 		private Color scaleColor;
 		private String unit;
-		private ViewState viewState;
+		private float unitScaling;
 	
-		public Scale(ViewState viewState, Color scaleColor, String unit) {
+		Scale(ViewState viewState, Color scaleColor, String unit, float unitScaling) {
 			this.viewState = viewState;
 			this.scaleColor = scaleColor;
 			this.unit = unit;
+			this.unitScaling = unitScaling;
 			scaleLength_px = minScaleLength_px;
 			scaleLength_u = 1;
 		}
 
-		public void update() {
+		void update() {
 			if (!viewState.haveScalePixelPerLength()) return;
 			
 			scaleLength_u = 1;
 			
-			if (( viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) )
-				while ( viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) {
+			if (( viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) )
+				while ( viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) {
 					float base = scaleLength_u;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u = 1.5f*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    2*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    3*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    4*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    5*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    6*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =    8*base;
-					if (viewState.convertLength_LengthToScreen(scaleLength_u) < minScaleLength_px) scaleLength_u =   10*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u = 1.5f*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    2*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    3*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    4*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    5*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    6*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =    8*base;
+					if (viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling) < minScaleLength_px) scaleLength_u =   10*base;
 				}
 			else
-				while ( viewState.convertLength_LengthToScreen(scaleLength_u*0.80f) > minScaleLength_px) {
+				while ( viewState.convertLength_LengthToScreen(scaleLength_u*0.80f/unitScaling) > minScaleLength_px) {
 					float base = scaleLength_u;
-					if (viewState.convertLength_LengthToScreen(base*0.80f) > minScaleLength_px) scaleLength_u = base*0.80f;
-					if (viewState.convertLength_LengthToScreen(base*0.60f) > minScaleLength_px) scaleLength_u = base*0.60f;
-					if (viewState.convertLength_LengthToScreen(base*0.50f) > minScaleLength_px) scaleLength_u = base*0.50f;
-					if (viewState.convertLength_LengthToScreen(base*0.40f) > minScaleLength_px) scaleLength_u = base*0.40f;
-					if (viewState.convertLength_LengthToScreen(base*0.30f) > minScaleLength_px) scaleLength_u = base*0.30f;
-					if (viewState.convertLength_LengthToScreen(base*0.20f) > minScaleLength_px) scaleLength_u = base*0.20f;
-					if (viewState.convertLength_LengthToScreen(base*0.15f) > minScaleLength_px) scaleLength_u = base*0.15f;
-					if (viewState.convertLength_LengthToScreen(base*0.10f) > minScaleLength_px) scaleLength_u = base*0.10f;
+					if (viewState.convertLength_LengthToScreen(base*0.80f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.80f;
+					if (viewState.convertLength_LengthToScreen(base*0.60f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.60f;
+					if (viewState.convertLength_LengthToScreen(base*0.50f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.50f;
+					if (viewState.convertLength_LengthToScreen(base*0.40f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.40f;
+					if (viewState.convertLength_LengthToScreen(base*0.30f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.30f;
+					if (viewState.convertLength_LengthToScreen(base*0.20f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.20f;
+					if (viewState.convertLength_LengthToScreen(base*0.15f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.15f;
+					if (viewState.convertLength_LengthToScreen(base*0.10f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.10f;
 				}
-			scaleLength_px = viewState.convertLength_LengthToScreen(scaleLength_u);
+			scaleLength_px = viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling);
 		}
 		
 		private String getScaleLengthStr() {
 			float f = scaleLength_u;
+			//float f = scaleLength_u*unitScaling;
 			if (f<0.002) return String.format(Locale.ENGLISH, "%1.5f%s", f, unit);
 			if (f<0.02 ) return String.format(Locale.ENGLISH, "%1.4f%s", f, unit);
 			if (f<0.2  ) return String.format(Locale.ENGLISH, "%1.3f%s", f, unit);
@@ -543,7 +581,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			else         return String.format(Locale.ENGLISH, "%1.0fM%s", f, unit);
 		}
 		
-		public void drawScale(Graphics2D g2, int x, int y, int w, int h) {
+		void drawScale(Graphics2D g2, int x, int y, int w, int h) {
 			//g2.setColor(Color.RED);
 			//g2.drawRect(x, y, w, h);
 			
