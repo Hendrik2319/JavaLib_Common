@@ -77,12 +77,14 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	protected void setMapScaleUnitScaling(double unitScaling) { setMapScaleUnitScaling((float)unitScaling); }
 	protected void setMapScaleUnitScaling(float unitScaling) {
 		if (mapScale!=null) mapScale.setUnitScaling(unitScaling);
+		updateMapScale();
 	}
 	
 	protected void setAxesUnitScaling(double vertUnitScaling, double horizUnitScaling) { setAxesUnitScaling((float)vertUnitScaling, (float)horizUnitScaling); }
 	protected void setAxesUnitScaling(float vertUnitScaling, float horizUnitScaling) {
 		if (verticalAxes  !=null) verticalAxes  .setUnitScaling(vertUnitScaling);
 		if (horizontalAxes!=null) horizontalAxes.setUnitScaling(horizUnitScaling);
+		updateAxes();
 	}
 	
 	protected void mouseEntered(MouseEvent e) {}
