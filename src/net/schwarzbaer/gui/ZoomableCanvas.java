@@ -14,31 +14,30 @@ import javax.swing.event.MouseInputAdapter;
 public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas {
 	private static final long serialVersionUID = -1282219829667604150L;
 
-	private Point panStart;
 	protected VS viewState;
+	private Point panStart;
 
+	private Scale mapScale;
 	private Axes verticalAxes;
 	private Axes horizontalAxes;
-	private Scale mapScale;
 
 	private boolean withTopAxis;
-
 	private boolean withRightAxis;
-
 	private boolean withBottomAxis;
-
 	private boolean withLeftAxis;
 	
 	protected ZoomableCanvas() {
-		this.withTopAxis = false;
-		this.withRightAxis = false;
-		this.withBottomAxis = false;
-		this.withLeftAxis = false;
-		panStart = null;
 		viewState = createViewState();
+		panStart = null;
+		
 		mapScale = null;
 		verticalAxes = null;
 		horizontalAxes = null;
+		
+		withTopAxis = false;
+		withRightAxis = false;
+		withBottomAxis = false;
+		withLeftAxis = false;
 		
 		MouseInputAdapter mouse = new MouseInputAdapter() {
 			@Override public void mousePressed   (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) startPan  (e.getPoint()); }
@@ -217,6 +216,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private float scaleLengthPerAngleLong;
 		private float lowerZoomLimit;
 
+		private boolean mapIsSpherical;
+		private float sphereRadius;
+		private float scaleX;
+		private float scaleY;
+
 		protected boolean debug_showChanges_scalePixelPerLength;
 
 		protected ViewState(ZoomableCanvas<?> canvas, float lowerZoomLimit) {
@@ -224,7 +228,28 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			this.lowerZoomLimit = lowerZoomLimit;
 			tempPanOffset = null;
 			clearValues();
+			
+			sphereRadius = Float.NaN;
+			mapIsSpherical = false;
+			scaleX = 1;
+			scaleY = 1;
+			
 			debug_showChanges_scalePixelPerLength = false;
+		}
+		
+		public void setSphericalMapSurface(float sphereRadius) {
+			this.mapIsSpherical = true;
+			this.sphereRadius = sphereRadius;
+			this.scaleX = Float.NaN;
+			this.scaleY = Float.NaN;
+		}
+		
+		public void setPlainMapSurface() { setPlainMapSurface(1,1); }
+		public void setPlainMapSurface(float scaleX, float scaleY) {
+			this.mapIsSpherical = false;
+			this.sphereRadius = Float.NaN;
+			this.scaleX = scaleX;
+			this.scaleY = scaleY;
 		}
 		
 		protected void clearValues() {
@@ -247,9 +272,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		public boolean isOk() {
 			return center!=null && !Float.isNaN(scalePixelPerLength) && !Float.isNaN(scaleLengthPerAngleLat) && !Float.isNaN(scaleLengthPerAngleLong);
 		}
-		
-		protected abstract float computeScaleLengthPerAngle_Latitude();
-		protected abstract float computeScaleLengthPerAngle_Longitude();
+
 		protected abstract void  determineMinMax(MapLatLong min, MapLatLong max);
 		
 		protected boolean reset() {
@@ -295,7 +318,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//System.out.printf(Locale.ENGLISH, "OLD: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
 			
 			center.latitude  = (centerOld.latitude  - location.latitude ) / f + location.latitude;
-			center.longitude = (centerOld.longitude - location.longitude) * (float) (Math.cos(centerOld.latitude/180*Math.PI) / Math.cos(center.latitude/180*Math.PI) ) / f + location.longitude;
+			float sphericalCorrection = mapIsSpherical ? (float) (Math.cos(centerOld.latitude/180*Math.PI) / Math.cos(center.latitude/180*Math.PI) ) : 1;
+			center.longitude = (centerOld.longitude - location.longitude) * sphericalCorrection / f + location.longitude;
 			updateScaleLengthPerAngle();
 			//System.out.printf(Locale.ENGLISH, "NEW: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
 			
@@ -313,8 +337,13 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 	
 		private void updateScaleLengthPerAngle() {
-			scaleLengthPerAngleLat  = computeScaleLengthPerAngle_Latitude();
-			scaleLengthPerAngleLong = computeScaleLengthPerAngle_Longitude();
+			if (mapIsSpherical) {
+				scaleLengthPerAngleLat  = (float) (2*Math.PI*sphereRadius / 360);
+				scaleLengthPerAngleLong = (float) (2*Math.PI*sphereRadius / 360 * Math.cos(center.latitude/180*Math.PI));
+			} else {
+				scaleLengthPerAngleLat  = scaleY;
+				scaleLengthPerAngleLong = scaleX;
+			}
 		}
 
 		public Point convertPos_AngleToScreen(MapLatLong location) {
