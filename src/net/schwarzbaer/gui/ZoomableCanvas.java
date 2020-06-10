@@ -158,48 +158,48 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 
 	public static class MapLatLong {
 		
-		public Float latitude;
-		public Float longitude;
+		public Float latitude_y;
+		public Float longitude_x;
 		
 		public MapLatLong() {
-			this.latitude = null;
-			this.longitude = null;
+			this.latitude_y = null;
+			this.longitude_x = null;
 		}
 		
-		public MapLatLong(float latitude, float longitude) {
-			this.latitude = latitude;
-			this.longitude = longitude;
+		public MapLatLong(float latitude_y, float longitude_x) {
+			this.latitude_y = latitude_y;
+			this.longitude_x = longitude_x;
 		}
 	
 		public MapLatLong(MapLatLong other) {
-			this.latitude = other.latitude;
-			this.longitude = other.longitude;
+			this.latitude_y = other.latitude_y;
+			this.longitude_x = other.longitude_x;
 		}
 	
 		@Override
 		public String toString() {
-			return String.format("MapLatLong [latitude=%s, longitude=%s]", latitude, longitude);
+			return String.format("MapLatLong [latitude=%s, longitude=%s]", latitude_y, longitude_x);
 		}
 	
 		public void setMin(MapLatLong location) {
-			if (location.latitude!=null) {
-				if (latitude==null) latitude = location.latitude;
-				else latitude = Math.min( latitude, location.latitude );
+			if (location.latitude_y!=null) {
+				if (latitude_y==null) latitude_y = location.latitude_y;
+				else latitude_y = Math.min( latitude_y, location.latitude_y );
 			}
-			if (location.longitude!=null) {
-				if (longitude==null) longitude = location.longitude;
-				else longitude = Math.min( longitude, location.longitude );
+			if (location.longitude_x!=null) {
+				if (longitude_x==null) longitude_x = location.longitude_x;
+				else longitude_x = Math.min( longitude_x, location.longitude_x );
 			}
 		}
 	
 		public void setMax(MapLatLong location) {
-			if (location.latitude!=null) {
-				if (latitude==null) latitude = location.latitude;
-				else latitude = Math.max( latitude, location.latitude );
+			if (location.latitude_y!=null) {
+				if (latitude_y==null) latitude_y = location.latitude_y;
+				else latitude_y = Math.max( latitude_y, location.latitude_y );
 			}
-			if (location.longitude!=null) {
-				if (longitude==null) longitude = location.longitude;
-				else longitude = Math.max( longitude, location.longitude );
+			if (location.longitude_x!=null) {
+				if (longitude_x==null) longitude_x = location.longitude_x;
+				else longitude_x = Math.max( longitude_x, location.longitude_x );
 			}
 		}
 		
@@ -212,14 +212,14 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		Point tempPanOffset;
 		protected MapLatLong center;
 		private float scalePixelPerLength;
-		private float scaleLengthPerAngleLat;
-		private float scaleLengthPerAngleLong;
+		private float scaleLengthPerAngleLatY;
+		private float scaleLengthPerAngleLongX;
 		private float lowerZoomLimit;
 
 		private boolean mapIsSpherical;
 		private float sphereRadius;
-		private float scaleX;
-		private float scaleY;
+		private float fixedMapScalingX;
+		private float fixedMapScalingY;
 
 		protected boolean debug_showChanges_scalePixelPerLength;
 
@@ -229,34 +229,34 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			tempPanOffset = null;
 			clearValues();
 			
-			sphereRadius = Float.NaN;
 			mapIsSpherical = false;
-			scaleX = 1;
-			scaleY = 1;
+			sphereRadius = Float.NaN;
+			fixedMapScalingX = 1;
+			fixedMapScalingY = 1;
 			
 			debug_showChanges_scalePixelPerLength = false;
 		}
 		
 		public void setSphericalMapSurface(float sphereRadius) {
 			this.mapIsSpherical = true;
-			this.sphereRadius = sphereRadius;
-			this.scaleX = Float.NaN;
-			this.scaleY = Float.NaN;
+			this.sphereRadius     = sphereRadius;
+			this.fixedMapScalingX = Float.NaN;
+			this.fixedMapScalingY = Float.NaN;
 		}
 		
 		public void setPlainMapSurface() { setPlainMapSurface(1,1); }
-		public void setPlainMapSurface(float scaleX, float scaleY) {
+		public void setPlainMapSurface(float fixedMapScalingX, float fixedMapScalingY) {
 			this.mapIsSpherical = false;
-			this.sphereRadius = Float.NaN;
-			this.scaleX = scaleX;
-			this.scaleY = scaleY;
+			this.sphereRadius     = Float.NaN;
+			this.fixedMapScalingX = fixedMapScalingX;
+			this.fixedMapScalingY = fixedMapScalingY;
 		}
 		
 		protected void clearValues() {
 			center = null;
-			scaleLengthPerAngleLat  = Float.NaN;
-			scaleLengthPerAngleLong = Float.NaN;
-			scalePixelPerLength     = Float.NaN;
+			scaleLengthPerAngleLatY  = Float.NaN;
+			scaleLengthPerAngleLongX = Float.NaN;
+			scalePixelPerLength      = Float.NaN;
 			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset -> scalePixelPerLength: %f %n", scalePixelPerLength);
 		}
 
@@ -264,13 +264,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			return !Float.isNaN(scalePixelPerLength);
 		}
 		
-		public Integer convertLength_LengthToScreen(Float length_u) {
-			if (length_u==null || Float.isNaN(length_u)) return null;
-			return Math.round( length_u * scalePixelPerLength );
-		}
-	
 		public boolean isOk() {
-			return center!=null && !Float.isNaN(scalePixelPerLength) && !Float.isNaN(scaleLengthPerAngleLat) && !Float.isNaN(scaleLengthPerAngleLong);
+			return center!=null && haveScalePixelPerLength() && !Float.isNaN(scaleLengthPerAngleLatY) && !Float.isNaN(scaleLengthPerAngleLongX);
 		}
 
 		protected abstract void  determineMinMax(MapLatLong min, MapLatLong max);
@@ -280,24 +275,24 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			MapLatLong max = new MapLatLong();
 			determineMinMax(min, max);
 			
-			if (min.latitude==null || min.longitude==null || max.latitude==null || max.longitude==null ) {
+			if (min.latitude_y==null || min.longitude_x==null || max.latitude_y==null || max.longitude_x==null ) {
 				clearValues();
 				return false;
 			}
 			
-			center = new MapLatLong( (min.latitude+max.latitude)/2, (min.longitude+max.longitude)/2 );
+			center = new MapLatLong( (min.latitude_y+max.latitude_y)/2, (min.longitude_x+max.longitude_x)/2 );
 			
 			updateScaleLengthPerAngle();
-			float neededHeight = (max.latitude -min.latitude )*scaleLengthPerAngleLat;
-			float neededWidth  = (max.longitude-min.longitude)*scaleLengthPerAngleLong;
+			float neededHeight = (max.latitude_y -min.latitude_y )*scaleLengthPerAngleLatY;
+			float neededWidth  = (max.longitude_x-min.longitude_x)*scaleLengthPerAngleLongX;
 			if (neededHeight==0 || neededWidth==0) {
 				clearValues();
 				return false;
 			}
 			
-			float scalePixelPerLengthLat  = (canvas.height-30) / neededHeight;
-			float scalePixelPerLengthLong = (canvas.width -30) / neededWidth;
-			scalePixelPerLength = Math.min(scalePixelPerLengthLat, scalePixelPerLengthLong);
+			float scalePixelPerLengthLatY  = (canvas.height-30) / neededHeight;
+			float scalePixelPerLengthLongY = (canvas.width -30) / neededWidth;
+			scalePixelPerLength = Math.min(scalePixelPerLengthLatY, scalePixelPerLengthLongY);
 			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset -> scalePixelPerLength: %f %n", scalePixelPerLength);
 			
 			return true;
@@ -317,9 +312,9 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//System.out.printf(Locale.ENGLISH, "zoom( Point[%d,%d], %1.4f) -> MapLatLong[ lat:%1.3f, long:%1.3f ] -> scalePixelPerLength: %1.3f %n", point.x,point.y, f, location.latitude,location.longitude, scalePixelPerLength);
 			//System.out.printf(Locale.ENGLISH, "OLD: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
 			
-			center.latitude  = (centerOld.latitude  - location.latitude ) / f + location.latitude;
-			float sphericalCorrection = mapIsSpherical ? (float) (Math.cos(centerOld.latitude/180*Math.PI) / Math.cos(center.latitude/180*Math.PI) ) : 1;
-			center.longitude = (centerOld.longitude - location.longitude) * sphericalCorrection / f + location.longitude;
+			center.latitude_y  = (centerOld.latitude_y  - location.latitude_y ) / f + location.latitude_y;
+			float sphericalCorrection = mapIsSpherical ? (float) (Math.cos(centerOld.latitude_y/180*Math.PI) / Math.cos(center.latitude_y/180*Math.PI) ) : 1;
+			center.longitude_x = (centerOld.longitude_x - location.longitude_x) * sphericalCorrection / f + location.longitude_x;
 			updateScaleLengthPerAngle();
 			//System.out.printf(Locale.ENGLISH, "NEW: center:[ lat:%1.3f, long:%1.3f ] scaleLengthPerAngle:[ lat:%1.3f, long:%1.3f ] %n", center.latitude,center.longitude, scaleLengthPerAngleLat, scaleLengthPerAngleLong);
 			
@@ -329,8 +324,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		boolean pan(Point offsetOnScreen) {
 			if (!isOk()) return false;
 			
-			center.latitude  -= convertLength_ScreenToAngle_Lat (-offsetOnScreen.y);
-			center.longitude -= convertLength_ScreenToAngle_Long( offsetOnScreen.x);
+			center.latitude_y  -= convertLength_ScreenToAngle_LatY (-offsetOnScreen.y);
+			center.longitude_x -= convertLength_ScreenToAngle_LongX( offsetOnScreen.x);
 			updateScaleLengthPerAngle();
 			
 			return true;
@@ -338,54 +333,59 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	
 		private void updateScaleLengthPerAngle() {
 			if (mapIsSpherical) {
-				scaleLengthPerAngleLat  = (float) (2*Math.PI*sphereRadius / 360);
-				scaleLengthPerAngleLong = (float) (2*Math.PI*sphereRadius / 360 * Math.cos(center.latitude/180*Math.PI));
+				scaleLengthPerAngleLatY  = (float) (2*Math.PI*sphereRadius / 360);
+				scaleLengthPerAngleLongX = (float) (2*Math.PI*sphereRadius / 360 * Math.cos(center.latitude_y/180*Math.PI));
 			} else {
-				scaleLengthPerAngleLat  = scaleY;
-				scaleLengthPerAngleLong = scaleX;
+				scaleLengthPerAngleLatY  = fixedMapScalingY;
+				scaleLengthPerAngleLongX = fixedMapScalingX;
 			}
 		}
 
+		public Integer convertLength_LengthToScreen(Float length_u) {
+			if (length_u==null || Float.isNaN(length_u)) return null;
+			return Math.round( length_u * scalePixelPerLength );
+		}
+
 		public Point convertPos_AngleToScreen(MapLatLong location) {
-			if (location==null || location.latitude==null || location.longitude==null) return null;
-			return convertPos_AngleToScreen(location.longitude, location.latitude);
+			if (location==null || location.latitude_y==null || location.longitude_x==null) return null;
+			return convertPos_AngleToScreen(location.longitude_x, location.latitude_y);
 		}
 		public Point convertPos_AngleToScreen(float longitude_x, float latitude_y) {
 			return new Point(
-				convertPos_AngleToScreen_Long(longitude_x),
-				convertPos_AngleToScreen_Lat (latitude_y )
+				convertPos_AngleToScreen_LongX(longitude_x),
+				convertPos_AngleToScreen_LatY (latitude_y )
 			);
 		}
 		
-		public int convertPos_AngleToScreen_Long(float longitude) {
-			float x = canvas.width /2f + convertLength_AngleToScreen_Long(longitude - center.longitude);
+		public int convertPos_AngleToScreen_LongX(float longitude_x) {
+			float x = canvas.width /2f + convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
 			if (tempPanOffset!=null) x += tempPanOffset.x;
 			return Math.round(x);
 		}
-		public int convertPos_AngleToScreen_Lat (float latitude) {
-			float y = canvas.height/2f - convertLength_AngleToScreen_Lat (latitude  - center.latitude );
+		public int convertPos_AngleToScreen_LatY (float latitude_y) {
+			float y = canvas.height/2f - convertLength_AngleToScreen_LatY (latitude_y  - center.latitude_y );
 			if (tempPanOffset!=null) y += tempPanOffset.y;
 			return Math.round(y);
 		}
-		private float convertLength_AngleToScreen_Long(float length_a) { return length_a * scaleLengthPerAngleLong * scalePixelPerLength; }
-		private float convertLength_AngleToScreen_Lat (float length_a) { return length_a * scaleLengthPerAngleLat  * scalePixelPerLength; }
+		private float convertLength_AngleToScreen_LongX(float length_a) { return length_a * scaleLengthPerAngleLongX * scalePixelPerLength; }
+		private float convertLength_AngleToScreen_LatY (float length_a) { return length_a * scaleLengthPerAngleLatY  * scalePixelPerLength; }
 		
 		public MapLatLong convertScreenToAngle(Point point) {
 			return new MapLatLong(
-				convertPos_ScreenToAngle_Lat (point.y),
-				convertPos_ScreenToAngle_Long(point.x)
+				convertPos_ScreenToAngle_LatY (point.y),
+				convertPos_ScreenToAngle_LongX(point.x)
 			);
 		}
-		public float convertPos_ScreenToAngle_Long(int x) {
+		public float convertPos_ScreenToAngle_LongX(int x) {
 			if (tempPanOffset!=null) x -= tempPanOffset.x;
-			return center.longitude + convertLength_ScreenToAngle_Long(x - canvas.width /2f);
+			return center.longitude_x + convertLength_ScreenToAngle_LongX(x - canvas.width /2f);
 		}
-		public float convertPos_ScreenToAngle_Lat(int y) {
+		public float convertPos_ScreenToAngle_LatY(int y) {
 			if (tempPanOffset!=null) y -= tempPanOffset.y;
-			return center.latitude  - convertLength_ScreenToAngle_Lat(y - canvas.height/2f);
+			return center.latitude_y  - convertLength_ScreenToAngle_LatY(y - canvas.height/2f);
 		}
-		public float convertLength_ScreenToAngle_Long(float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLong; }
-		public float convertLength_ScreenToAngle_Lat (float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLat ; }
+		public float convertLength_ScreenToAngle_LongX(float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLongX; }
+		public float convertLength_ScreenToAngle_LatY (float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLatY ; }
 	}
 
 	private static class Axes {
@@ -418,8 +418,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		
 		void updateTicks() {
 			float minMinorTickUnitLength_a;
-			if (isVertical) minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Lat (minMinorTickUnitLength_px) / unitScaling;
-			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_Long(minMinorTickUnitLength_px) / unitScaling;
+			if (isVertical) minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_LatY (minMinorTickUnitLength_px) / unitScaling;
+			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_LongX(minMinorTickUnitLength_px) / unitScaling;
 			
 			majorTickUnit_a = 1f;
 			minorTickCount = 5; // minorTickUnit_a = 0.2
@@ -468,10 +468,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			if (width1<0) return; // display area too small
 			
 			float minAngle_a,maxAngle_a,angleWidth_a;
-			if (isVertical) minAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1) / unitScaling;
-			else            minAngle_a = viewState.convertPos_ScreenToAngle_Long(c1) / unitScaling;
-			if (isVertical) maxAngle_a = viewState.convertPos_ScreenToAngle_Lat (c1+width1) / unitScaling;
-			else            maxAngle_a = viewState.convertPos_ScreenToAngle_Long(c1+width1) / unitScaling;
+			if (isVertical) minAngle_a = viewState.convertPos_ScreenToAngle_LatY (c1) / unitScaling;
+			else            minAngle_a = viewState.convertPos_ScreenToAngle_LongX(c1) / unitScaling;
+			if (isVertical) maxAngle_a = viewState.convertPos_ScreenToAngle_LatY (c1+width1) / unitScaling;
+			else            maxAngle_a = viewState.convertPos_ScreenToAngle_LongX(c1+width1) / unitScaling;
 			
 			if (maxAngle_a<minAngle_a) {
 				angleWidth_a = minAngle_a; // angleWidth_a  used as temp. storage
@@ -502,8 +502,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//   isVertical:  c0 = x, c1 = y, width1 = height
 			// ! isVertical:  c0 = y, c1 = x, width1 = width
 			int c1;
-			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle*unitScaling);
-			else            c1 = viewState.convertPos_AngleToScreen_Long(angle*unitScaling);
+			if (isVertical) c1 = viewState.convertPos_AngleToScreen_LatY (angle*unitScaling);
+			else            c1 = viewState.convertPos_AngleToScreen_LongX(angle*unitScaling);
 			
 			int halfTick = majorTickLength_px/2;
 			int tickLeft  = halfTick;
@@ -529,8 +529,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			//   isVertical:  c0 = x, c1 = y, width1 = height
 			// ! isVertical:  c0 = y, c1 = x, width1 = width
 			int c1;
-			if (isVertical) c1 = viewState.convertPos_AngleToScreen_Lat (angle*unitScaling);
-			else            c1 = viewState.convertPos_AngleToScreen_Long(angle*unitScaling);
+			if (isVertical) c1 = viewState.convertPos_AngleToScreen_LatY (angle*unitScaling);
+			else            c1 = viewState.convertPos_AngleToScreen_LongX(angle*unitScaling);
 			
 			int tickLeft  = minorTickLength_px/2;
 			int tickRight = minorTickLength_px/2;
