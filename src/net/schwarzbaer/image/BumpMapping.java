@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.function.BiFunction;
 
 public class BumpMapping {
@@ -28,11 +29,13 @@ public class BumpMapping {
 		setNormalFunction(getNormal);
 	}
 	public BumpMapping(boolean cachedImage) {
-		imageCache = !cachedImage?null:new ImageCache<>(this::renderImageUncached);
+		imageCache = !cachedImage?null:new ImageCache<>(this::renderImage_uncached);
 	}
 
 	public void setNormalMap(Normal[][] normalMap) {
-		setNormalFunction((x,y,width,height)->{
+		setNormalFunction((x_,y_,width,height)->{
+			int x = (int) Math.round(x_);
+			int y = (int) Math.round(y_);
 			if (x<0 || x>=normalMap   .length) return new Normal(0,0,1);
 			if (y<0 || y>=normalMap[x].length) return new Normal(0,0,1);
 			return normalMap[x][y];
@@ -114,14 +117,25 @@ public class BumpMapping {
 	
 	public BufferedImage renderImage(int width, int height) {
 		if (imageCache!=null) return imageCache.getImage(width, height);
-		return renderImageUncached(width, height);
+		return renderImage_uncached(width, height);
 	}
-	public BufferedImage renderImageUncached(int width, int height) {
+	public BufferedImage renderImage_uncached(int width, int height) {
 		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
 		for (int x=0; x<width; x++)
 			for (int y=0; y<height; y++) {
 				raster.setPixel(x, y, shading.getColor(x,y,width,height,normalFunction.getNormal(x,y,width,height)));
+			}
+		return image;
+	}
+	public BufferedImage renderScaledImage_uncached(int width, int height, float scale) {
+		int scaledWidth  = Math.round(width *scale);
+		int scaledHeight = Math.round(height*scale);
+		BufferedImage image = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+		WritableRaster raster = image.getRaster();
+		for (int x=0; x<scaledWidth; x++)
+			for (int y=0; y<scaledHeight; y++) {
+				raster.setPixel(x, y, shading.getColor(x/scale,y/scale,width,height,normalFunction.getNormal(x/scale,y/scale,width,height)));
 			}
 		return image;
 	}
@@ -139,7 +153,7 @@ public class BumpMapping {
 			sun = new Normal(x,y,z).normalize();
 		}
 
-		public abstract int[] getColor(int x, int y, int width, int height, Normal normal);
+		public abstract int[] getColor(double x, double y, double width, double height, Normal normal);
 		
 		public static class MixedShading extends Shading {
 			
@@ -165,7 +179,7 @@ public class BumpMapping {
 			}
 			
 			@Override
-			public int[] getColor(int x, int y, int width, int height, Normal normal) {
+			public int[] getColor(double x, double y, double width, double height, Normal normal) {
 				int i = indexer.getIndex(x, y, width, height);
 				Assert(0<=i);
 				Assert(i<shadings.length);
@@ -180,7 +194,7 @@ public class BumpMapping {
 			}
 
 			@Override
-			public int[] getColor(int x, int y, int width, int height, Normal normal) {
+			public int[] getColor(double x, double y, double width, double height, Normal normal) {
 				color[0] = (int) Math.round(((normal.x+1)/2)*255); Assert(0<=color[0] && color[0]<=255);
 				color[1] = (int) Math.round(((normal.y+1)/2)*255); Assert(0<=color[1] && color[1]<=255);
 				color[2] = (int) Math.round(((normal.z+1)/2)*255); Assert(0<=color[2] && color[2]<=255);
@@ -221,7 +235,7 @@ public class BumpMapping {
 			}
 			
 			@Override
-			public int[] getColor(int x, int y, int width, int height, Normal normal) {
+			public int[] getColor(double x, double y, double width, double height, Normal normal) {
 				color[3] = 255;
 				double intensityDiff = Math.max( minIntensity, getF(sun,normal) );
 				double intensityRefl = getF(maxRefl,normal);
@@ -275,7 +289,7 @@ public class BumpMapping {
 			}
 
 			@Override
-			public int[] getColor(int x, int y, int width, int height, Normal normal) {
+			public int[] getColor(double x, double y, double width, double height, Normal normal) {
 				color[3] = 255;
 				double f1 = getF(normal);
 				double f = Math.max(0,f1);
@@ -314,11 +328,11 @@ public class BumpMapping {
 	
 	public interface Indexer {
 		
-		public int getIndex(int x, int y, int width, int height);
+		public int getIndex(double x, double y, double width, double height);
 		
 		static Indexer convert(IndexerCart indexer) {
 			return (x,y,width,height)->{
-				return indexer.getIndex(x,y);
+				return indexer.getIndex(x,y,true);
 			};
 		}
 		static Indexer convert(IndexerPolar indexer) {
@@ -332,7 +346,7 @@ public class BumpMapping {
 		}
 	}
 	public interface IndexerCart {
-		public int getIndex(int x, int y);
+		public int getIndex(double x, double y, boolean dummy);
 	}
 	public interface IndexerPolar {
 		public int getIndex(double w, double r);
@@ -340,11 +354,11 @@ public class BumpMapping {
 	
 	public interface Colorizer {
 		
-		public Color getColor(int x, int y, int width, int height);
+		public Color getColor(double x, double y, double width, double height);
 		
 		static Colorizer convert(ColorizerCart colorizer) {
 			return (x,y,width,height)->{
-				return colorizer.getColor(x,y);
+				return colorizer.getColor(x,y,true);
 			};
 		}
 		static Colorizer convert(ColorizerPolar colorizer) {
@@ -358,18 +372,18 @@ public class BumpMapping {
 		}
 	}
 	public interface ColorizerCart {
-		public Color getColor(int x, int y);
+		public Color getColor(double x, double y, boolean dummy);
 	}
 	public interface ColorizerPolar {
 		public Color getColor(double w, double r);
 	}
 
 	public static interface NormalFunction {
-		public Normal getNormal(int x, int y, int width, int height);
+		public Normal getNormal(double x, double y, double width, double height);
 		
 		static NormalFunction convert(NormalFunctionCart normalFunction) {
 			return (x,y,width,height)->{
-				return normalFunction.getNormal(x,y);
+				return normalFunction.getNormal(x,y,true);
 			};
 		}
 		static NormalFunction convert(NormalFunctionPolar normalFunction) {
@@ -383,7 +397,7 @@ public class BumpMapping {
 		}
 	}
 	public static interface NormalFunctionCart {
-		public Normal getNormal(int x, int y);
+		public Normal getNormal(double x, double y, boolean dummy);
 	}
 	public static interface NormalFunctionPolar {
 		public Normal getNormal(double w, double r);
@@ -506,12 +520,63 @@ public class BumpMapping {
 			}
 		}
 		
-		public static class Linear extends ConstructivePolarNormalFunction {
+		public static class RoundBlend extends ConstructivePolarNormalFunction {
+
+			private Normal normalAtMinR;
+			private Normal normalAtMaxR;
+			private boolean linearBlend;
+			private double f1;
+			private double f2;
+			private int f0;
+
+			public RoundBlend(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+				super(minR, maxR);
+				this.normalAtMinR = normalAtMinR;
+				this.normalAtMaxR = normalAtMaxR;
+				Assert(this.normalAtMinR!=null);
+				Assert(this.normalAtMaxR!=null);
+				Assert(0<=this.normalAtMinR.z);
+				Assert(0<=this.normalAtMaxR.z);
+				prepareValues();
+			}
+
+			private void prepareValues() {
+				double a1 = Math.atan2(this.normalAtMinR.z, this.normalAtMinR.x);
+				double a2 = Math.atan2(this.normalAtMaxR.z, this.normalAtMaxR.x);
+				Assert(a1<=Math.PI);
+				Assert(0<=a1);
+				Assert(a2<=Math.PI);
+				Assert(0<=a2);
+				System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> a1:%6.2f° a2:%6.2f°%n", a1/Math.PI*180, a2/Math.PI*180); 
+				if (a1==a2) { linearBlend=true; System.out.println("linearBlend"); return; } else linearBlend=false;
+				if (a1<a2) { a1 += Math.PI; a2 += Math.PI; f0=-1; } else f0=1;
+				System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> cos(a1):%1.5f cos(a2):%1.5f%n", Math.cos(a1), Math.cos(a2)); 
+				
+				double R = (maxR-minR)/(Math.cos(a2)-Math.cos(a1));
+				f1 = R*Math.cos(a1) - minR;
+				f2 = R*R;
+				// x = r + R*Math.cos(a1) - minR;
+				// z = Math.sqrt( R*R - x*x );
+			}
+
+			@Override
+			protected Normal getBaseNormal(double r) {
+				if (linearBlend)
+					return Normal.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
+				// x = r + R*Math.cos(a1) - minR;
+				// z = Math.sqrt( R*R - x*x );
+				double x = f0*(r + f1);
+				double z = Math.sqrt( f2 - x*x );
+				return new Normal(x, 0, z);
+			}
+		}
+		
+		public static class LinearBlend extends ConstructivePolarNormalFunction {
 
 			private final Normal normalAtMinR;
 			private final Normal normalAtMaxR;
 
-			public Linear(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+			public LinearBlend(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
 				super(minR, maxR);
 				this.normalAtMinR = normalAtMinR;
 				this.normalAtMaxR = normalAtMaxR;
