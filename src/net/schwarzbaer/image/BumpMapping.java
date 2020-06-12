@@ -3,6 +3,9 @@ package net.schwarzbaer.image;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.function.BiFunction;
 
 public class BumpMapping {
 
@@ -45,7 +48,7 @@ public class BumpMapping {
 		Normal[][] normalMap = new Normal[width][height];
 		for (int x1=0; x1<width; ++x1)
 			for (int y1=0; y1<height; ++y1) {
-				Normal base = new Normal(0,0,0,colorMap==null?null:colorMap[x1][y1]);
+				MutableNormal base = new MutableNormal(0,0,0,colorMap==null?null:colorMap[x1][y1]);
 				addNormal(base,computeNormal(heightMap,x1,y1,+1, 0),1); 
 				addNormal(base,computeNormal(heightMap,x1,y1, 0,+1),1); 
 				addNormal(base,computeNormal(heightMap,x1,y1,-1, 0),1); 
@@ -56,11 +59,11 @@ public class BumpMapping {
 					addNormal(base,computeNormal(heightMap,x1,y1,-1,+1),cornerScale); 
 					addNormal(base,computeNormal(heightMap,x1,y1,-1,-1),cornerScale); 
 				}
-				normalMap[x1][y1] = base.normalize();
+				normalMap[x1][y1] = base.toNormal().normalize();
 			}
 		setNormalMap(normalMap);
 	}
-	private void addNormal(Normal base, Normal n, double scale) {
+	private void addNormal(MutableNormal base, Normal n, double scale) {
 		if (n != null) {
 			base.x += n.x*scale;
 			base.y += n.y*scale;
@@ -103,11 +106,11 @@ public class BumpMapping {
 		shading.setSun(x,y,z);
 		if (imageCache!=null) imageCache.resetImage();
 	}
-	public void getSun(Normal sunOut) {
-		sunOut.x = shading.sun.x;
-		sunOut.y = shading.sun.y;
-		sunOut.z = shading.sun.z;
-	}
+//	public void getSun(Normal sunOut) {
+//		sunOut.x = shading.sun.x;
+//		sunOut.y = shading.sun.y;
+//		sunOut.z = shading.sun.z;
+//	}
 	public void setShading(Shading shading) {
 		this.shading = shading;
 		if (imageCache!=null) imageCache.resetImage();
@@ -285,6 +288,16 @@ public class BumpMapping {
 		}
 	}
 	
+	public interface Colorizer {
+		public Color getColor(int x, int y, int width, int height);
+	}
+	public interface ColorizerCart {
+		public Color getColor(int x, int y);
+	}
+	public interface ColorizerPolar {
+		public Color getColor(double w, double r);
+	}
+
 	public static interface NormalFunctionCart {
 		public Normal getNormal(int x, int y);
 	}
@@ -295,21 +308,26 @@ public class BumpMapping {
 		public Normal getNormal(int x, int y, int width, int height);
 	}
 	
-	public static class Normal {
+	public static class MutableNormal {
 		public double x,y,z;
+		public final Color color;
+		public MutableNormal(Normal n) { this(n.x,n.y,n.z,n.color); }
+		public MutableNormal(double x, double y, double z, Color color) { this.color=color; this.x=x; this.y=y; this.z=z; }
+		public Normal toNormal() { return new Normal( x,y,z, color ); }
+	}
+	
+	public static class Normal {
+		public final double x,y,z;
 		public final Color color;
 
 		public Normal() { this(0,0,0); }
+		public Normal(Normal n) { this(n.x,n.y,n.z,n.color); }
+		public Normal(Normal n, Color color) { this(n.x,n.y,n.z,color); }
 		public Normal(double x, double y, double z) { this(x,y,z,null); }
-		public Normal(double x, double y, double z, Color color) { this.color=color; set(x,y,z);  }
+		public Normal(double x, double y, double z, Color color) { this.color=color; this.x=x; this.y=y; this.z=z; }
 		
 		public Normal add(Normal v) {
 			return new Normal(x+v.x,y+v.y,z+v.z,color);
-		}
-		public void set(double x, double y, double z) {
-			this.x = x;
-			this.y = y;
-			this.z = z;
 		}
 		public double dotP(Normal v) {
 			return x*v.x+y*v.y+z*v.z;
@@ -338,6 +356,181 @@ public class BumpMapping {
 		@Override
 		public String toString() {
 			return "Vector3D [x=" + x + ", y=" + y + ", z=" + z + "]";
+		}
+		
+	}
+	
+	public static abstract class ConstructivePolarNormalFunction implements NormalFunctionPolar {
+		
+		public final double minR; // inclusive
+		public final double maxR; // exclusive
+		private ColorizerPolar colorizer;
+
+		ConstructivePolarNormalFunction(double minR, double maxR) {
+			this.minR = minR;
+			this.maxR = maxR;
+			Assert(!Double.isNaN(minR));
+			Assert(!Double.isNaN(maxR));
+			Assert(minR<=maxR);
+			this.colorizer = null;
+		}
+		
+		public ConstructivePolarNormalFunction setColorizer(ColorizerPolar colorizer) {
+			this.colorizer = colorizer;
+			return this;
+		}
+		
+		public boolean contains(double r) {
+			return minR<=r && r<maxR;
+		}
+
+		@Override
+		public Normal getNormal(double w, double r) {
+			Normal n = getBaseNormal(r);
+			if (n!=null) n = n.normalize().rotateZ(w);
+			if (colorizer != null) {
+				Color color = colorizer.getColor(w,r);
+				if (color!=null)
+					return new Normal(n,color);
+			}
+			return n;
+		}
+		
+		protected abstract Normal getBaseNormal(double r);
+		
+		
+		public static class Constant extends ConstructivePolarNormalFunction {
+
+			public static Normal computeNormal(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
+				Assert(Double.isFinite(minR));
+				Assert(Double.isFinite(maxR));
+				Assert(minR<=maxR);
+				Assert(Double.isFinite(heightAtMinR));
+				Assert(Double.isFinite(heightAtMaxR));
+				return new Normal(heightAtMinR-heightAtMaxR,0,maxR-minR).normalize();
+			}
+
+			private final Normal constN;
+
+			Constant(double minR, double maxR) {
+				this(minR, maxR, new Normal(0,0,1));
+			}
+			Constant(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
+				this(minR, maxR, computeNormal(minR, maxR, heightAtMinR, heightAtMaxR));
+			}
+			Constant(double minR, double maxR, Normal constN) {
+				super(minR, maxR);
+				this.constN = constN;
+			}
+
+			@Override
+			protected Normal getBaseNormal(double r) {
+				return constN;
+			}
+		}
+		
+		public static class Linear extends ConstructivePolarNormalFunction {
+
+			private final Normal normalAtMinR;
+			private final Normal normalAtMaxR;
+
+			Linear(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+				super(minR, maxR);
+				this.normalAtMinR = normalAtMinR;
+				this.normalAtMaxR = normalAtMaxR;
+				Assert(this.normalAtMinR!=null);
+				Assert(this.normalAtMaxR!=null);
+			}
+
+			@Override
+			protected Normal getBaseNormal(double r) {
+				return Normal.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
+			}
+			
+		}
+		
+		public static class Group extends ConstructivePolarNormalFunction {
+
+			private static double getR(ConstructivePolarNormalFunction[] children, BiFunction<Double,Double,Double> compare) {
+				Assert(children!=null);
+				Assert(children.length>0);
+				Assert(children[0]!=null);
+				
+				double r = children[0].minR;
+				for (ConstructivePolarNormalFunction child:children) {
+					Assert(child!=null);
+					r = compare.apply(compare.apply(r, child.minR), child.maxR);
+				}
+				return r;
+			}
+
+			private static double getMaxR(ConstructivePolarNormalFunction[] children) {
+				return getR(children,Math::max);
+			}
+
+			private static double getMinR(ConstructivePolarNormalFunction[] children) {
+				return getR(children,Math::min);
+			}
+
+			private ConstructivePolarNormalFunction[] children;
+
+			Group(double minR, double maxR) {
+				this(minR, maxR, null);
+			}
+			Group(ConstructivePolarNormalFunction[] children) {
+				this(getMinR(children), getMaxR(children), children);
+			}
+			Group(double minR, double maxR, ConstructivePolarNormalFunction[] children) {
+				super(minR, maxR);
+				setGroup(children);
+			}
+			
+			public void setGroup(ConstructivePolarNormalFunction[] children) {
+				this.children = children;
+				if (this.children!=null) {
+					Assert(this.children.length>0);
+					for (ConstructivePolarNormalFunction child:children)
+						Assert(child!=null);
+				}
+			}
+			
+			public boolean hasGaps() {
+				if (children==null) return minR<maxR;
+				if (minR==maxR) return false;
+				
+				Arrays.sort(children,Comparator.<ConstructivePolarNormalFunction,Double>comparing(fcn->fcn.minR).thenComparing(fcn->fcn.maxR));
+				
+				int first = -1;
+				for (int i=0; i<children.length; i++)
+					if (children[i].contains(minR)) {
+						first = i;
+						break;
+					}
+				if (first == -1) return true;
+				
+				// [r0,r1) [r1,r2) ...
+				// [0.5,1.0) [0.8,1.3) [1.2,1.5) ...
+				// -->  child[n].contains( child[n-1].maxR )
+				//  &&  child[first].contains( minR )
+				//  &&  maxR <= child[last].maxR
+				double r = minR;
+				for (int i=first; i<children.length; i++) {
+					if (!children[i].contains(r)) return true;
+					r = children[i].maxR;
+				}
+				
+				return r<maxR;
+			}
+
+			@Override
+			protected Normal getBaseNormal(double r) {
+				if (children==null) return null;
+				for (ConstructivePolarNormalFunction child:children)
+					if (child.contains(r))
+						return child.getBaseNormal(r);
+				return null;
+			}
+			
 		}
 		
 	}
