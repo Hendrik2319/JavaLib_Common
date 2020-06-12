@@ -85,18 +85,10 @@ public class BumpMapping {
 	}
 	
 	public void setNormalFunction(NormalFunctionCart normalFunction) {
-		setNormalFunction((x,y,width,height)->{
-			return normalFunction.getNormal(x,y);
-		});
+		setNormalFunction(NormalFunction.convert(normalFunction));
 	}
 	public void setNormalFunction(NormalFunctionPolar normalFunction) {
-		setNormalFunction((x,y,width,height)->{
-			double y1 = y-height/2.0;
-			double x1 = x-width/2.0;
-			double w = Math.atan2(y1,x1);
-			double r = Math.sqrt(x1*x1+y1*y1);
-			return normalFunction.getNormal(w,r);
-		});
+		setNormalFunction(NormalFunction.convert(normalFunction));
 	}
 	public void setNormalFunction(NormalFunction normalFunction) {
 		this.normalFunction = normalFunction;
@@ -129,7 +121,7 @@ public class BumpMapping {
 		WritableRaster raster = image.getRaster();
 		for (int x=0; x<width; x++)
 			for (int y=0; y<height; y++) {
-				raster.setPixel(x, y, shading.getColor(normalFunction.getNormal(x,y,width,height)));
+				raster.setPixel(x, y, shading.getColor(x,y,width,height,normalFunction.getNormal(x,y,width,height)));
 			}
 		return image;
 	}
@@ -147,7 +139,39 @@ public class BumpMapping {
 			sun = new Normal(x,y,z).normalize();
 		}
 
-		public abstract int[] getColor(Normal normal);
+		public abstract int[] getColor(int x, int y, int width, int height, Normal normal);
+		
+		public static class MixedShading extends Shading {
+			
+			private final Shading[] shadings;
+			private Indexer indexer;
+			
+			public MixedShading(IndexerCart  indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
+			public MixedShading(IndexerPolar indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
+			public MixedShading(Indexer      indexer, Shading...shadings) {
+				super(new Normal(0,0,1));
+				this.indexer = indexer;
+				this.shadings = shadings;
+				Assert(indexer!=null);
+				Assert(shadings!=null);
+				Assert(shadings.length>0);
+			}
+
+			@Override
+			public void setSun(double x, double y, double z) {
+				super.setSun(x, y, z);
+				for (Shading sh:shadings)
+					sh.setSun(x, y, z);
+			}
+			
+			@Override
+			public int[] getColor(int x, int y, int width, int height, Normal normal) {
+				int i = indexer.getIndex(x, y, width, height);
+				Assert(0<=i);
+				Assert(i<shadings.length);
+				return shadings[i].getColor(x, y, width, height, normal);
+			}
+		}
 		
 		public static class NormalImage extends Shading {
 			
@@ -156,7 +180,7 @@ public class BumpMapping {
 			}
 
 			@Override
-			public int[] getColor(Normal normal) {
+			public int[] getColor(int x, int y, int width, int height, Normal normal) {
 				color[0] = (int) Math.round(((normal.x+1)/2)*255); Assert(0<=color[0] && color[0]<=255);
 				color[1] = (int) Math.round(((normal.y+1)/2)*255); Assert(0<=color[1] && color[1]<=255);
 				color[2] = (int) Math.round(((normal.z+1)/2)*255); Assert(0<=color[2] && color[2]<=255);
@@ -197,7 +221,7 @@ public class BumpMapping {
 			}
 			
 			@Override
-			public int[] getColor(Normal normal) {
+			public int[] getColor(int x, int y, int width, int height, Normal normal) {
 				color[3] = 255;
 				double intensityDiff = Math.max( minIntensity, getF(sun,normal) );
 				double intensityRefl = getF(maxRefl,normal);
@@ -251,7 +275,7 @@ public class BumpMapping {
 			}
 
 			@Override
-			public int[] getColor(Normal normal) {
+			public int[] getColor(int x, int y, int width, int height, Normal normal) {
 				color[3] = 255;
 				double f1 = getF(normal);
 				double f = Math.max(0,f1);
@@ -288,8 +312,50 @@ public class BumpMapping {
 		}
 	}
 	
+	public interface Indexer {
+		
+		public int getIndex(int x, int y, int width, int height);
+		
+		static Indexer convert(IndexerCart indexer) {
+			return (x,y,width,height)->{
+				return indexer.getIndex(x,y);
+			};
+		}
+		static Indexer convert(IndexerPolar indexer) {
+			return (x,y,width,height)->{
+				double y1 = y-height/2.0;
+				double x1 = x-width/2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return indexer.getIndex(w,r);
+			};
+		}
+	}
+	public interface IndexerCart {
+		public int getIndex(int x, int y);
+	}
+	public interface IndexerPolar {
+		public int getIndex(double w, double r);
+	}
+	
 	public interface Colorizer {
+		
 		public Color getColor(int x, int y, int width, int height);
+		
+		static Colorizer convert(ColorizerCart colorizer) {
+			return (x,y,width,height)->{
+				return colorizer.getColor(x,y);
+			};
+		}
+		static Colorizer convert(ColorizerPolar colorizer) {
+			return (x,y,width,height)->{
+				double y1 = y-height/2.0;
+				double x1 = x-width/2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return colorizer.getColor(w,r);
+			};
+		}
 	}
 	public interface ColorizerCart {
 		public Color getColor(int x, int y);
@@ -298,14 +364,29 @@ public class BumpMapping {
 		public Color getColor(double w, double r);
 	}
 
+	public static interface NormalFunction {
+		public Normal getNormal(int x, int y, int width, int height);
+		
+		static NormalFunction convert(NormalFunctionCart normalFunction) {
+			return (x,y,width,height)->{
+				return normalFunction.getNormal(x,y);
+			};
+		}
+		static NormalFunction convert(NormalFunctionPolar normalFunction) {
+			return (x,y,width,height)->{
+				double y1 = y-height/2.0;
+				double x1 = x-width/2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return normalFunction.getNormal(w,r);
+			};
+		}
+	}
 	public static interface NormalFunctionCart {
 		public Normal getNormal(int x, int y);
 	}
 	public static interface NormalFunctionPolar {
 		public Normal getNormal(double w, double r);
-	}
-	public static interface NormalFunction {
-		public Normal getNormal(int x, int y, int width, int height);
 	}
 	
 	public static class MutableNormal {
@@ -366,7 +447,7 @@ public class BumpMapping {
 		public final double maxR; // exclusive
 		private ColorizerPolar colorizer;
 
-		ConstructivePolarNormalFunction(double minR, double maxR) {
+		protected ConstructivePolarNormalFunction(double minR, double maxR) {
 			this.minR = minR;
 			this.maxR = maxR;
 			Assert(!Double.isNaN(minR));
@@ -412,13 +493,9 @@ public class BumpMapping {
 
 			private final Normal constN;
 
-			Constant(double minR, double maxR) {
-				this(minR, maxR, new Normal(0,0,1));
-			}
-			Constant(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
-				this(minR, maxR, computeNormal(minR, maxR, heightAtMinR, heightAtMaxR));
-			}
-			Constant(double minR, double maxR, Normal constN) {
+			public Constant(double minR, double maxR) { this(minR, maxR, new Normal(0,0,1)); }
+			public Constant(double minR, double maxR, double heightAtMinR, double heightAtMaxR) { this(minR, maxR, computeNormal(minR, maxR, heightAtMinR, heightAtMaxR)); }
+			public Constant(double minR, double maxR, Normal constN) {
 				super(minR, maxR);
 				this.constN = constN;
 			}
@@ -434,7 +511,7 @@ public class BumpMapping {
 			private final Normal normalAtMinR;
 			private final Normal normalAtMaxR;
 
-			Linear(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+			public Linear(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
 				super(minR, maxR);
 				this.normalAtMinR = normalAtMinR;
 				this.normalAtMaxR = normalAtMaxR;
@@ -474,18 +551,14 @@ public class BumpMapping {
 
 			private ConstructivePolarNormalFunction[] children;
 
-			Group(double minR, double maxR) {
-				this(minR, maxR, null);
-			}
-			Group(ConstructivePolarNormalFunction[] children) {
-				this(getMinR(children), getMaxR(children), children);
-			}
-			Group(double minR, double maxR, ConstructivePolarNormalFunction[] children) {
+			public Group(double minR, double maxR) { this(minR, maxR, null); }
+			public Group(ConstructivePolarNormalFunction... children) { this(getMinR(children), getMaxR(children), children); }
+			public Group(double minR, double maxR, ConstructivePolarNormalFunction[] children) {
 				super(minR, maxR);
 				setGroup(children);
 			}
 			
-			public void setGroup(ConstructivePolarNormalFunction[] children) {
+			public void setGroup(ConstructivePolarNormalFunction... children) {
 				this.children = children;
 				if (this.children!=null) {
 					Assert(this.children.length>0);
