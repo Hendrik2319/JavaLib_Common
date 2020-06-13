@@ -450,39 +450,57 @@ public class BumpMapping {
 		}
 		@Override
 		public String toString() {
-			return "Vector3D [x=" + x + ", y=" + y + ", z=" + z + "]";
+			return "Normal [x=" + x + ", y=" + y + ", z=" + z + "]";
 		}
 		
 	}
 	
-	public static abstract class ConstructivePolarNormalFunction implements NormalFunctionPolar {
+	public static class NormalXY {
+		public final double x,y;
+		public final Color color;
 		
-		public final double minR; // inclusive
-		public final double maxR; // exclusive
+		public NormalXY() { this(0,0,null); }
+		public NormalXY(NormalXY n) { this(n.x,n.y,n.color); }
+		public NormalXY(NormalXY n, Color color) { this(n.x,n.y,color); }
+		public NormalXY(double x, double y) { this(x,y,null); }
+		public NormalXY(double x, double y, Color color) { this.x=x; this.y=y; this.color=color; }
+		
+		public static NormalXY blend(double f, double fmin, double fmax, NormalXY vmin, NormalXY vmax) {
+			f = (f-fmin)/(fmax-fmin); 
+			return new NormalXY(
+					vmax.x*f+vmin.x*(1-f),
+					vmax.y*f+vmin.y*(1-f)
+				);
+		}
+		
+		public NormalXY normalize()   { return mul(1/getLength()); }
+		public NormalXY mul(double d) { return new NormalXY(x*d,y*d,color); }
+		public double   getLength()   { return Math.sqrt(x*x+y*y); }
+		
+		public Normal toNormal() { return new Normal( x,0,y, color ); }
+	}
+	
+	public static class RotatedProfile implements NormalFunctionPolar {
+		
+		private ProfileXY profile;
 		private ColorizerPolar colorizer;
 
-		protected ConstructivePolarNormalFunction(double minR, double maxR) {
-			this.minR = minR;
-			this.maxR = maxR;
-			Assert(!Double.isNaN(minR));
-			Assert(!Double.isNaN(maxR));
-			Assert(minR<=maxR);
+		public RotatedProfile(ProfileXY profile) {
+			this.profile = profile;
+			Assert(this.profile!=null);
 			this.colorizer = null;
 		}
 		
-		public ConstructivePolarNormalFunction setColorizer(ColorizerPolar colorizer) {
+		public RotatedProfile setColorizer(ColorizerPolar colorizer) {
 			this.colorizer = colorizer;
 			return this;
 		}
 		
-		public boolean contains(double r) {
-			return minR<=r && r<maxR;
-		}
-
 		@Override
 		public Normal getNormal(double w, double r) {
-			Normal n = getBaseNormal(r);
-			if (n!=null) n = n.normalize().rotateZ(w);
+			NormalXY n0 = profile.getNormal(r);
+			if (n0==null) return null; 
+			Normal n = n0.toNormal().normalize().rotateZ(w);
 			if (colorizer != null) {
 				Color color = colorizer.getColor(w,r);
 				if (color!=null)
@@ -490,59 +508,77 @@ public class BumpMapping {
 			}
 			return n;
 		}
+	}
+	
+	public static abstract class ProfileXY {
 		
-		protected abstract Normal getBaseNormal(double r);
-		
-		
-		public static class Constant extends ConstructivePolarNormalFunction {
+		public final double minR; // inclusive
+		public final double maxR; // exclusive
 
-			public static Normal computeNormal(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
+		protected ProfileXY(double minR, double maxR) {
+			this.minR = minR;
+			this.maxR = maxR;
+			Assert(!Double.isNaN(minR));
+			Assert(!Double.isNaN(maxR));
+			Assert(minR<=maxR);
+		}
+		
+		public boolean contains(double r) {
+			return minR<=r && r<maxR;
+		}
+
+		protected abstract NormalXY getNormal(double r);
+		
+		
+		public static class Constant extends ProfileXY {
+
+			public static NormalXY computeNormal(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
 				Assert(Double.isFinite(minR));
 				Assert(Double.isFinite(maxR));
 				Assert(minR<=maxR);
 				Assert(Double.isFinite(heightAtMinR));
 				Assert(Double.isFinite(heightAtMaxR));
-				return new Normal(heightAtMinR-heightAtMaxR,0,maxR-minR).normalize();
+				return new NormalXY(heightAtMinR-heightAtMaxR,maxR-minR).normalize();
 			}
 
-			private final Normal constN;
+			private final NormalXY constN;
 
-			public Constant(double minR, double maxR) { this(minR, maxR, new Normal(0,0,1)); }
+			public Constant(double minR, double maxR) { this(minR, maxR, new NormalXY(0,1)); }
 			public Constant(double minR, double maxR, double heightAtMinR, double heightAtMaxR) { this(minR, maxR, computeNormal(minR, maxR, heightAtMinR, heightAtMaxR)); }
-			public Constant(double minR, double maxR, Normal constN) {
+			public Constant(double minR, double maxR, NormalXY constN) {
 				super(minR, maxR);
 				this.constN = constN;
 			}
 
 			@Override
-			protected Normal getBaseNormal(double r) {
+			protected NormalXY getNormal(double r) {
 				return constN;
 			}
 		}
 		
-		public static class RoundBlend extends ConstructivePolarNormalFunction {
+		public static class RoundBlend extends ProfileXY {
 
-			private Normal normalAtMinR;
-			private Normal normalAtMaxR;
+			private NormalXY normalAtMinR;
+			private NormalXY normalAtMaxR;
 			private boolean linearBlend;
 			private double f1;
 			private double f2;
 			private int f0;
 
-			public RoundBlend(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+			public RoundBlend(double minR, double maxR, NormalXY normalAtMinR, NormalXY normalAtMaxR) {
 				super(minR, maxR);
 				this.normalAtMinR = normalAtMinR;
 				this.normalAtMaxR = normalAtMaxR;
 				Assert(this.normalAtMinR!=null);
 				Assert(this.normalAtMaxR!=null);
-				Assert(0<=this.normalAtMinR.z);
-				Assert(0<=this.normalAtMaxR.z);
+				Assert(0<=this.normalAtMinR.y);
+				Assert(0<=this.normalAtMaxR.y);
 				prepareValues();
 			}
 
 			private void prepareValues() {
-				double a1 = Math.atan2(this.normalAtMinR.z, this.normalAtMinR.x);
-				double a2 = Math.atan2(this.normalAtMaxR.z, this.normalAtMaxR.x);
+				double a1 = Math.atan2(this.normalAtMinR.y, this.normalAtMinR.x);
+				double a2 = Math.atan2(this.normalAtMaxR.y, this.normalAtMaxR.x);
 				Assert(a1<=Math.PI);
 				Assert(0<=a1);
 				Assert(a2<=Math.PI);
@@ -556,27 +592,27 @@ public class BumpMapping {
 				f1 = R*Math.cos(a1) - minR;
 				f2 = R*R;
 				// x = r + R*Math.cos(a1) - minR;
-				// z = Math.sqrt( R*R - x*x );
+				// y = Math.sqrt( R*R - x*x );
 			}
 
 			@Override
-			protected Normal getBaseNormal(double r) {
+			protected NormalXY getNormal(double r) {
 				if (linearBlend)
-					return Normal.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
+					return NormalXY.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
 				// x = r + R*Math.cos(a1) - minR;
-				// z = Math.sqrt( R*R - x*x );
+				// y = Math.sqrt( R*R - x*x );
 				double x = f0*(r + f1);
-				double z = Math.sqrt( f2 - x*x );
-				return new Normal(x, 0, z);
+				double y = Math.sqrt( f2 - x*x );
+				return new NormalXY(x,y);
 			}
 		}
 		
-		public static class LinearBlend extends ConstructivePolarNormalFunction {
+		public static class LinearBlend extends ProfileXY {
 
-			private final Normal normalAtMinR;
-			private final Normal normalAtMaxR;
+			private final NormalXY normalAtMinR;
+			private final NormalXY normalAtMaxR;
 
-			public LinearBlend(double minR, double maxR, Normal normalAtMinR, Normal normalAtMaxR) {
+			public LinearBlend(double minR, double maxR, NormalXY normalAtMinR, NormalXY normalAtMaxR) {
 				super(minR, maxR);
 				this.normalAtMinR = normalAtMinR;
 				this.normalAtMaxR = normalAtMaxR;
@@ -585,58 +621,55 @@ public class BumpMapping {
 			}
 
 			@Override
-			protected Normal getBaseNormal(double r) {
-				return Normal.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
+			protected NormalXY getNormal(double r) {
+				return NormalXY.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
 			}
 			
 		}
 		
-		public static class Group extends ConstructivePolarNormalFunction {
+		public static class Group extends ProfileXY {
 
-			private static double getR(ConstructivePolarNormalFunction[] children, BiFunction<Double,Double,Double> compare) {
+			private static double getR(ProfileXY[] children, BiFunction<Double,Double,Double> compare) {
 				Assert(children!=null);
 				Assert(children.length>0);
 				Assert(children[0]!=null);
 				
 				double r = children[0].minR;
-				for (ConstructivePolarNormalFunction child:children) {
+				for (ProfileXY child:children) {
 					Assert(child!=null);
 					r = compare.apply(compare.apply(r, child.minR), child.maxR);
 				}
 				return r;
 			}
 
-			private static double getMaxR(ConstructivePolarNormalFunction[] children) {
+			private static double getMaxR(ProfileXY[] children) {
 				return getR(children,Math::max);
 			}
 
-			private static double getMinR(ConstructivePolarNormalFunction[] children) {
+			private static double getMinR(ProfileXY[] children) {
 				return getR(children,Math::min);
 			}
 
-			private ConstructivePolarNormalFunction[] children;
+			private ProfileXY[] children;
 
-			public Group(double minR, double maxR) { this(minR, maxR, null); }
-			public Group(ConstructivePolarNormalFunction... children) { this(getMinR(children), getMaxR(children), children); }
-			public Group(double minR, double maxR, ConstructivePolarNormalFunction[] children) {
+			public Group(ProfileXY... children) { this(getMinR(children), getMaxR(children), children); }
+			public Group(double minR, double maxR, ProfileXY... children) {
 				super(minR, maxR);
 				setGroup(children);
 			}
 			
-			public void setGroup(ConstructivePolarNormalFunction... children) {
+			public void setGroup(ProfileXY... children) {
+				Assert(children!=null);
+				for (ProfileXY child:children)
+					Assert(child!=null);
 				this.children = children;
-				if (this.children!=null) {
-					Assert(this.children.length>0);
-					for (ConstructivePolarNormalFunction child:children)
-						Assert(child!=null);
-				}
 			}
 			
 			public boolean hasGaps() {
-				if (children==null) return minR<maxR;
+				if (children.length==0) return minR<maxR;
 				if (minR==maxR) return false;
 				
-				Arrays.sort(children,Comparator.<ConstructivePolarNormalFunction,Double>comparing(fcn->fcn.minR).thenComparing(fcn->fcn.maxR));
+				Arrays.sort(children,Comparator.<ProfileXY,Double>comparing(fcn->fcn.minR).thenComparing(fcn->fcn.maxR));
 				
 				int first = -1;
 				for (int i=0; i<children.length; i++)
@@ -661,11 +694,10 @@ public class BumpMapping {
 			}
 
 			@Override
-			protected Normal getBaseNormal(double r) {
-				if (children==null) return null;
-				for (ConstructivePolarNormalFunction child:children)
+			protected NormalXY getNormal(double r) {
+				for (ProfileXY child:children)
 					if (child.contains(r))
-						return child.getBaseNormal(r);
+						return child.getNormal(r);
 				return null;
 			}
 			
