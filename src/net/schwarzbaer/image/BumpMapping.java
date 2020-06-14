@@ -18,12 +18,12 @@ public class BumpMapping {
 	private NormalFunction normalFunction;
 	private ImageCache<BufferedImage> imageCache;
 
-	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionCart getNormal) {
+	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction.Cart getNormal) {
 		this(false);
 		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
 	}
-	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunctionPolar getNormal) {
+	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction.Polar getNormal) {
 		this(false);
 		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
 		setNormalFunction(getNormal);
@@ -87,15 +87,16 @@ public class BumpMapping {
 		return null;
 	}
 	
-	public void setNormalFunction(NormalFunctionCart normalFunction) {
-		setNormalFunction(NormalFunction.convert(normalFunction));
+	public BumpMapping setNormalFunction(NormalFunction.Cart normalFunction) {
+		return setNormalFunction(NormalFunction.convert(normalFunction));
 	}
-	public void setNormalFunction(NormalFunctionPolar normalFunction) {
-		setNormalFunction(NormalFunction.convert(normalFunction));
+	public BumpMapping setNormalFunction(NormalFunction.Polar normalFunction) {
+		return setNormalFunction(NormalFunction.convert(normalFunction));
 	}
-	public void setNormalFunction(NormalFunction normalFunction) {
+	public BumpMapping setNormalFunction(NormalFunction normalFunction) {
 		this.normalFunction = normalFunction;
 		if (imageCache!=null) imageCache.resetImage();
+		return this;
 	}
 	public void setSun(double x, double y, double z) {
 		shading.setSun(x,y,z);
@@ -160,8 +161,8 @@ public class BumpMapping {
 			private final Shading[] shadings;
 			private Indexer indexer;
 			
-			public MixedShading(IndexerCart  indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
-			public MixedShading(IndexerPolar indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
+			public MixedShading(Indexer.Cart  indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
+			public MixedShading(Indexer.Polar indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
 			public MixedShading(Indexer      indexer, Shading...shadings) {
 				super(new Normal(0,0,1));
 				this.indexer = indexer;
@@ -421,12 +422,12 @@ public class BumpMapping {
 		
 		public int getIndex(double x, double y, double width, double height);
 		
-		static Indexer convert(IndexerCart indexer) {
+		static Indexer convert(Cart indexer) {
 			return (x,y,width,height)->{
-				return indexer.getIndex(x,y,true);
+				return indexer.getIndex(x,y);
 			};
 		}
-		static Indexer convert(IndexerPolar indexer) {
+		static Indexer convert(Polar indexer) {
 			return (x,y,width,height)->{
 				double y1 = y-height/2.0;
 				double x1 = x-width/2.0;
@@ -435,24 +436,20 @@ public class BumpMapping {
 				return indexer.getIndex(w,r);
 			};
 		}
-	}
-	public interface IndexerCart {
-		public int getIndex(double x, double y, boolean dummy);
-	}
-	public interface IndexerPolar {
-		public int getIndex(double w, double r);
+		public interface Cart  { public int getIndex(double x, double y); }
+		public interface Polar { public int getIndex(double w, double r); }
 	}
 	
 	public interface Colorizer {
 		
 		public Color getColor(double x, double y, double width, double height);
 		
-		static Colorizer convert(ColorizerCart colorizer) {
+		static Colorizer convert(Cart colorizer) {
 			return (x,y,width,height)->{
-				return colorizer.getColor(x,y,true);
+				return colorizer.getColor(x,y);
 			};
 		}
-		static Colorizer convert(ColorizerPolar colorizer) {
+		static Colorizer convert(Polar colorizer) {
 			return (x,y,width,height)->{
 				double y1 = y-height/2.0;
 				double x1 = x-width/2.0;
@@ -461,23 +458,20 @@ public class BumpMapping {
 				return colorizer.getColor(w,r);
 			};
 		}
-	}
-	public interface ColorizerCart {
-		public Color getColor(double x, double y, boolean dummy);
-	}
-	public interface ColorizerPolar {
-		public Color getColor(double w, double r);
+		
+		public interface Cart  { public Color getColor(double x, double y); }
+		public interface Polar { public Color getColor(double w, double r); }
 	}
 
 	public static interface NormalFunction {
 		public Normal getNormal(double x, double y, double width, double height);
 		
-		static NormalFunction convert(NormalFunctionCart normalFunction) {
+		static NormalFunction convert(Cart normalFunction) {
 			return (x,y,width,height)->{
-				return normalFunction.getNormal(x,y,true);
+				return normalFunction.getNormal(x,y);
 			};
 		}
-		static NormalFunction convert(NormalFunctionPolar normalFunction) {
+		static NormalFunction convert(Polar normalFunction) {
 			return (x,y,width,height)->{
 				double y1 = y-height/2.0;
 				double x1 = x-width/2.0;
@@ -486,12 +480,9 @@ public class BumpMapping {
 				return normalFunction.getNormal(w,r);
 			};
 		}
-	}
-	public static interface NormalFunctionCart {
-		public Normal getNormal(double x, double y, boolean dummy);
-	}
-	public static interface NormalFunctionPolar {
-		public Normal getNormal(double w, double r);
+		
+		public static interface Cart  { public Normal getNormal(double x, double y); }
+		public static interface Polar { public Normal getNormal(double w, double r); }
 	}
 	
 	public static class MutableNormal {
@@ -524,10 +515,10 @@ public class BumpMapping {
 		
 		public Normal rotateZ(double w) {
 			return new Normal(
-					x*Math.cos(w)-y*Math.sin(w),
-					x*Math.sin(w)+y*Math.cos(w),
-					z,
-					color
+				x*Math.cos(w)-y*Math.sin(w),
+				x*Math.sin(w)+y*Math.cos(w),
+				z,
+				color
 			);
 		}
 		
@@ -571,33 +562,166 @@ public class BumpMapping {
 		public Normal toNormal() { return new Normal( x,0,y, color ); }
 	}
 	
-	public static class RotatedProfile implements NormalFunctionPolar {
+	public interface ExtraNormalFunctionPolar {
+		Normal getNormal(double w, double r);
 		
-		private ProfileXY profile;
-		private ColorizerPolar colorizer;
+		@SuppressWarnings("unused")
+		public static Normal merge(Normal n, Normal en) {
+			if (en==null) return  n;
+			if ( n==null) return en;
+			double wZ = Math.atan2(n.y, n.x);
+			Normal  n1 =  n.rotateZ(wZ);
+			Normal en1 = en.rotateZ(wZ);
+			
+			// TODO: merge en & n
+			return en;
+		}
 
-		public RotatedProfile(ProfileXY profile) {
-			this.profile = profile;
-			Assert(this.profile!=null);
+		public static class Group implements ExtraNormalFunctionPolar {
+			
+			private ExtraNormalFunctionPolar[] elements;
+			public Group(ExtraNormalFunctionPolar... elements) {
+				this.elements = elements;
+				Assert(this.elements!=null);
+				for (ExtraNormalFunctionPolar el:this.elements)
+					Assert(el!=null);
+			}
+
+			@Override
+			public Normal getNormal(double w, double r) {
+				for (ExtraNormalFunctionPolar el:this.elements) {
+					Normal en = el.getNormal(w,r);
+					if (en!=null) return en;
+				}
+				return null;
+			}
+		}
+		
+		public static class Rotated implements ExtraNormalFunctionPolar {
+			
+			private double anglePos;
+			private ExtraNormalFunctionPolar extra;
+
+			public Rotated(double anglePosDegree, ExtraNormalFunctionPolar extraNormalizedAtXaxis) {
+				this.anglePos = -anglePosDegree/180.0*Math.PI;
+				this.extra = extraNormalizedAtXaxis;
+				Assert(Double.isFinite(this.anglePos));
+				Assert(this.extra!=null);
+			}
+
+			@Override
+			public Normal getNormal(double w, double r) {
+				Normal en = extra.getNormal(w-anglePos,r);
+				if (en==null) return null;
+				return en.rotateZ(anglePos);
+			}
+		}
+		
+		public static class LineOnX implements ExtraNormalFunctionPolar {
+
+			private double minR;
+			private double maxR;
+			private ProfileXY profile;
+
+			public LineOnX(double minR, double maxR, ProfileXY profile) {
+				this.minR = minR;
+				this.maxR = maxR;
+				this.profile = profile;
+				Assert(Double.isFinite(this.minR));
+				Assert(Double.isFinite(this.maxR));
+				Assert(this.profile!=null);
+			}
+			
+			@Override
+			public Normal getNormal(double w, double r) {
+				double x = r*Math.cos(w);
+				double y = r*Math.sin(w);
+				double maxProfileR = profile.maxR;
+				if (x < minR-maxProfileR) return null;
+				if (x > maxR+maxProfileR) return null;
+				if (y <     -maxProfileR) return null;
+				if (y >      maxProfileR) return null;
+				
+				double local_r;
+				double local_w;
+				if (x < minR) {
+					local_r = Math.sqrt( y*y + (x-minR)*(x-minR) );
+					local_w = Math.atan2(y, x-minR);
+					
+				} else if (x > maxR) {
+					local_r = Math.sqrt( y*y + (x-maxR)*(x-maxR) );
+					local_w = Math.atan2(y, x-maxR);
+					
+				} else if (y>0) {
+					local_r = y;
+					local_w = Math.PI/2;
+					
+				} else {
+					local_r = -y;
+					local_w = -Math.PI/2;
+				}
+				
+				NormalXY n0 = profile.getNormal(local_r);
+				if (n0==null) return null; 
+				return n0.toNormal().normalize().rotateZ(local_w);
+			}
+		}
+	}
+	
+	public static abstract class AbstractNormalFunctionPolar<MyClass extends AbstractNormalFunctionPolar<MyClass>> implements NormalFunction.Polar {
+		
+		private Colorizer.Polar colorizer;
+		private ExtraNormalFunctionPolar extras;
+
+		public AbstractNormalFunctionPolar() {
 			this.colorizer = null;
+			extras = null;
 		}
-		
-		public RotatedProfile setColorizer(ColorizerPolar colorizer) {
+		protected abstract MyClass getThis(); // return this;
+
+		public MyClass setColorizer(Colorizer.Polar colorizer) {
 			this.colorizer = colorizer;
-			return this;
+			Assert(this.colorizer!=null);
+			return getThis();
 		}
 		
+		public MyClass setExtras(ExtraNormalFunctionPolar extras) {
+			this.extras = extras;
+			Assert(this.extras!=null);
+			return getThis();
+		}
+
 		@Override
 		public Normal getNormal(double w, double r) {
-			NormalXY n0 = profile.getNormal(r);
-			if (n0==null) return null; 
-			Normal n = n0.toNormal().normalize().rotateZ(w);
-			if (colorizer != null) {
+			Normal n = getBaseNormal(w, r);
+			if (extras!=null)
+				n = ExtraNormalFunctionPolar.merge( n, extras.getNormal(w,r) ); 
+			if (n!=null && colorizer!=null) {
 				Color color = colorizer.getColor(w,r);
 				if (color!=null)
 					return new Normal(n,color);
 			}
 			return n;
+		}
+		
+		protected abstract Normal getBaseNormal(double w, double r);
+	}
+	
+	public static class RotatedProfile extends AbstractNormalFunctionPolar<RotatedProfile> {
+		
+		private ProfileXY profile;
+
+		public RotatedProfile(ProfileXY profile) {
+			this.profile = profile;
+			Assert(this.profile!=null);
+		}
+		@Override protected RotatedProfile getThis() { return this; }
+
+		@Override
+		protected Normal getBaseNormal(double w, double r) {
+			NormalXY n0 = profile.getNormal(r);
+			if (n0==null) return null; 
+			return n0.toNormal().normalize().rotateZ(w);
 		}
 	}
 	
