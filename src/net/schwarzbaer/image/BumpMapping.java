@@ -462,6 +462,29 @@ public class BumpMapping {
 		public interface Cart  { public Color getColor(double x, double y); }
 		public interface Polar { public Color getColor(double w, double r); }
 	}
+	
+	public interface Filter {
+		
+		public boolean passesFilter(double x, double y, double width, double height);
+		
+		static Filter convert(Cart colorizer) {
+			return (x,y,width,height)->{
+				return colorizer.passesFilter(x,y);
+			};
+		}
+		static Filter convert(Polar colorizer) {
+			return (x,y,width,height)->{
+				double y1 = y-height/2.0;
+				double x1 = x-width/2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return colorizer.passesFilter(w,r);
+			};
+		}
+		
+		public interface Cart  { public boolean passesFilter(double x, double y); }
+		public interface Polar { public boolean passesFilter(double w, double r); }
+	}
 
 	public static interface NormalFunction {
 		public Normal getNormal(double x, double y, double width, double height);
@@ -522,6 +545,15 @@ public class BumpMapping {
 			);
 		}
 		
+		public Normal rotateY(double w) {
+			return new Normal(
+				x*Math.cos(w)+z*Math.sin(w),
+				y,
+				-x*Math.sin(w)+z*Math.cos(w),
+				color
+			);
+		}
+		
 		public static Normal blend(double f, double fmin, double fmax, Normal vmin, Normal vmax) {
 			f = (f-fmin)/(fmax-fmin); 
 			return new Normal(
@@ -530,9 +562,8 @@ public class BumpMapping {
 					vmax.z*f+vmin.z*(1-f)
 				);
 		}
-		@Override
-		public String toString() {
-			return "Normal [x=" + x + ", y=" + y + ", z=" + z + "]";
+		@Override public String toString() {
+			return String.format(Locale.ENGLISH, "Normal[%1.5f,%1.5f,%1.5f%s]", x, y, z, color==null?"":String.format(",0x%08X", color.getRGB()) );
 		}
 		
 	}
@@ -560,21 +591,45 @@ public class BumpMapping {
 		public double   getLength()   { return Math.sqrt(x*x+y*y); }
 		
 		public Normal toNormal() { return new Normal( x,0,y, color ); }
+		
+		@Override public String toString() {
+			return String.format(Locale.ENGLISH, "NormalXY[%1.5f,%1.5f,%1.5f%s]", x, y, color==null?"":String.format(",0x%08X", color.getRGB()) );
+		}
 	}
 	
 	public interface ExtraNormalFunctionPolar {
 		Normal getNormal(double w, double r);
 		
-		@SuppressWarnings("unused")
 		public static Normal merge(Normal n, Normal en) {
 			if (en==null) return  n;
 			if ( n==null) return en;
 			double wZ = Math.atan2(n.y, n.x);
-			Normal  n1 =  n.rotateZ(wZ);
-			Normal en1 = en.rotateZ(wZ);
-			
-			// TODO: merge en & n
+			 n =  n.rotateZ(-wZ);
+			en = en.rotateZ(-wZ);
+			double wY = Math.atan2(n.x, n.z);
+			en = en.rotateY(wY);
+			en = en.rotateZ(wZ);
 			return en;
+		}
+
+		public static class Stencil implements ExtraNormalFunctionPolar {
+			
+			private Filter.Polar filter;
+			private ExtraNormalFunctionPolar extra;
+
+			public Stencil(Filter.Polar filter, ExtraNormalFunctionPolar extra) {
+				this.filter = filter;
+				this.extra = extra;
+				Assert(this.filter!=null);
+				Assert(this.extra!=null);
+			}
+
+			@Override
+			public Normal getNormal(double w, double r) {
+				if (filter.passesFilter(w,r))
+					return extra.getNormal(w,r);
+				return null;
+			}
 		}
 
 		public static class Group implements ExtraNormalFunctionPolar {
@@ -798,10 +853,10 @@ public class BumpMapping {
 				Assert(0<=a1);
 				Assert(a2<=Math.PI);
 				Assert(0<=a2);
-				System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> a1:%6.2f° a2:%6.2f°%n", a1/Math.PI*180, a2/Math.PI*180); 
-				if (a1==a2) { linearBlend=true; System.out.println("linearBlend"); return; } else linearBlend=false;
+				//System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> a1:%6.2f° a2:%6.2f°%n", a1/Math.PI*180, a2/Math.PI*180); 
+				if (a1==a2) { linearBlend=true; /*System.out.println("linearBlend");*/ return; } else linearBlend=false;
 				if (a1<a2) { a1 += Math.PI; a2 += Math.PI; f0=-1; } else f0=1;
-				System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> cos(a1):%1.5f cos(a2):%1.5f%n", Math.cos(a1), Math.cos(a2)); 
+				//System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> cos(a1):%1.5f cos(a2):%1.5f%n", Math.cos(a1), Math.cos(a2)); 
 				
 				double R = (maxR-minR)/(Math.cos(a2)-Math.cos(a1));
 				f1 = R*Math.cos(a1) - minR;
