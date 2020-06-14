@@ -17,7 +17,8 @@ public class BumpMapping {
 	private Shading shading;
 	private NormalFunction normalFunction;
 	private ImageCache<BufferedImage> imageCache;
-
+	private OverSampling overSampling = OverSampling.None;
+	
 	public BumpMapping(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction.Cart getNormal) {
 		this(false);
 		setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
@@ -95,12 +96,12 @@ public class BumpMapping {
 	}
 	public BumpMapping setNormalFunction(NormalFunction normalFunction) {
 		this.normalFunction = normalFunction;
-		if (imageCache!=null) imageCache.resetImage();
+		resetImageCache();
 		return this;
 	}
 	public void setSun(double x, double y, double z) {
 		shading.setSun(x,y,z);
-		if (imageCache!=null) imageCache.resetImage();
+		resetImageCache();
 	}
 //	public void getSun(Normal sunOut) {
 //		sunOut.x = shading.sun.x;
@@ -109,9 +110,92 @@ public class BumpMapping {
 //	}
 	public void setShading(Shading shading) {
 		this.shading = shading;
-		if (imageCache!=null) imageCache.resetImage();
+		resetImageCache();
+	}
+	
+	public enum OverSampling {
+		None         ("None (1x)"),
+		_2x_Diagonal1("2x (diagonal1)"  , new SamplingPoint(-0.25,-0.25), new SamplingPoint(0.25,0.25)),
+		_2x_Diagonal2("2x (diagonal2)"  , new SamplingPoint(-0.25,0.25), new SamplingPoint(0.25,-0.25)),
+		_4x_Square   ("4x (square)"     , new SamplingPoint(-0.25,-0.25), new SamplingPoint(0.25,0.25), new SamplingPoint(-0.25,0.25), new SamplingPoint(0.25,-0.25)),
+		_5x_Cross    ("5x (cross,\"x\")", new SamplingPoint(0,0), new SamplingPoint(-0.3,-0.3), new SamplingPoint(0.3,0.3), new SamplingPoint(-0.3,0.3), new SamplingPoint(0.3,-0.3)),
+		_9x_Square   ("9x (square)"     , new SamplingPoint(0,0), new SamplingPoint(0,0.33), new SamplingPoint(0,-0.33), new SamplingPoint(0.33,0), new SamplingPoint(-0.33,0), new SamplingPoint(0.33,0.33), new SamplingPoint(0.33,-0.33), new SamplingPoint(-0.33,0.33), new SamplingPoint(-0.33,-0.33)),
+		;
+		
+		private final String label;
+		private final SamplingPoint[] samplingPoints;
+		OverSampling(String label, SamplingPoint... samplingPoints) {
+			this.label = label;
+			this.samplingPoints = samplingPoints;
+		}
+		@Override
+		public String toString() {
+			return label;
+		}
+		
+		public static int[] computeColor(OverSampling overSampling, double pixWidth, double pixX, double pixY, ColorSource colorSource) {
+			if (overSampling==null || overSampling==OverSampling.None)
+				return colorSource.getColor(pixX,pixY);
+			return overSampling.computeColor(pixWidth,pixX,pixY, colorSource);
+		}
+		
+		public int[] computeColor(double pixWidth, double pixX, double pixY, ColorSource colorSource) {
+			if (samplingPoints.length==0)
+				return colorSource.getColor(pixX,pixY);
+			int[] sumColor = null;
+			for (SamplingPoint sp:samplingPoints) {
+				int[] color = colorSource.getColor(
+						pixX+sp.x*pixWidth,
+						pixY+sp.y*pixWidth
+				);
+				sumColor = add(sumColor,color);
+			}
+			return div(sumColor,samplingPoints.length);
+		}
+		
+		private int[] div(int[] color, int divisor) {
+			Assert(color!=null);
+			for (int i=0; i<color.length; i++)
+				color[i] /= divisor;
+			return color;
+		}
+		
+		private int[] add(int[] sumColor, int[] color) {
+			Assert(color!=null);
+			Assert(color.length>0);
+			if (sumColor==null) {
+				sumColor = new int[color.length];
+				Arrays.fill(sumColor,0);
+			}
+			Assert(sumColor.length == color.length);
+			for (int i=0; i<sumColor.length; i++)
+				sumColor[i] += color[i];
+			return sumColor;
+		}
+
+		private static class SamplingPoint {
+			final double x,y;
+			private SamplingPoint(double x, double y) { this.x = x; this.y = y;
+			}
+		}
+		
+		public interface ColorSource {
+			int[] getColor(double x,double y);
+		}
+	}
+	
+	public void setOverSampling(OverSampling overSampling) {
+		this.overSampling = overSampling;
+		resetImageCache();
+	}
+	public OverSampling getOverSampling() {
+		return overSampling;
 	}
 	public void resetImage() {
+		resetImageCache();
+	}
+	
+	private void resetImageCache() {
 		if (imageCache!=null) imageCache.resetImage();
 	}
 
@@ -120,23 +204,17 @@ public class BumpMapping {
 		if (imageCache!=null) return imageCache.getImage(width, height);
 		return renderImage_uncached(width, height);
 	}
-	public BufferedImage renderImage_uncached(int width, int height) {
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		WritableRaster raster = image.getRaster();
-		for (int x=0; x<width; x++)
-			for (int y=0; y<height; y++) {
-				raster.setPixel(x, y, shading.getColor(x,y,width,height,normalFunction.getNormal(x,y,width,height)));
-			}
-		return image;
-	}
+	public BufferedImage renderImage_uncached      (int width, int height) { return renderScaledImage_uncached(width,height,1); }
 	public BufferedImage renderScaledImage_uncached(int width, int height, float scale) {
+		OverSampling.ColorSource colorSource = (x,y)->shading.getColor(x,y,width,height,normalFunction.getNormal(x,y,width,height));
 		int scaledWidth  = Math.round(width *scale);
 		int scaledHeight = Math.round(height*scale);
 		BufferedImage image = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
 		for (int x=0; x<scaledWidth; x++)
 			for (int y=0; y<scaledHeight; y++) {
-				raster.setPixel(x, y, shading.getColor(x/scale,y/scale,width,height,normalFunction.getNormal(x/scale,y/scale,width,height)));
+				int[] color = OverSampling.computeColor(overSampling, 1/scale,x/scale,y/scale, colorSource);
+				raster.setPixel(x, y, color);
 			}
 		return image;
 	}
