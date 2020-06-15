@@ -35,13 +35,42 @@ public class BumpMapping {
 	}
 
 	public void setNormalMap(Normal[][] normalMap) {
-		setNormalFunction((x_,y_,width,height)->{
-			int x = (int) Math.round(x_);
-			int y = (int) Math.round(y_);
-			if (x<0 || x>=normalMap   .length) return new Normal(0,0,1);
-			if (y<0 || y>=normalMap[x].length) return new Normal(0,0,1);
-			return normalMap[x][y];
-		});
+		setNormalFunction( new NormalMapFunction(normalMap,false) );
+//		setNormalFunction((x_,y_,width,height)->{
+//			int x = (int) Math.round(x_);
+//			int y = (int) Math.round(y_);
+//			if (x<0 || x>=normalMap   .length) return new Normal(0,0,1);
+//			if (y<0 || y>=normalMap[x].length) return new Normal(0,0,1);
+//			return normalMap[x][y];
+//		});
+	}
+	
+	public static class NormalMapFunction implements NormalFunction {
+		
+		private Normal[][] normalMap;
+		private boolean forceNormalCreation;
+		private boolean centered;
+		
+		public NormalMapFunction(Normal[][] normalMap, boolean centered) {
+			this.normalMap = normalMap;
+			this.centered = centered;
+			forceNormalCreation = true;
+		}
+		@Override
+		public Normal getNormal(double x, double y, double width, double height) {
+			int mapWidth  = normalMap    .length;
+			int xi = (int) Math.round(x + (centered ? (mapWidth -width )/2 : 0));
+			if (xi<0 || xi>=mapWidth ) return forceNormalCreation ? new Normal(0,0,1) : null;
+			
+			int mapHeight = normalMap[xi].length;
+			int yi = (int) Math.round(y + (centered ? (mapHeight-height)/2 : 0));
+			if (yi<0 || yi>=mapHeight) return forceNormalCreation ? new Normal(0,0,1) : null;
+			
+			return normalMap[xi][yi];
+		}
+		@Override public void forceNormalCreation(boolean forceNormalCreation) {
+			this.forceNormalCreation = forceNormalCreation;
+		}
 	}
 	
 	public void setHeightMap(float[][] heightMap, double cornerScale) {
@@ -134,34 +163,75 @@ public class BumpMapping {
 			return label;
 		}
 		
-		public static int[] computeColor(OverSampling overSampling, double pixWidth, double pixX, double pixY, ColorSource colorSource) {
-			if (overSampling==null || overSampling==OverSampling.None)
-				return colorSource.getColor(pixX,pixY);
-			return overSampling.computeColor(pixWidth,pixX,pixY, colorSource);
+		public interface ColorSource {
+			int[]  getColor(double x,double y, Normal n);
+			Normal getNormal(double x,double y);
+			void forceNormalCreation(boolean b);
 		}
-		
-		public int[] computeColor(double pixWidth, double pixX, double pixY, ColorSource colorSource) {
-			if (samplingPoints.length==0)
-				return colorSource.getColor(pixX,pixY);
+
+		public static int[] computeColor(OverSampling overSampling, double pixWidth, double pixX, double pixY, ColorSource colorSource) {
+			if (overSampling==null || overSampling==OverSampling.None || overSampling.samplingPoints.length==0)
+				return colorSource.getColor(pixX,pixY,colorSource.getNormal(pixX,pixY));
+			
+			boolean miss = false;
+			boolean hit  = false;
+			Normal[] normals = new Normal[overSampling.samplingPoints.length];
+			for (int i=0; i<normals.length; i++) {
+				SamplingPoint sp = overSampling.samplingPoints[i];
+				normals[i] = getNormal(colorSource, pixWidth, pixX, pixY, sp);
+				if (normals[i]==null) {
+					if (!miss && hit) colorSource.forceNormalCreation(true);
+					miss = true;
+				} else {
+					if (!hit && miss) colorSource.forceNormalCreation(true);
+					hit = true;
+				}
+			}
+			if (hit && miss) {
+				// colorSource.forceNormalCreation is already set
+				for (int i=0; i<normals.length; i++) {
+					SamplingPoint sp = overSampling.samplingPoints[i];
+					normals[i] = getNormal(colorSource, pixWidth, pixX, pixY, sp);
+					Assert(normals[i]!=null);
+				}
+				colorSource.forceNormalCreation(false);
+			}
+			
+			if (miss && !hit)
+				return null;
+			
 			int[] sumColor = null;
-			for (SamplingPoint sp:samplingPoints) {
-				int[] color = colorSource.getColor(
-						pixX+sp.x*pixWidth,
-						pixY+sp.y*pixWidth
-				);
+			for (int i=0; i<overSampling.samplingPoints.length; i++) {
+				SamplingPoint sp = overSampling.samplingPoints[i];
+				int[] color = getColor(colorSource, pixWidth, pixX, pixY, sp, normals[i]);
 				sumColor = add(sumColor,color);
 			}
-			return div(sumColor,samplingPoints.length);
+			return div(sumColor,overSampling.samplingPoints.length);
 		}
 		
-		private int[] div(int[] color, int divisor) {
+		private static int[] getColor(ColorSource colorSource, double pixWidth, double pixX, double pixY, SamplingPoint sp, Normal n) {
+			return colorSource.getColor(
+				pixX+sp.x*pixWidth,
+				pixY+sp.y*pixWidth,
+				n
+			);
+		}
+		
+		private static Normal getNormal(ColorSource colorSource, double pixWidth, double pixX, double pixY, SamplingPoint sp) {
+			return colorSource.getNormal(
+				pixX+sp.x*pixWidth,
+				pixY+sp.y*pixWidth
+			);
+		}
+		
+		private static int[] div(int[] color, int divisor) {
 			Assert(color!=null);
 			for (int i=0; i<color.length; i++)
 				color[i] /= divisor;
 			return color;
 		}
 		
-		private int[] add(int[] sumColor, int[] color) {
+		private static int[] add(int[] sumColor, int[] color) {
 			Assert(color!=null);
 			Assert(color.length>0);
 			if (sumColor==null) {
@@ -178,10 +248,6 @@ public class BumpMapping {
 			final double x,y;
 			private SamplingPoint(double x, double y) { this.x = x; this.y = y;
 			}
-		}
-		
-		public interface ColorSource {
-			int[] getColor(double x,double y);
 		}
 	}
 	
@@ -207,7 +273,11 @@ public class BumpMapping {
 	}
 	public BufferedImage renderImage_uncached      (int width, int height) { return renderScaledImage_uncached(width,height,1); }
 	public BufferedImage renderScaledImage_uncached(int width, int height, float scale) {
-		OverSampling.ColorSource colorSource = (x,y)->shading.getColor(x,y,width,height,normalFunction.getNormal(x,y,width,height));
+		OverSampling.ColorSource colorSource = new OverSampling.ColorSource() {
+			@Override public int[]  getColor (double x, double y, Normal n) { return shading       .getColor (x,y,width,height,n); }
+			@Override public Normal getNormal(double x, double y          ) { return normalFunction.getNormal(x,y,width,height  ); }
+			@Override public void forceNormalCreation(boolean b) { normalFunction.forceNormalCreation(b); }
+		};
 		int scaledWidth  = Math.round(width *scale);
 		int scaledHeight = Math.round(height*scale);
 		BufferedImage image = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
@@ -567,24 +637,69 @@ public class BumpMapping {
 
 	public static interface NormalFunction {
 		public Normal getNormal(double x, double y, double width, double height);
-		
+		public void forceNormalCreation(boolean force);
+
 		static NormalFunction convert(Cart normalFunction) {
-			return (x,y,width,height)->{
-				return normalFunction.getNormal(x,y);
+			return new NormalFunction() {
+				@Override public Normal getNormal(double x, double y, double width, double height) {
+					return normalFunction.getNormal(x,y);
+				}
+				@Override public void forceNormalCreation(boolean force) {
+					normalFunction.forceNormalCreation(force);
+				}
 			};
 		}
 		static NormalFunction convert(Polar normalFunction) {
-			return (x,y,width,height)->{
-				double y1 = y-height/2.0;
-				double x1 = x-width/2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return normalFunction.getNormal(w,r);
+			return new NormalFunction() {
+				@Override public Normal getNormal(double x, double y, double width, double height) {
+					double y1 = y-height/2.0;
+					double x1 = x-width/2.0;
+					double w = Math.atan2(y1,x1);
+					double r = Math.sqrt(x1*x1+y1*y1);
+					return normalFunction.getNormal(w,r);
+				}
+				@Override public void forceNormalCreation(boolean force) {
+					normalFunction.forceNormalCreation(force);
+				}
 			};
 		}
 		
-		public static interface Cart  { public Normal getNormal(double x, double y); }
-		public static interface Polar { public Normal getNormal(double w, double r); }
+		public static interface Cart  { public Normal getNormal(double x, double y); public void forceNormalCreation(boolean force); }
+		public static interface Polar { public Normal getNormal(double w, double r); public void forceNormalCreation(boolean force); }
+		
+		public static class Simple implements NormalFunction {
+			public interface Fcn {
+				public Normal apply(double x, double y, double width, double height);
+			}
+			
+			private Fcn fcn;
+			public Simple(Fcn fcn) {
+				this.fcn = fcn;
+				Assert(this.fcn!=null);
+			}
+			@Override public Normal getNormal(double x, double y, double width, double height) {
+				Normal normal = fcn.apply(x, y, width, height);
+				Assert(normal!=null);
+				return normal;
+			}
+			@Override public void forceNormalCreation(boolean force) {}
+			
+		}
+		
+		public static class SimplePolar implements Polar {
+			private BiFunction<Double, Double, Normal> fcn;
+			public SimplePolar(BiFunction<Double,Double,Normal> fcn) {
+				this.fcn = fcn;
+				Assert(this.fcn!=null);
+			}
+			@Override public Normal getNormal(double w, double r) {
+				Normal normal = fcn.apply(w,r);
+				Assert(normal!=null);
+				return normal;
+			}
+			@Override public void forceNormalCreation(boolean force) {}
+			
+		}
 	}
 	
 	public static class MutableNormal {
@@ -810,10 +925,13 @@ public class BumpMapping {
 		
 		private Colorizer.Polar colorizer;
 		private ExtraNormalFunctionPolar extras;
+		private boolean forceNormalCreation;
+		private boolean showExtrasOnly;
 
 		public AbstractNormalFunctionPolar() {
 			this.colorizer = null;
 			extras = null;
+			forceNormalCreation = false;
 		}
 		protected abstract MyClass getThis(); // return this;
 
@@ -821,6 +939,14 @@ public class BumpMapping {
 			this.colorizer = colorizer;
 			Assert(this.colorizer!=null);
 			return getThis();
+		}
+		
+		@Override
+		public void forceNormalCreation(boolean forceNormalCreation) {
+			this.forceNormalCreation = forceNormalCreation;
+		}
+		public void showExtrasOnly(boolean showExtrasOnly) {
+			this.showExtrasOnly = showExtrasOnly;
 		}
 		
 		public MyClass setExtras(ExtraNormalFunctionPolar extras) {
@@ -831,9 +957,23 @@ public class BumpMapping {
 
 		@Override
 		public Normal getNormal(double w, double r) {
-			Normal n = getBaseNormal(w, r);
+			boolean showAll = !showExtrasOnly;
+			
+			Normal n = null;
+			Normal en = null;
+			
 			if (extras!=null)
-				n = ExtraNormalFunctionPolar.merge( n, extras.getNormal(w,r) ); 
+				en = extras.getNormal(w,r);
+			
+			if (en!=null || showAll || forceNormalCreation)
+				n = getBaseNormal(w, r);
+			
+			if (en!=null)
+				n = ExtraNormalFunctionPolar.merge( n, en );
+			
+			if (forceNormalCreation && n==null)
+				n = new Normal(0,0,1);
+			
 			if (n!=null && colorizer!=null) {
 				Color color = colorizer.getColor(w,r);
 				if (color!=null)
