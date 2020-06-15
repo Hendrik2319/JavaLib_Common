@@ -129,6 +129,9 @@ public class BumpMapping {
 		resetImageCache();
 		return this;
 	}
+	public NormalFunction getNormalFunction() {
+		return normalFunction;
+	}
 	public void setSun(double x, double y, double z) {
 		shading.setSun(x,y,z);
 		resetImageCache();
@@ -142,6 +145,7 @@ public class BumpMapping {
 		this.shading = shading;
 		resetImageCache();
 	}
+	public Shading getShading() { return shading; }
 	
 	public enum OverSampling {
 		None         ("None (1x)"),
@@ -285,7 +289,7 @@ public class BumpMapping {
 		for (int x=0; x<scaledWidth; x++)
 			for (int y=0; y<scaledHeight; y++) {
 				int[] color = OverSampling.computeColor(overSampling, 1/scale,x/scale,y/scale, colorSource);
-				raster.setPixel(x, y, color);
+				if (color!=null) raster.setPixel(x, y, color);
 			}
 		return image;
 	}
@@ -298,13 +302,26 @@ public class BumpMapping {
 			this.sun = sun.normalize();
 			this.color = new int[4];
 		}
-		
+		public Shading(Shading shading) {
+			this(shading.sun);
+		}
+
 		public void setSun(double x, double y, double z) {
 			sun = new Normal(x,y,z).normalize();
 		}
 
 		public abstract int[] getColor(double x, double y, double width, double height, Normal normal);
 		
+		public static Shading clone(Shading shading) {
+			if (shading==null) return null;
+			if (shading instanceof NormalImage      ) return new NormalImage      ((NormalImage      ) shading);
+			if (shading instanceof MixedShading     ) return new MixedShading     ((MixedShading     ) shading);
+			if (shading instanceof MaterialShading  ) return new MaterialShading  ((MaterialShading  ) shading);
+			if (shading instanceof GUISurfaceShading) return new GUISurfaceShading((GUISurfaceShading) shading);
+			Assert(false);
+			return null;
+		}
+
 		public static class MixedShading extends Shading {
 			
 			private final Shading[] shadings;
@@ -312,7 +329,7 @@ public class BumpMapping {
 			
 			public MixedShading(Indexer.Cart  indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
 			public MixedShading(Indexer.Polar indexer, Shading...shadings) { this(Indexer.convert(indexer),shadings); }
-			public MixedShading(Indexer      indexer, Shading...shadings) {
+			public MixedShading(Indexer       indexer, Shading...shadings) {
 				super(new Normal(0,0,1));
 				this.indexer = indexer;
 				this.shadings = shadings;
@@ -320,7 +337,17 @@ public class BumpMapping {
 				Assert(shadings!=null);
 				Assert(shadings.length>0);
 			}
-
+			public MixedShading(MixedShading shading) {
+				super(shading);
+				Assert(shading.indexer!=null);
+				Assert(shading.shadings!=null);
+				Assert(shading.shadings.length>0);
+				indexer = shading.indexer;
+				shadings = new Shading[shading.shadings.length];
+				for (int i=0; i<shadings.length; i++)
+					shadings[i] = Shading.clone(shading.shadings[i]);
+			}
+			
 			@Override
 			public void setSun(double x, double y, double z) {
 				super.setSun(x, y, z);
@@ -341,6 +368,9 @@ public class BumpMapping {
 			
 			public NormalImage() {
 				super(new Normal(0,0,1));
+			}
+			public NormalImage(NormalImage shading) {
+				super(shading);
 			}
 
 			@Override
@@ -372,7 +402,10 @@ public class BumpMapping {
 				this.reflectionIntensity = Math.max(0,Math.min(reflectionIntensity,1));
 				updateMaxSunRefl();
 			}
-			
+			public MaterialShading(MaterialShading shading) {
+				this(shading.sun,shading.materialColor,shading.ambientIntensity,shading.phongExp,shading.withReflection,shading.reflectionIntensity);
+			}
+
 			public Color getMaterialColor() { return materialColor; }
 			public void  setMaterialColor(Color color) { this.materialColor = color; }
 
@@ -515,6 +548,10 @@ public class BumpMapping {
 				this.faceF = getAbsF(new Normal(0,0,1));
 			}
 			
+			public GUISurfaceShading(GUISurfaceShading shading) {
+				this(shading.sun,shading.highlightColor,shading.faceColor,shading.shadowColor);
+			}
+
 			public Color getHighlightColor() { return highlightColor; }
 			public Color getFaceColor     () { return faceColor; }
 			public Color getShadowColor   () { return shadowColor; }
@@ -793,7 +830,8 @@ public class BumpMapping {
 	
 	public interface ExtraNormalFunctionPolar {
 		Normal getNormal(double w, double r);
-		
+		boolean isInsideBounds(double w, double r);
+
 		public static Normal merge(Normal n, Normal en) {
 			if (en==null) return  n;
 			if ( n==null) return en;
@@ -808,14 +846,19 @@ public class BumpMapping {
 
 		public static class Stencil implements ExtraNormalFunctionPolar {
 			
-			private Filter.Polar filter;
-			private ExtraNormalFunctionPolar extra;
+			private final Filter.Polar filter;
+			private final ExtraNormalFunctionPolar extra;
 
 			public Stencil(Filter.Polar filter, ExtraNormalFunctionPolar extra) {
 				this.filter = filter;
 				this.extra = extra;
 				Assert(this.filter!=null);
 				Assert(this.extra!=null);
+			}
+
+			@Override
+			public boolean isInsideBounds(double w, double r) {
+				return filter.passesFilter(w,r);
 			}
 
 			@Override
@@ -828,7 +871,7 @@ public class BumpMapping {
 
 		public static class Group implements ExtraNormalFunctionPolar {
 			
-			private Vector<ExtraNormalFunctionPolar> elements;
+			private final Vector<ExtraNormalFunctionPolar> elements;
 			
 			public Group(ExtraNormalFunctionPolar... elements) {
 				this.elements = new Vector<>();
@@ -841,8 +884,17 @@ public class BumpMapping {
 			}
 
 			@Override
+			public boolean isInsideBounds(double w, double r) {
+				for (ExtraNormalFunctionPolar el:elements)
+					if (el.isInsideBounds(w, r))
+						return true;
+				return false;
+			}
+			
+			@Override
 			public Normal getNormal(double w, double r) {
 				for (ExtraNormalFunctionPolar el:elements) {
+					if (!el.isInsideBounds(w,r)) continue;
 					Normal en = el.getNormal(w,r);
 					if (en!=null) return en;
 				}
@@ -852,8 +904,8 @@ public class BumpMapping {
 		
 		public static class Rotated implements ExtraNormalFunctionPolar {
 			
-			private double anglePos;
-			private ExtraNormalFunctionPolar extra;
+			private final double anglePos;
+			private final ExtraNormalFunctionPolar extra;
 
 			public Rotated(double anglePosDegree, ExtraNormalFunctionPolar extraNormalizedAtXaxis) {
 				this.anglePos = anglePosDegree/180.0*Math.PI;
@@ -863,7 +915,13 @@ public class BumpMapping {
 			}
 
 			@Override
+			public boolean isInsideBounds(double w, double r) {
+				return extra.isInsideBounds(w-anglePos, r);
+			}
+
+			@Override
 			public Normal getNormal(double w, double r) {
+				if (!isInsideBounds(w,r)) return null;
 				Normal en = extra.getNormal(w-anglePos,r);
 				if (en==null) return null;
 				return en.rotateZ(anglePos);
@@ -872,21 +930,33 @@ public class BumpMapping {
 		
 		public static class LineOnX implements ExtraNormalFunctionPolar {
 
-			private double minR;
-			private double maxR;
-			private ProfileXY profile;
+			private final double minR;
+			private final double maxR;
+			private final ProfileXY profile;
+			private final Bounds bounds;
 
 			public LineOnX(double minR, double maxR, ProfileXY profile) {
 				this.minR = minR;
 				this.maxR = maxR;
 				this.profile = profile;
+				Assert(this.profile!=null);
 				Assert(Double.isFinite(this.minR));
 				Assert(Double.isFinite(this.maxR));
-				Assert(this.profile!=null);
+				Assert(0<=this.minR);
+				Assert(this.minR<=this.maxR);
+				double maxProfileR = profile.maxR;
+				double w = Math.asin(maxProfileR/this.minR);
+				bounds = new Bounds(-w,w,this.minR-maxProfileR,this.maxR+maxProfileR);
 			}
 			
 			@Override
+			public boolean isInsideBounds(double w, double r) {
+				return bounds.isInside(w, r);
+			}
+
+			@Override
 			public Normal getNormal(double w, double r) {
+				//if (!isInsideBounds(w,r)) return null;
 				double x = r*Math.cos(w);
 				double y = r*Math.sin(w);
 				double maxProfileR = profile.maxR;
@@ -917,6 +987,43 @@ public class BumpMapping {
 				NormalXY n0 = profile.getNormal(local_r);
 				if (n0==null) return null; 
 				return n0.toNormal().normalize().rotateZ(local_w);
+			}
+		}
+
+		public static class Bounds {
+			private static final double FULL_CIRCLE = 2*Math.PI;
+			
+			final double minW,maxW,minR,maxR;
+			
+			private Bounds() {
+				this(0,FULL_CIRCLE,0,Double.POSITIVE_INFINITY);
+			}
+			private Bounds(double minW, double maxW, double minR, double maxR) {
+				this.minW = minW;
+				this.maxW = maxW;
+				this.minR = minR;
+				this.maxR = maxR;
+				Assert(Double.isFinite(this.minW));
+				Assert(Double.isFinite(this.maxW));
+				Assert(this.minW<=this.maxW);
+				Assert(Double.isFinite(this.minR));
+				Assert(!Double.isNaN(this.maxR));
+				Assert(0<=this.minR);
+				Assert(this.minR<=this.maxR);
+			}
+			public boolean isInside(double w, double r) {
+				if (r<minR) return false;
+				if (r>maxR) return false;
+				
+				double wDiff = w-minW;
+				if (wDiff<0 || FULL_CIRCLE<wDiff) w -= Math.floor(wDiff/FULL_CIRCLE)*FULL_CIRCLE;
+				Assert(minW<=w);
+				Assert(w<=minW+FULL_CIRCLE);
+				
+				return w<=maxW;
+			}
+			public Bounds rotate(double w) {
+				return new Bounds(minW+w, maxW+w, minR, maxR);
 			}
 		}
 	}
