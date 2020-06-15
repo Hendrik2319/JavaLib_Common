@@ -6,6 +6,7 @@ import java.awt.image.WritableRaster;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Locale;
+import java.util.Vector;
 import java.util.function.BiFunction;
 
 public class BumpMapping {
@@ -712,17 +713,21 @@ public class BumpMapping {
 
 		public static class Group implements ExtraNormalFunctionPolar {
 			
-			private ExtraNormalFunctionPolar[] elements;
+			private Vector<ExtraNormalFunctionPolar> elements;
+			
 			public Group(ExtraNormalFunctionPolar... elements) {
-				this.elements = elements;
-				Assert(this.elements!=null);
-				for (ExtraNormalFunctionPolar el:this.elements)
-					Assert(el!=null);
+				this.elements = new Vector<>();
+				add(elements);
+			}
+			public void add(ExtraNormalFunctionPolar... elements) {
+				if (elements!=null)
+					for (ExtraNormalFunctionPolar el:elements)
+						if (el!=null) this.elements.add(el);
 			}
 
 			@Override
 			public Normal getNormal(double w, double r) {
-				for (ExtraNormalFunctionPolar el:this.elements) {
+				for (ExtraNormalFunctionPolar el:elements) {
 					Normal en = el.getNormal(w,r);
 					if (en!=null) return en;
 				}
@@ -736,7 +741,7 @@ public class BumpMapping {
 			private ExtraNormalFunctionPolar extra;
 
 			public Rotated(double anglePosDegree, ExtraNormalFunctionPolar extraNormalizedAtXaxis) {
-				this.anglePos = -anglePosDegree/180.0*Math.PI;
+				this.anglePos = anglePosDegree/180.0*Math.PI;
 				this.extra = extraNormalizedAtXaxis;
 				Assert(Double.isFinite(this.anglePos));
 				Assert(this.extra!=null);
