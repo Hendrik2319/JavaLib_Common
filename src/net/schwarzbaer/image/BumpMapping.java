@@ -20,18 +20,6 @@ public class BumpMapping {
 	private ImageCache<BufferedImage> imageCache;
 	private OverSampling overSampling = OverSampling.None;
 	
-	public static BumpMapping create(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction.Cart getNormal) {
-		BumpMapping bumpMapping = new BumpMapping(false);
-		bumpMapping.setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
-		bumpMapping.setNormalFunction(getNormal);
-		return bumpMapping;
-	}
-	public static BumpMapping create(Normal sun, Color highlightColor, Color faceColor, Color lowlightColor, NormalFunction.Polar getNormal) {
-		BumpMapping bumpMapping = new BumpMapping(false);
-		bumpMapping.setShading(new Shading.GUISurfaceShading(sun, highlightColor, faceColor, lowlightColor));
-		bumpMapping.setNormalFunction(getNormal);
-		return bumpMapping;
-	}
 	public BumpMapping(boolean cachedImage) {
 		imageCache = !cachedImage?null:new ImageCache<>(this::renderImage_uncached);
 	}
