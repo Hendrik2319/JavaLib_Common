@@ -19,9 +19,12 @@ public class BumpMapping {
 	private NormalFunction normalFunction;
 	private ImageCache<BufferedImage> imageCache;
 	private OverSampling overSampling = OverSampling.None;
+	private NormalCache normalCache = null;
+	private boolean cacheNormals;
 	
-	public BumpMapping(boolean cachedImage) {
-		imageCache = !cachedImage?null:new ImageCache<>(this::renderImage_uncached);
+	public BumpMapping(boolean cacheImage, boolean cacheNormals) {
+		this.cacheNormals = cacheNormals;
+		imageCache = !cacheImage?null:new ImageCache<>(this::renderImage_uncached);
 	}
 
 	public void setNormalMap(Normal[][] normalMap) {
@@ -117,6 +120,7 @@ public class BumpMapping {
 	public BumpMapping setNormalFunction(NormalFunction normalFunction) {
 		this.normalFunction = normalFunction;
 		resetImageCache();
+		resetNormalCache();
 		return this;
 	}
 	public NormalFunction getNormalFunction() {
@@ -140,16 +144,22 @@ public class BumpMapping {
 	public void setOverSampling(OverSampling overSampling) {
 		this.overSampling = overSampling;
 		resetImageCache();
+		resetNormalCache();
 	}
 	public OverSampling getOverSampling() {
 		return overSampling;
 	}
-	public void resetImage() {
+	public void reset() {
 		resetImageCache();
+		resetNormalCache();
 	}
 	
 	private void resetImageCache() {
 		if (imageCache!=null) imageCache.resetImage();
+	}
+	
+	private void resetNormalCache() {
+		normalCache = null;
 	}
 
 	
@@ -158,29 +168,86 @@ public class BumpMapping {
 		return renderImage_uncached(width, height);
 	}
 	
-	public BufferedImage renderImage_uncached      (int width, int height) { return renderScaledImage_uncached(width,height,1); }
-	public BufferedImage renderScaledImage_uncached(int width, int height, float scale) {
+	public BufferedImage renderImage_uncached(int width, int height) { return renderImage_uncached(width, height, null); }
+	public BufferedImage renderImage_uncached(int width, int height, RenderProgressListener listener) {
 		
-		PixelRenderer pixelRenderer = new PixelRenderer(overSampling, 1/scale,
-			(                     x, y, n) -> shading       .getColor (x,y,width,height,n),
-			(pixX, pixY, spIndex, x, y   ) -> normalFunction.getNormal(x,y,width,height  ),
-			b                              -> normalFunction.forceNormalCreation(b)
+		if (normalCache==null) {
+			if (cacheNormals) normalCache = new NormalCache(width, height, overSampling, (x,y)->normalFunction.getNormal(x,y,width,height));
+			else              normalCache = new NormalCache.Dummy(                       (x,y)->normalFunction.getNormal(x,y,width,height));
+		}
+		
+		PixelRenderer pixelRenderer = new PixelRenderer(overSampling,1,normalCache,
+			b       -> normalFunction.forceNormalCreation(b),
+			(x,y,n) -> shading.getColor(x,y,width,height,n)
 		);
 		
-		int scaledWidth  = Math.round(width *scale);
-		int scaledHeight = Math.round(height*scale);
+		BufferedImage image = renderImage(1, width, height, pixelRenderer, listener);
+		normalCache.setFixed();
+		
+		return image;
+	}
+	public BufferedImage renderImage_uncached(int width, int height, float scale) { return renderImage_uncached(width, height, scale, null); }
+	public BufferedImage renderImage_uncached(int width, int height, float scale, RenderProgressListener listener) {
+		PixelRenderer pixelRenderer = new PixelRenderer(overSampling, 1/scale,
+			(d1,d2,d3,x,y  ) -> normalFunction.getNormal(x,y,width,height),
+			b                -> normalFunction.forceNormalCreation(b),
+			(         x,y,n) -> shading       .getColor (x,y,width,height,n)
+		);
+		
+		return renderImage(scale, Math.round(width *scale), Math.round(height*scale), pixelRenderer, listener);
+	}
+
+	private BufferedImage renderImage(float scale, int scaledWidth, int scaledHeight, PixelRenderer pixelRenderer, RenderProgressListener listener) {
+		if (listener!=null) listener.setSize(scaledWidth, scaledHeight);
 		BufferedImage image = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
 		WritableRaster raster = image.getRaster();
 		for (int pixX=0; pixX<scaledWidth; pixX++)
 			for (int pixY=0; pixY<scaledHeight; pixY++) {
 				int[] color = pixelRenderer.computeColor(pixX,pixY,pixX/scale,pixY/scale);
 				if (color!=null) raster.setPixel(pixX, pixY, color);
+				if (listener!=null) listener.wasRendered(pixX, pixY);
 			}
+		
 		return image;
 	}
 	
-	@SuppressWarnings("unused")
-	private static class NormalCache {
+	public interface RenderProgressListener {
+		void setSize(int width, int height);
+		void wasRendered(int x, int y);
+	}
+	
+	private static class NormalCache implements PixelRenderer.NormalSource {
+		
+		public static class Dummy extends NormalCache {
+			Dummy(NormalSource normalSource) { super(0,0,null, normalSource); }
+			@Override public Normal getNormal(int pixX, int pixY, int spIndex, double x, double y) { return normalSource.getNormal(x, y); }
+		}
+
+		protected final NormalSource normalSource;
+		private boolean isFixed;
+		private Normal[][][] cache;
+
+		NormalCache(int width, int height, OverSampling overSampling, NormalSource normalSource) {
+			this.normalSource = normalSource;
+			this.isFixed = false;
+			int n = overSampling==null || overSampling==OverSampling.None ? 1 : overSampling.samplingPoints.length;
+			cache = new Normal[n][width][height];
+			for (Normal[][] arr1:cache)
+				for (Normal[] arr2:arr1)
+					Arrays.fill(arr2, null);
+		}
+
+		public void setFixed() { isFixed = true; }
+
+		@Override
+		public Normal getNormal(int pixX, int pixY, int spIndex, double x, double y) {
+			Normal n;
+			if (!isFixed) cache[spIndex][pixX][pixY] = n = normalSource.getNormal(x, y);
+			else          n = cache[spIndex][pixX][pixY];
+			return n;
+		}
+		
+		public interface NormalSource { Normal getNormal(double x,double y); }
 	}
 	
 	private static class PixelRenderer {
@@ -198,7 +265,7 @@ public class BumpMapping {
 
 		@SuppressWarnings("unused")
 		PixelRenderer(OverSampling overSampling, double pixWidth, Source source) { this(overSampling, pixWidth, source,source,source); }
-		PixelRenderer(OverSampling overSampling, double pixWidth, ColorSource colorSource, NormalSource normalSource, NormalSourceSwitch normalSourceSwitch) {
+		PixelRenderer(OverSampling overSampling, double pixWidth, NormalSource normalSource, NormalSourceSwitch normalSourceSwitch, ColorSource colorSource) {
 			this.overSampling = overSampling;
 			this.pixWidth = pixWidth;
 			this.normalSource = normalSource;
