@@ -9,8 +9,6 @@ import java.util.Locale;
 import java.util.Vector;
 import java.util.function.BiFunction;
 
-import net.schwarzbaer.image.BumpMapping.ExtraNormalFunction.Cart.ProfileXYbasedLineElement.Distance;
-
 public class BumpMapping { // bumpmapping
 
 	private static void Assert(boolean condition) {
@@ -938,10 +936,10 @@ public class BumpMapping { // bumpmapping
 			
 				@Override
 				public Normal getNormal(double x, double y) {
-					Distance d0 = null;
+					ProfileXYbasedLineElement.Distance d0 = null;
 					ProfileXYbasedLineElement el0 = null;
 					for (ProfileXYbasedLineElement el:elements) {
-						Distance d = el.getDistance(x,y);
+						ProfileXYbasedLineElement.Distance d = el.getDistance(x,y);
 						if (d!=null && (d0==null || d0.r>d.r)) { d0=d; el0 = el; }
 					}
 					if (el0==null || d0==null) return null;
