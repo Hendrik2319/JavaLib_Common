@@ -4,10 +4,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Locale;
-import java.util.Vector;
-import java.util.function.BiFunction;
 
 import net.schwarzbaer.image.ImageCache;
 
@@ -370,643 +367,19 @@ public class BumpMapping {
 		}
 	}
 	
-	public interface Indexer {
-		
-		public int getIndex(double x, double y, double width, double height);
-		
-		public interface Cart extends Indexer {
-			@Override public default int getIndex(double x, double y, double width, double height) {
-				return getIndex(x, y);
-			}
-			public int getIndex(double x, double y);
-		}
-		public interface Polar extends Indexer {
-			@Override public default int getIndex(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width/2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return getIndex(w,r);
-			}
-			public int getIndex(double w, double r);
-		}
-	}
-	
-	public interface Colorizer {
-		
-		public Color getColor(double x, double y, double width, double height);
-		
-		public interface Cart extends Colorizer {
-			@Override public default Color getColor(double x, double y, double width, double height) {
-				return getColor(x, y);
-			}
-			public Color getColor(double x, double y);
-		}
-		public interface Polar extends Colorizer {
-			@Override public default Color getColor(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width /2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return getColor(w, r);
-			}
-			public Color getColor(double w, double r);
-		}
-	}
-	
-	public interface Filter {
-		
-		public boolean passesFilter(double x, double y, double width, double height);
-		
-		public interface Cart extends Filter {
-			@Override public default boolean passesFilter(double x, double y, double width, double height) {
-				return passesFilter(x, y);
-			}
-			public boolean passesFilter(double x, double y);
-		}
-		public interface Polar extends Filter {
-			@Override public default boolean passesFilter(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width /2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return passesFilter(w,r);
-			}
-			public boolean passesFilter(double w, double r);
-		}
-	}
+	static final double FULL_CIRCLE = 2*Math.PI;
 
-	public static interface NormalFunction {
-		public Normal getNormal(double x, double y, double width, double height);
-		public void forceNormalCreation(boolean force);
+	public static boolean isInsideAngleRange(double minW, double maxW, double w) {
+		Debug.Assert(Double.isFinite(minW));
+		Debug.Assert(Double.isFinite(maxW));
+		Debug.Assert(minW<=maxW);
 		
-		public static class Simple implements NormalFunction {
-			public interface Fcn { public Normal getNormal(double x, double y, double width, double height); }
-			private Fcn fcn;
-			public Simple(Fcn fcn) {
-				this.fcn = fcn;
-				Debug.Assert(this.fcn!=null);
-			}
-			@Override public Normal getNormal(double x, double y, double width, double height) {
-				Normal normal = fcn.getNormal(x, y, width, height);
-				Debug.Assert(normal!=null);
-				return normal;
-			}
-			@Override public void forceNormalCreation(boolean force) {}
-			
-		}
-		public static interface Cart extends NormalFunction {
-			@Override public default Normal  getNormal     (double x, double y, double width, double height) { return getNormal     (x, y); }
-			public Normal getNormal(double x, double y);
-		}
-		public static interface Polar extends NormalFunction {
-			@Override public default Normal getNormal(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width /2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return getNormal(w,r);
-			}
-			public Normal getNormal(double w, double r);
-			
-			public static class Simple implements Polar {
-				public interface Fcn { public Normal getNormal(double w, double r); }
-				private Fcn fcn;
-				public Simple (Fcn fcn) {
-					this.fcn = fcn;
-					Debug.Assert(this.fcn!=null);
-				}
-				@Override public Normal getNormal(double w, double r) {
-					Normal normal = fcn.getNormal(w,r);
-					Debug.Assert(normal!=null);
-					return normal;
-				}
-				@Override public void forceNormalCreation(boolean force) {}
-				
-			}
-			public static abstract class AbstractNormalFunctionPolar<MyClass extends AbstractNormalFunctionPolar<MyClass>> implements Polar {
-				
-				private Colorizer.Polar colorizer;
-				private ExtraNormalFunction.Polar extras;
-				private boolean forceNormalCreation;
-				private boolean showExtrasOnly;
-			
-				public AbstractNormalFunctionPolar() {
-					this.colorizer = null;
-					extras = null;
-					forceNormalCreation = false;
-				}
-				protected abstract MyClass getThis(); // return this;
-			
-				public MyClass setColorizer(Colorizer.Polar colorizer) {
-					this.colorizer = colorizer;
-					Debug.Assert(this.colorizer!=null);
-					return getThis();
-				}
-				
-				@Override
-				public void forceNormalCreation(boolean forceNormalCreation) {
-					this.forceNormalCreation = forceNormalCreation;
-				}
-				public void showExtrasOnly(boolean showExtrasOnly) {
-					this.showExtrasOnly = showExtrasOnly;
-				}
-				
-				public MyClass setExtras(ExtraNormalFunction.Polar extras) {
-					this.extras = extras;
-					Debug.Assert(this.extras!=null);
-					return getThis();
-				}
-			
-				@Override
-				public Normal getNormal(double w, double r) {
-					boolean showAll = !showExtrasOnly;
-					
-					Normal n = null;
-					Normal en = null;
-					
-					if (extras!=null)
-						en = extras.getNormal(w,r);
-					
-					if (en!=null || showAll || forceNormalCreation)
-						n = getBaseNormal(w, r);
-					
-					if (en!=null)
-						n = ExtraNormalFunction.merge( n, en );
-					
-					if (forceNormalCreation && n==null)
-						n = new Normal(0,0,1);
-					
-					if (n!=null && colorizer!=null) {
-						Color color = colorizer.getColor(w,r);
-						if (color!=null)
-							return new Normal(n,color);
-					}
-					return n;
-				}
-				
-				protected abstract Normal getBaseNormal(double w, double r);
-			}
-			public static class RotatedProfile extends AbstractNormalFunctionPolar<RotatedProfile> {
-				
-				private ProfileXY profile;
-			
-				public RotatedProfile(ProfileXY profile) {
-					this.profile = profile;
-					Debug.Assert(this.profile!=null);
-				}
-				@Override protected RotatedProfile getThis() { return this; }
-			
-				@Override
-				protected Normal getBaseNormal(double w, double r) {
-					NormalXY n0 = profile.getNormal(r);
-					if (n0==null) return null; 
-					return n0.toNormalInXZ().normalize().rotateZ(w);
-				}
-			}
-		}
-	}
-	
-	public interface ExtraNormalFunction {
-
-		public static Normal merge(Normal n, Normal en) {
-			if (en==null) return  n;
-			if ( n==null) return en;
-			double wZ = Math.atan2(n.y, n.x);
-			 n =  n.rotateZ(-wZ);
-			en = en.rotateZ(-wZ);
-			double wY = Math.atan2(n.x, n.z);
-			en = en.rotateY(wY);
-			en = en.rotateZ(wZ);
-			return en;
-		}
+		double wDiff = w-minW;
+		if (wDiff<0 || FULL_CIRCLE<wDiff) w -= Math.floor(wDiff/FULL_CIRCLE)*FULL_CIRCLE;
+		Debug.Assert(minW<=w);
+		Debug.Assert(w<=minW+FULL_CIRCLE);
 		
-		public Normal  getNormal     (double x, double y, double width, double height);
-		public boolean isInsideBounds(double x, double y, double width, double height);
-		
-		public interface Cart extends ExtraNormalFunction {
-			@Override public default Normal  getNormal     (double x, double y, double width, double height) { return getNormal     (x, y); }
-			@Override public default boolean isInsideBounds(double x, double y, double width, double height) { return isInsideBounds(x, y); }
-			public Normal  getNormal     (double x, double y);
-			public boolean isInsideBounds(double x, double y);
-			
-			public static abstract class AbstractGroup<ElementType extends Cart> implements Cart {
-			
-				protected final Vector<ElementType> elements;
-				public AbstractGroup(ElementType[] elements) {
-					this.elements = new Vector<>();
-					add(elements);
-				}
-			
-				public void add(ElementType element) {
-					if (element!=null)
-						elements.add(element);
-					
-				}
-				public void add(ElementType[] elements) {
-					if (elements!=null)
-						for (ElementType el:elements)
-							add(el);
-				}
-				
-				@Override
-				public boolean isInsideBounds(double x, double y) {
-					for (ElementType el:elements)
-						if (el.isInsideBounds(x, y))
-							return true;
-					return false;
-				}
-			}
-			
-			public static class MergeGroup extends AbstractGroup<ProfileXYbasedLineElement> {
-			
-				public MergeGroup(ProfileXYbasedLineElement...elements) {
-					super(elements);
-				}
-			
-				@Override
-				public Normal getNormal(double x, double y) {
-					ProfileXYbasedLineElement.Distance d0 = null;
-					ProfileXYbasedLineElement el0 = null;
-					for (ProfileXYbasedLineElement el:elements) {
-						ProfileXYbasedLineElement.Distance d = el.getDistance(x,y);
-						if (d!=null && (d0==null || d0.r>d.r)) { d0=d; el0 = el; }
-					}
-					if (el0==null || d0==null) return null;
-					return el0.getNormal(d0);
-				}
-			}
-
-			public static abstract class ProfileXYbasedLineElement implements Cart {
-				
-				protected final ProfileXY profile;
-			
-				public ProfileXYbasedLineElement(ProfileXY profile) {
-					this.profile = profile;
-				}
-				
-				public abstract Distance getDistance(double x, double y);
-			
-				@Override
-				public Normal getNormal(double x, double y) {
-					return getNormal(getDistance(x, y));
-				}
-			
-				public Normal getNormal(Distance distance) {
-					if (distance==null) return null;
-					
-					NormalXY n0 = profile.getNormal(distance.r);
-					if (n0==null) return null;
-					
-					return n0.toNormalInXZ().normalize().rotateZ(distance.w);
-				}
-				
-				public static class Distance {
-					public final double r,w;
-					private Distance(double r, double w) {
-						this.r = r;
-						this.w = w;
-						Debug.Assert(r>=0);
-					}
-					public static double computeW(double xC, double yC, double x, double y) {
-						double localX = x-xC;
-						double localY = y-yC;
-						return Math.atan2(localY, localX);
-					}
-					public static double computeR(double xC, double yC, double x, double y) {
-						double localX = x-xC;
-						double localY = y-yC;
-						return Math.sqrt(localX*localX+localY*localY);
-					}
-					public static Distance compute(double xC, double yC, double x, double y) {
-						double localX = x-xC;
-						double localY = y-yC;
-						double localR = Math.sqrt(localX*localX+localY*localY);
-						double localW = Math.atan2(localY, localX);
-						return new Distance(localR,localW);
-					}
-				}
-				
-				public static class LineGroup extends ProfileXYbasedLineElement {
-			
-					protected final Vector<ProfileXYbasedLineElement> elements;
-					public LineGroup(ProfileXY profile) {
-						super(profile);
-						this.elements = new Vector<>();
-					}
-					
-					public void addLine(double x1, double y1, double x2, double y2) {
-						elements.add(new Line(x1,y1,x2,y2,profile));
-					}
-					
-					public void addArc(double xC, double yC, double r, double aStart, double aEnd) {
-						elements.add(new Arc(xC,yC, r,aStart,aEnd, profile));
-					}
-					
-					@Override
-					public Distance getDistance(double x, double y) {
-						Distance d0 = null;
-						for (ProfileXYbasedLineElement el:elements) {
-							Distance d = el.getDistance(x,y);
-							if (d!=null && (d0==null || d0.r>d.r)) d0=d;
-						}
-						return d0;
-					}
-			
-					@Override
-					public boolean isInsideBounds(double x, double y) {
-						for (ProfileXYbasedLineElement el:elements)
-							if (el.isInsideBounds(x, y))
-								return true;
-						return false;
-					}
-				}
-				
-				public static class Line extends ProfileXYbasedLineElement {
-			
-					private final double x1, y1, x2, y2;
-					private final double length;
-					private final double angle;
-			
-					public Line(double x1, double y1, double x2, double y2, ProfileXY profile) {
-						super(profile);
-						this.x1 = x1;
-						this.y1 = y1;
-						this.x2 = x2;
-						this.y2 = y2;
-						length = Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
-						Debug.Assert(length>0);
-						angle = Math.atan2(y2-y1, x2-x1);
-					}
-			
-					@Override
-					public Distance getDistance(double x, double y) {
-						double f = ((x2-x1)*(x-x1)+(y2-y1)*(y-y1))/length/length; // cos(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|² -> (x1,y1) ..f.. (x2,y2)
-						if (f>1) {
-							// after (x2,y2)
-							Distance d = Distance.compute(x2,y2,x,y);
-							if (d.r>profile.maxR) return null;
-							return d;
-						}
-						if (f<0) {
-							// before (x1,y1)
-							Distance d = Distance.compute(x1,y1,x,y);
-							if (d.r>profile.maxR) return null;
-							return d;
-						}
-						// between (x1,y1) and (x2,y2)
-						double r = ((x2-x1)*(y-y1)-(y2-y1)*(x-x1))/length; // sin(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|  =  sin(a)*|x-x1,y-y1|  =  r
-						if (Math.abs(r)>profile.maxR) return null;
-						if (r>0) return new Distance( r, angle+Math.PI/2);
-						else     return new Distance(-r, angle-Math.PI/2);
-					}
-			
-					@Override
-					public boolean isInsideBounds(double x, double y) {
-						double r = ((x2-x1)*(y-y1)-(y2-y1)*(x-x1))/length; // sin(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|  =  sin(a)*|x-x1,y-y1|  =  r
-						if (Math.abs(r)>profile.maxR) return false;
-						
-						double s = ((x2-x1)*(x-x1)+(y2-y1)*(y-y1))/length; // cos(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|  =  cos(a)*|x-x1,y-y1|  =  s
-						return -profile.maxR<=s && s<=length+profile.maxR;
-					}
-				}
-				
-				public static class Arc extends ProfileXYbasedLineElement {
-			
-					private final double xC,yC,r,aStart,aEnd, xS,yS,xE,yE;
-			
-					public Arc(double xC, double yC, double r, double aStart, double aEnd, ProfileXY profile) {
-						super(profile);
-						this.xC = xC;
-						this.yC = yC;
-						this.r = r;
-						this.aStart = aStart;
-						this.aEnd = aEnd;
-						xS = r*Math.cos(this.aStart);
-						yS = r*Math.sin(this.aStart);
-						xE = r*Math.cos(this.aEnd);
-						yE = r*Math.sin(this.aEnd);
-					}
-			
-					@Override
-					public Distance getDistance(double x, double y) {
-						Distance dC = Distance.compute(xC,yC,x,y);
-						if (Math.abs(dC.r-r)>profile.maxR) return null;
-						
-						if (isInsideAngleRange(aStart, aEnd, dC.w)) {
-							if (dC.r>r) return new Distance(dC.r-r,  dC.w);
-							return             new Distance(r-dC.r, -dC.w);
-						}
-						Distance dS = Distance.compute(xS,yS,x,y);
-						Distance dE = Distance.compute(xE,yE,x,y);
-						if (dS.r<dE.r) {
-							if (dS.r<=profile.maxR) return dS;
-						} else {
-							if (dE.r<=profile.maxR) return dE;
-						}
-						return null;
-					}
-			
-					@Override
-					public boolean isInsideBounds(double x, double y) {
-						Distance dC = Distance.compute(xC,yC,x,y);
-						if (Math.abs(dC.r-r)>profile.maxR) return false;
-						if (isInsideAngleRange(aStart, aEnd, dC.w)) return true;
-						return Distance.computeR(xS,yS,x,y)<=profile.maxR || Distance.computeR(xE,yE,x,y)<=profile.maxR;
-					}
-				}
-			}
-		}
-		public interface Polar extends ExtraNormalFunction {
-			@Override public default Normal getNormal(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width /2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return getNormal(w,r);
-			}
-			@Override public default boolean isInsideBounds(double x, double y, double width, double height) {
-				double y1 = y-height/2.0;
-				double x1 = x-width /2.0;
-				double w = Math.atan2(y1,x1);
-				double r = Math.sqrt(x1*x1+y1*y1);
-				return isInsideBounds(w,r);
-			}
-			public Normal  getNormal     (double w, double r);
-			public boolean isInsideBounds(double w, double r);
-			
-			public static class Stencil implements Polar {
-				
-				private final Filter.Polar filter;
-				private final Polar extra;
-			
-				public Stencil(Filter.Polar filter, Polar extra) {
-					this.filter = filter;
-					this.extra = extra;
-					Debug.Assert(this.filter!=null);
-					Debug.Assert(this.extra!=null);
-				}
-			
-				@Override
-				public boolean isInsideBounds(double w, double r) {
-					return filter.passesFilter(w,r);
-				}
-			
-				@Override
-				public Normal getNormal(double w, double r) {
-					if (filter.passesFilter(w,r))
-						return extra.getNormal(w,r);
-					return null;
-				}
-			}
-			public static class Group implements Polar {
-				
-				private final Vector<Polar> elements;
-				
-				public Group(Polar... elements) {
-					this.elements = new Vector<>();
-					add(elements);
-				}
-				public void add(Polar... elements) {
-					if (elements!=null)
-						for (Polar el:elements)
-							if (el!=null) this.elements.add(el);
-				}
-			
-				@Override
-				public boolean isInsideBounds(double w, double r) {
-					for (Polar el:elements)
-						if (el.isInsideBounds(w, r))
-							return true;
-					return false;
-				}
-				
-				@Override
-				public Normal getNormal(double w, double r) {
-					for (Polar el:elements) {
-						if (!el.isInsideBounds(w,r)) continue;
-						Normal en = el.getNormal(w,r);
-						if (en!=null) return en;
-					}
-					return null;
-				}
-			}
-			public static class Rotated implements Polar {
-				
-				private final double anglePos;
-				private final Polar extra;
-			
-				public Rotated(double anglePosDegree, Polar extraNormalizedAtXaxis) {
-					this.anglePos = anglePosDegree/180.0*Math.PI;
-					this.extra = extraNormalizedAtXaxis;
-					Debug.Assert(Double.isFinite(this.anglePos));
-					Debug.Assert(this.extra!=null);
-				}
-			
-				@Override
-				public boolean isInsideBounds(double w, double r) {
-					return extra.isInsideBounds(w-anglePos, r);
-				}
-			
-				@Override
-				public Normal getNormal(double w, double r) {
-					if (!isInsideBounds(w,r)) return null;
-					Normal en = extra.getNormal(w-anglePos,r);
-					if (en==null) return null;
-					return en.rotateZ(anglePos);
-				}
-			}
-			public static class Bounds {
-				
-				final double minW,maxW,minR,maxR;
-				
-				private Bounds() {
-					this(0,FULL_CIRCLE,0,Double.POSITIVE_INFINITY);
-				}
-				private Bounds(double minW, double maxW, double minR, double maxR) {
-					this.minW = minW;
-					this.maxW = maxW;
-					this.minR = minR;
-					this.maxR = maxR;
-					Debug.Assert(Double.isFinite(this.minW));
-					Debug.Assert(Double.isFinite(this.maxW));
-					Debug.Assert(this.minW<=this.maxW);
-					Debug.Assert(Double.isFinite(this.minR));
-					Debug.Assert(!Double.isNaN(this.maxR));
-					Debug.Assert(0<=this.minR);
-					Debug.Assert(this.minR<=this.maxR);
-				}
-				public boolean isInside(double w, double r) {
-					if (r<minR) return false;
-					if (r>maxR) return false;
-					return isInsideAngleRange(minW, maxW, w);
-				}
-				public Bounds rotate(double w) {
-					return new Bounds(minW+w, maxW+w, minR, maxR);
-				}
-			}
-			public static class LineOnX implements Polar {
-			
-				private final double minR;
-				private final double maxR;
-				private final ProfileXY profile;
-				private final Bounds bounds;
-			
-				public LineOnX(double minR, double maxR, ProfileXY profile) {
-					this.minR = minR;
-					this.maxR = maxR;
-					this.profile = profile;
-					Debug.Assert(this.profile!=null);
-					Debug.Assert(Double.isFinite(this.minR));
-					Debug.Assert(Double.isFinite(this.maxR));
-					Debug.Assert(0<=this.minR);
-					Debug.Assert(this.minR<=this.maxR);
-					double maxProfileR = profile.maxR;
-					double w = Math.asin(maxProfileR/this.minR);
-					bounds = new Bounds(-w,w,this.minR-maxProfileR,this.maxR+maxProfileR);
-				}
-				
-				@Override
-				public boolean isInsideBounds(double w, double r) {
-					return bounds.isInside(w, r);
-				}
-			
-				@Override
-				public Normal getNormal(double w, double r) {
-					//if (!isInsideBounds(w,r)) return null;
-					double x = r*Math.cos(w);
-					double y = r*Math.sin(w);
-					double maxProfileR = profile.maxR;
-					if (x < minR-maxProfileR) return null;
-					if (x > maxR+maxProfileR) return null;
-					if (y <     -maxProfileR) return null;
-					if (y >      maxProfileR) return null;
-					
-					double local_r;
-					double local_w;
-					if (x < minR) {
-						local_r = Math.sqrt( y*y + (x-minR)*(x-minR) );
-						local_w = Math.atan2(y, x-minR);
-						
-					} else if (x > maxR) {
-						local_r = Math.sqrt( y*y + (x-maxR)*(x-maxR) );
-						local_w = Math.atan2(y, x-maxR);
-						
-					} else if (y>0) {
-						local_r = y;
-						local_w = Math.PI/2;
-						
-					} else {
-						local_r = -y;
-						local_w = -Math.PI/2;
-					}
-					
-					NormalXY n0 = profile.getNormal(local_r);
-					if (n0==null) return null; 
-					return n0.toNormalInXZ().normalize().rotateZ(local_w);
-				}
-			}
-		}
+		return w<=maxW;
 	}
 
 	public static class MutableNormal {
@@ -1016,11 +389,11 @@ public class BumpMapping {
 		public MutableNormal(double x, double y, double z, Color color) { this.color=color; this.x=x; this.y=y; this.z=z; }
 		public Normal toNormal() { return new Normal( x,y,z, color ); }
 	}
-	
+
 	public static class Normal {
 		public final double x,y,z;
 		public final Color color;
-
+		
 		public Normal() { this(0,0,0); }
 		public Normal(Normal n) { this(n.x,n.y,n.z,n.color); }
 		public Normal(Normal n, Color color) { this(n.x,n.y,n.z,color); }
@@ -1097,213 +470,70 @@ public class BumpMapping {
 			return String.format(Locale.ENGLISH, "NormalXY[%1.5f,%1.5f,%1.5f%s]", x, y, color==null?"":String.format(",0x%08X", color.getRGB()) );
 		}
 	}
-	
-	private static final double FULL_CIRCLE = 2*Math.PI;
-	public static boolean isInsideAngleRange(double minW, double maxW, double w) {
-		Debug.Assert(Double.isFinite(minW));
-		Debug.Assert(Double.isFinite(maxW));
-		Debug.Assert(minW<=maxW);
+
+	public interface Indexer {
 		
-		double wDiff = w-minW;
-		if (wDiff<0 || FULL_CIRCLE<wDiff) w -= Math.floor(wDiff/FULL_CIRCLE)*FULL_CIRCLE;
-		Debug.Assert(minW<=w);
-		Debug.Assert(w<=minW+FULL_CIRCLE);
+		public int getIndex(double x, double y, double width, double height);
 		
-		return w<=maxW;
+		public interface Cart extends Indexer {
+			@Override public default int getIndex(double x, double y, double width, double height) {
+				return getIndex(x, y);
+			}
+			public int getIndex(double x, double y);
+		}
+		public interface Polar extends Indexer {
+			@Override public default int getIndex(double x, double y, double width, double height) {
+				double y1 = y-height/2.0;
+				double x1 = x-width/2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return getIndex(w,r);
+			}
+			public int getIndex(double w, double r);
+		}
 	}
 	
-	public static abstract class ProfileXY {
+	public interface Colorizer {
 		
-		public final double minR; // inclusive
-		public final double maxR; // exclusive
-
-		protected ProfileXY(double minR, double maxR) {
-			this.minR = minR;
-			this.maxR = maxR;
-			Debug.Assert(!Double.isNaN(minR));
-			Debug.Assert(!Double.isNaN(maxR));
-			Debug.Assert(minR<=maxR);
+		public Color getColor(double x, double y, double width, double height);
+		
+		public interface Cart extends Colorizer {
+			@Override public default Color getColor(double x, double y, double width, double height) {
+				return getColor(x, y);
+			}
+			public Color getColor(double x, double y);
 		}
-		
-		public boolean contains(double r) {
-			return minR<=r && r<maxR;
+		public interface Polar extends Colorizer {
+			@Override public default Color getColor(double x, double y, double width, double height) {
+				double y1 = y-height/2.0;
+				double x1 = x-width /2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return getColor(w, r);
+			}
+			public Color getColor(double w, double r);
 		}
-
-		protected abstract NormalXY getNormal(double r);
+	}
+	
+	public interface Filter {
 		
+		public boolean passesFilter(double x, double y, double width, double height);
 		
-		public static class Constant extends ProfileXY {
-
-			public static NormalXY computeNormal(double minR, double maxR, double heightAtMinR, double heightAtMaxR) {
-				Debug.Assert(Double.isFinite(minR));
-				Debug.Assert(Double.isFinite(maxR));
-				Debug.Assert(minR<=maxR);
-				Debug.Assert(Double.isFinite(heightAtMinR));
-				Debug.Assert(Double.isFinite(heightAtMaxR));
-				return new NormalXY(heightAtMinR-heightAtMaxR,maxR-minR).normalize();
+		public interface Cart extends Filter {
+			@Override public default boolean passesFilter(double x, double y, double width, double height) {
+				return passesFilter(x, y);
 			}
-
-			private final NormalXY constN;
-
-			public Constant(double minR, double maxR) { this(minR, maxR, new NormalXY(0,1)); }
-			public Constant(double minR, double maxR, double heightAtMinR, double heightAtMaxR) { this(minR, maxR, computeNormal(minR, maxR, heightAtMinR, heightAtMaxR)); }
-			public Constant(double minR, double maxR, NormalXY constN) {
-				super(minR, maxR);
-				this.constN = constN;
-			}
-
-			@Override
-			protected NormalXY getNormal(double r) {
-				return constN;
-			}
+			public boolean passesFilter(double x, double y);
 		}
-		
-		public static class RoundBlend extends ProfileXY {
-
-			private NormalXY normalAtMinR;
-			private NormalXY normalAtMaxR;
-			private boolean linearBlend;
-			private double f1;
-			private double f2;
-			private int f0;
-
-			public RoundBlend(double minR, double maxR, NormalXY normalAtMinR, NormalXY normalAtMaxR) {
-				super(minR, maxR);
-				this.normalAtMinR = normalAtMinR;
-				this.normalAtMaxR = normalAtMaxR;
-				Debug.Assert(this.normalAtMinR!=null);
-				Debug.Assert(this.normalAtMaxR!=null);
-				Debug.Assert(0<=this.normalAtMinR.y);
-				Debug.Assert(0<=this.normalAtMaxR.y);
-				prepareValues();
+		public interface Polar extends Filter {
+			@Override public default boolean passesFilter(double x, double y, double width, double height) {
+				double y1 = y-height/2.0;
+				double x1 = x-width /2.0;
+				double w = Math.atan2(y1,x1);
+				double r = Math.sqrt(x1*x1+y1*y1);
+				return passesFilter(w,r);
 			}
-
-			private void prepareValues() {
-				double a1 = Math.atan2(this.normalAtMinR.y, this.normalAtMinR.x);
-				double a2 = Math.atan2(this.normalAtMaxR.y, this.normalAtMaxR.x);
-				Debug.Assert(a1<=Math.PI);
-				Debug.Assert(0<=a1);
-				Debug.Assert(a2<=Math.PI);
-				Debug.Assert(0<=a2);
-				//System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> a1:%6.2f° a2:%6.2f°%n", a1/Math.PI*180, a2/Math.PI*180); 
-				if (a1==a2) { linearBlend=true; /*System.out.println("linearBlend");*/ return; } else linearBlend=false;
-				if (a1<a2) { a1 += Math.PI; a2 += Math.PI; f0=-1; } else f0=1;
-				//System.out.printf(Locale.ENGLISH,"RoundBlend.prepareValues() -> cos(a1):%1.5f cos(a2):%1.5f%n", Math.cos(a1), Math.cos(a2)); 
-				
-				double R = (maxR-minR)/(Math.cos(a2)-Math.cos(a1));
-				f1 = R*Math.cos(a1) - minR;
-				f2 = R*R;
-				// x = r + R*Math.cos(a1) - minR;
-				// y = Math.sqrt( R*R - x*x );
-			}
-
-			@Override
-			protected NormalXY getNormal(double r) {
-				if (linearBlend)
-					return NormalXY.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
-				// x = r + R*Math.cos(a1) - minR;
-				// y = Math.sqrt( R*R - x*x );
-				double x = f0*(r + f1);
-				double y = Math.sqrt( f2 - x*x );
-				return new NormalXY(x,y);
-			}
+			public boolean passesFilter(double w, double r);
 		}
-		
-		public static class LinearBlend extends ProfileXY {
-
-			private final NormalXY normalAtMinR;
-			private final NormalXY normalAtMaxR;
-
-			public LinearBlend(double minR, double maxR, NormalXY normalAtMinR, NormalXY normalAtMaxR) {
-				super(minR, maxR);
-				this.normalAtMinR = normalAtMinR;
-				this.normalAtMaxR = normalAtMaxR;
-				Debug.Assert(this.normalAtMinR!=null);
-				Debug.Assert(this.normalAtMaxR!=null);
-			}
-
-			@Override
-			protected NormalXY getNormal(double r) {
-				return NormalXY.blend(r,minR,maxR,normalAtMinR,normalAtMaxR);
-			}
-			
-		}
-		
-		public static class Group extends ProfileXY {
-
-			private static double getR(ProfileXY[] children, BiFunction<Double,Double,Double> compare) {
-				Debug.Assert(children!=null);
-				Debug.Assert(children.length>0);
-				Debug.Assert(children[0]!=null);
-				
-				double r = children[0].minR;
-				for (ProfileXY child:children) {
-					Debug.Assert(child!=null);
-					r = compare.apply(compare.apply(r, child.minR), child.maxR);
-				}
-				return r;
-			}
-
-			private static double getMaxR(ProfileXY[] children) {
-				return getR(children,Math::max);
-			}
-
-			private static double getMinR(ProfileXY[] children) {
-				return getR(children,Math::min);
-			}
-
-			private ProfileXY[] children;
-
-			public Group(ProfileXY... children) { this(getMinR(children), getMaxR(children), children); }
-			public Group(double minR, double maxR, ProfileXY... children) {
-				super(minR, maxR);
-				setGroup(children);
-			}
-			
-			public void setGroup(ProfileXY... children) {
-				Debug.Assert(children!=null);
-				for (ProfileXY child:children)
-					Debug.Assert(child!=null);
-				this.children = children;
-			}
-			
-			public boolean hasGaps() {
-				if (children.length==0) return minR<maxR;
-				if (minR==maxR) return false;
-				
-				Arrays.sort(children,Comparator.<ProfileXY,Double>comparing(fcn->fcn.minR).thenComparing(fcn->fcn.maxR));
-				
-				int first = -1;
-				for (int i=0; i<children.length; i++)
-					if (children[i].contains(minR)) {
-						first = i;
-						break;
-					}
-				if (first == -1) return true;
-				
-				// [r0,r1) [r1,r2) ...
-				// [0.5,1.0) [0.8,1.3) [1.2,1.5) ...
-				// -->  child[n].contains( child[n-1].maxR )
-				//  &&  child[first].contains( minR )
-				//  &&  maxR <= child[last].maxR
-				double r = minR;
-				for (int i=first; i<children.length; i++) {
-					if (!children[i].contains(r)) return true;
-					r = children[i].maxR;
-				}
-				
-				return r<maxR;
-			}
-
-			@Override
-			protected NormalXY getNormal(double r) {
-				for (ProfileXY child:children)
-					if (child.contains(r))
-						return child.getNormal(r);
-				return null;
-			}
-			
-		}
-		
 	}
 }
