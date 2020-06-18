@@ -15,7 +15,7 @@ public class BumpMapping {
 	private ImageCache<BufferedImage> imageCache;
 	private OverSampling overSampling = OverSampling.None;
 	private NormalCache normalCache = null;
-	private boolean cacheNormals;
+	private final boolean cacheNormals;
 	
 	public BumpMapping(boolean cacheImage, boolean cacheNormals) {
 		this.cacheNormals = cacheNormals;
@@ -76,7 +76,7 @@ public class BumpMapping {
 	public BufferedImage renderImage_uncached(int width, int height) { return renderImage_uncached(width, height, null); }
 	public BufferedImage renderImage_uncached(int width, int height, RenderProgressListener listener) {
 		
-		if (normalCache==null) {
+		if (normalCache==null || (cacheNormals && !normalCache.hasSize(width, height))) {
 			if (cacheNormals) normalCache = new NormalCache(width, height, overSampling, (x,y)->normalFunction.getNormal(x,y,width,height));
 			else              normalCache = new NormalCache.Dummy(                       (x,y)->normalFunction.getNormal(x,y,width,height));
 		}
@@ -131,8 +131,12 @@ public class BumpMapping {
 		protected final NormalSource normalSource;
 		private boolean isFixed;
 		private Normal[][][] cache;
+		private int width;
+		private int height;
 
 		NormalCache(int width, int height, OverSampling overSampling, NormalSource normalSource) {
+			this.width = width;
+			this.height = height;
 			this.normalSource = normalSource;
 			this.isFixed = false;
 			int n = overSampling==null || overSampling==OverSampling.None ? 1 : overSampling.samplingPoints.length;
@@ -140,6 +144,10 @@ public class BumpMapping {
 			for (Normal[][] arr1:cache)
 				for (Normal[] arr2:arr1)
 					Arrays.fill(arr2, null);
+		}
+
+		public boolean hasSize(int width, int height) {
+			return this.width==width && this.height==height;
 		}
 
 		public void setFixed() { isFixed = true; }
