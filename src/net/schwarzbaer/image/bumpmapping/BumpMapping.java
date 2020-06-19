@@ -308,7 +308,7 @@ public class BumpMapping {
 
 	public static class MutableNormal {
 		public double x,y,z;
-		public final Color color;
+		public Color color;
 		public MutableNormal(Normal n) { this(n.x,n.y,n.z,n.color); }
 		public MutableNormal(double x, double y, double z, Color color) { this.color=color; this.x=x; this.y=y; this.z=z; }
 		public Normal toNormal() { return new Normal( x,y,z, color ); }

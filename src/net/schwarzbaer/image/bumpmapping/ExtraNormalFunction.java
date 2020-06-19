@@ -18,12 +18,71 @@ public interface ExtraNormalFunction {
 		double wY = Math.atan2(n.x, n.z);
 		en = en.rotateY(wY);
 		en = en.rotateZ(wZ);
+		if (en.color==null && n.color!=null);
+			en = new Normal(en, n.color);
 		return en;
 	}
 	
 	public Normal  getNormal     (double x, double y, double width, double height);
 	public boolean isInsideBounds(double x, double y, double width, double height);
 	
+	public interface Host {
+		public void showExtrasOnly(boolean showExtrasOnly);
+		public Object setExtras(ExtraNormalFunction extras);
+	}
+	
+	public interface CartHost {
+		public void showExtrasOnly(boolean showExtrasOnly);
+		public Object setExtras(ExtraNormalFunction.Cart extras);
+		
+		public static Normal getMergedNormal(double x, double y, boolean showExtrasOnly, boolean forceNormalCreation, ExtraNormalFunction.Cart extras, NormalFunction.CartBase base) {
+			boolean showAll = !showExtrasOnly;
+			
+			Normal n = null;
+			Normal en = null;
+			
+			if (extras!=null)
+				en = extras.getNormal(x,y);
+			
+			if (en!=null || showAll || forceNormalCreation)
+				n = base.getNormal(x,y);
+			
+			if (en!=null)
+				n = merge( n, en );
+			
+			if (forceNormalCreation && n==null)
+				n = new Normal(0,0,1);
+			
+			return n;
+		}
+	}
+	
+	public interface PolarHost {
+		public void showExtrasOnly(boolean showExtrasOnly);
+		public Object setExtras(ExtraNormalFunction.Polar extras);
+		
+		public static Normal getMergedNormal(double w, double r, boolean showExtrasOnly, boolean forceNormalCreation, ExtraNormalFunction.Polar extras, NormalFunction.PolarBase base) {
+			boolean showAll = !showExtrasOnly;
+			
+			Normal n = null;
+			Normal en = null;
+			
+			if (extras!=null)
+				en = extras.getNormal(w,r);
+			
+			if (en!=null || showAll || forceNormalCreation)
+				n = base.getNormal(w,r);
+			
+			if (en!=null)
+				n = merge( n, en );
+			
+			if (forceNormalCreation && n==null)
+				n = new Normal(0,0,1);
+			
+			return n;
+		}
+	}
+
 	public interface Cart extends ExtraNormalFunction {
 		@Override public default Normal  getNormal     (double x, double y, double width, double height) { return getNormal     (x, y); }
 		@Override public default boolean isInsideBounds(double x, double y, double width, double height) { return isInsideBounds(x, y); }
