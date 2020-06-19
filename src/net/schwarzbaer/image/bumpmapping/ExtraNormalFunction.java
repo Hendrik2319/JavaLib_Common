@@ -30,7 +30,28 @@ public interface ExtraNormalFunction {
 		public Normal  getNormal     (double x, double y);
 		public boolean isInsideBounds(double x, double y);
 		
-		public static abstract class AbstractGroup<ElementType extends Cart> implements Cart {
+		public static class BoundingRectangle {
+			private final double xMin,yMin,xMax,yMax;
+			public BoundingRectangle(double x, double y) { this(x,y,x,y); }
+			public BoundingRectangle(double xMin, double yMin, double xMax, double yMax) {
+				this.xMin = xMin;
+				this.yMin = yMin;
+				this.xMax = xMax;
+				this.yMax = yMax;
+			}
+			public BoundingRectangle add(double x, double y) {
+				return new BoundingRectangle(Math.min(xMin,x),Math.min(yMin,y),Math.max(xMax,x),Math.max(yMax,y));
+			}
+			public BoundingRectangle add(BoundingRectangle other) {
+				if (other==null) return this;
+				return add(other.xMin,other.yMin).add(other.xMax,other.yMax);
+			}
+			public boolean isInside(double x, double y) {
+				return xMin<=x && yMin<=y && x<=xMax && y<=yMax;
+			}
+		}
+
+		public static abstract class AbstractGroup<ElementType extends Cart, ThisType extends AbstractGroup<ElementType,ThisType>> implements Cart {
 		
 			protected final Vector<ElementType> elements;
 			public AbstractGroup(ElementType[] elements) {
@@ -38,17 +59,20 @@ public interface ExtraNormalFunction {
 				add(elements);
 			}
 		
-			public void add(ElementType element) {
+			public ThisType add(ElementType element) {
 				if (element!=null)
 					elements.add(element);
-				
+				return getThis();
 			}
-			public void add(ElementType[] elements) {
+			public ThisType add(ElementType[] elements) {
 				if (elements!=null)
 					for (ElementType el:elements)
 						add(el);
+				return getThis();
 			}
 			
+			protected abstract ThisType getThis();
+
 			@Override
 			public boolean isInsideBounds(double x, double y) {
 				for (ElementType el:elements)
@@ -58,12 +82,13 @@ public interface ExtraNormalFunction {
 			}
 		}
 		
-		public static class MergeGroup extends AbstractGroup<ProfileXYbasedLineElement> {
+		public static class MergeGroup extends AbstractGroup<ProfileXYbasedLineElement,MergeGroup> {
 		
 			public MergeGroup(ProfileXYbasedLineElement...elements) {
 				super(elements);
 			}
-		
+			@Override protected MergeGroup getThis() { return this; }
+
 			@Override
 			public Normal getNormal(double x, double y) {
 				ProfileXYbasedLineElement.Distance d0 = null;
@@ -125,27 +150,6 @@ public interface ExtraNormalFunction {
 					double localR = Math.sqrt(localX*localX+localY*localY);
 					double localW = Math.atan2(localY, localX);
 					return new Distance(localR,localW);
-				}
-			}
-			
-			public static class BoundingRectangle {
-				private final double xMin,yMin,xMax,yMax;
-				public BoundingRectangle(double x, double y) { this(x,y,x,y); }
-				public BoundingRectangle(double xMin, double yMin, double xMax, double yMax) {
-					this.xMin = xMin;
-					this.yMin = yMin;
-					this.xMax = xMax;
-					this.yMax = yMax;
-				}
-				public BoundingRectangle add(double x, double y) {
-					return new BoundingRectangle(Math.min(xMin,x),Math.min(yMin,y),Math.max(xMax,x),Math.max(yMax,y));
-				}
-				public BoundingRectangle add(BoundingRectangle other) {
-					if (other==null) return this;
-					return add(other.xMin,other.yMin).add(other.xMax,other.yMax);
-				}
-				public boolean isInside(double x, double y) {
-					return xMin<=x && yMin<=y && x<=xMax && y<=yMax;
 				}
 			}
 			
@@ -328,19 +332,21 @@ public interface ExtraNormalFunction {
 			}
 		}
 		
-		public static class AlphaCharSquence implements Cart {
+		public static class AlphaCharSquence extends AbstractGroup<AlphaChar,AlphaCharSquence> {
 			
 			private double x;
 			private double y;
 			private double scale;
 			private ProfileXY profile;
 			private String text;
-			private final Vector<AlphaChar> chars;
+			private BoundingRectangle bounds;
 
 			public AlphaCharSquence(double x, double y, double scale, ProfileXY profile, String text) {
-				chars = new Vector<>();
+				super(null);
+				bounds = null;
 				set(x, y, scale, profile, text);
 			}
+			@Override protected AlphaCharSquence getThis() { return this; }
 
 			public void set(double x, double y, double scale, ProfileXY profile, String text) {
 				this.x = x;
@@ -366,11 +372,12 @@ public interface ExtraNormalFunction {
 			public void setText   (String text       ) { set(x, y, scale, profile, text); }
 
 			private void updateChars() {
-				chars.clear();
+				elements.clear();
 				double pos = x;
 				double whitespaceOffset = 40*scale;
 				double charOffset       = 10*scale;
 				boolean lastCharWasSpace = true;
+				bounds = null;
 				for (char ch:text.toCharArray()) {
 					if (ch==' ') { pos += whitespaceOffset; lastCharWasSpace = true; continue; }
 					if (!lastCharWasSpace) pos += charOffset;
@@ -379,13 +386,15 @@ public interface ExtraNormalFunction {
 					AlphaChar alphaChar = new AlphaChar(pos, y, scale, profile, ch);
 					XRange range = alphaChar.getRange();
 					pos += range.maxX + profile.maxR;
-					chars.add(alphaChar);
+					add(alphaChar);
+					if (bounds==null) bounds = alphaChar.getBoundingRectangle();
+					else bounds = bounds.add( alphaChar.getBoundingRectangle() );
 				}
 			}
 
 			@Override
 			public Normal getNormal(double x, double y) {
-				for (AlphaChar alphaChar:chars)
+				for (AlphaChar alphaChar:elements)
 					if (alphaChar.isInsideBounds(x,y)) {
 						Normal n = alphaChar.getNormal(x,y);
 						if (n!=null) return n;
@@ -395,9 +404,8 @@ public interface ExtraNormalFunction {
 
 			@Override
 			public boolean isInsideBounds(double x, double y) {
-				for (AlphaChar alphaChar:chars)
-					if (alphaChar.isInsideBounds(x,y)) return true;
-				return false;
+				if (!bounds.isInside(x,y)) return false;
+				return super.isInsideBounds(x,y);
 			}
 		}
 		
@@ -441,13 +449,12 @@ public interface ExtraNormalFunction {
 
 			private void updateLines() {
 				elements.clear();
-				XRange tempRange = null;
+				range = null;
 				for (Form form:lineSets) {
-					if (tempRange==null) tempRange = form.getXRange(scale);
-					else tempRange = tempRange.add(form.getXRange(scale));
+					if (range==null) range = form.getXRange(scale);
+					else range = range.add(form.getXRange(scale));
 					form.addTo(this,x,y,scale);
 				}
-				range = tempRange;
 			}
 
 			public XRange getRange() {
