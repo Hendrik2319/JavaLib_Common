@@ -5,6 +5,7 @@ import java.util.Vector;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Filter;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Normal;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalXY;
+import net.schwarzbaer.image.bumpmapping.ExtraNormalFunction.Cart.AlphaChar.XRange;
 
 public interface ExtraNormalFunction {
 
@@ -85,6 +86,7 @@ public interface ExtraNormalFunction {
 			}
 			
 			public abstract Distance getDistance(double x, double y);
+			public abstract BoundingRectangle getBoundingRectangle();
 		
 			@Override
 			public Normal getNormal(double x, double y) {
@@ -126,38 +128,24 @@ public interface ExtraNormalFunction {
 				}
 			}
 			
-			public static class LineGroup extends ProfileXYbasedLineElement {
-		
-				protected final Vector<ProfileXYbasedLineElement> elements;
-				public LineGroup(ProfileXY profile) {
-					super(profile);
-					this.elements = new Vector<>();
+			public static class BoundingRectangle {
+				private final double xMin,yMin,xMax,yMax;
+				public BoundingRectangle(double x, double y) { this(x,y,x,y); }
+				public BoundingRectangle(double xMin, double yMin, double xMax, double yMax) {
+					this.xMin = xMin;
+					this.yMin = yMin;
+					this.xMax = xMax;
+					this.yMax = yMax;
 				}
-				
-				public void addLine(double x1, double y1, double x2, double y2) {
-					elements.add(new Line(x1,y1,x2,y2,profile));
+				public BoundingRectangle add(double x, double y) {
+					return new BoundingRectangle(Math.min(xMin,x),Math.min(yMin,y),Math.max(xMax,x),Math.max(yMax,y));
 				}
-				
-				public void addArc(double xC, double yC, double r, double aStart, double aEnd) {
-					elements.add(new Arc(xC,yC, r,aStart,aEnd, profile));
+				public BoundingRectangle add(BoundingRectangle other) {
+					if (other==null) return this;
+					return add(other.xMin,other.yMin).add(other.xMax,other.yMax);
 				}
-				
-				@Override
-				public Distance getDistance(double x, double y) {
-					Distance d0 = null;
-					for (ProfileXYbasedLineElement el:elements) {
-						Distance d = el.getDistance(x,y);
-						if (d!=null && (d0==null || d0.r>d.r)) d0=d;
-					}
-					return d0;
-				}
-		
-				@Override
-				public boolean isInsideBounds(double x, double y) {
-					for (ProfileXYbasedLineElement el:elements)
-						if (el.isInsideBounds(x, y))
-							return true;
-					return false;
+				public boolean isInside(double x, double y) {
+					return xMin<=x && yMin<=y && x<=xMax && y<=yMax;
 				}
 			}
 			
@@ -166,6 +154,7 @@ public interface ExtraNormalFunction {
 				private final double x1, y1, x2, y2;
 				private final double length;
 				private final double angle;
+				private final BoundingRectangle bounds;
 		
 				public Line(double x1, double y1, double x2, double y2, ProfileXY profile) {
 					super(profile);
@@ -173,11 +162,23 @@ public interface ExtraNormalFunction {
 					this.y1 = y1;
 					this.x2 = x2;
 					this.y2 = y2;
+					Debug.Assert(Double.isFinite(this.x1));
+					Debug.Assert(Double.isFinite(this.y1));
+					Debug.Assert(Double.isFinite(this.x2));
+					Debug.Assert(Double.isFinite(this.y2));
 					length = Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 					Debug.Assert(length>0);
 					angle = Math.atan2(y2-y1, x2-x1);
+					
+					double xMin = Math.min(x1,x2)-profile.maxR;
+					double yMin = Math.min(y1,y2)-profile.maxR;
+					double xMax = Math.max(x1,x2)+profile.maxR;
+					double yMax = Math.max(y1,y2)+profile.maxR;
+					bounds = new BoundingRectangle(xMin, yMin, xMax, yMax);
 				}
-		
+				
+				@Override public BoundingRectangle getBoundingRectangle() { return bounds; }
+
 				@Override
 				public Distance getDistance(double x, double y) {
 					double f = ((x2-x1)*(x-x1)+(y2-y1)*(y-y1))/length/length; // cos(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|² -> (x1,y1) ..f.. (x2,y2)
@@ -202,6 +203,8 @@ public interface ExtraNormalFunction {
 		
 				@Override
 				public boolean isInsideBounds(double x, double y) {
+					if (!bounds.isInside(x,y)) return false;
+					
 					double r = ((x2-x1)*(y-y1)-(y2-y1)*(x-x1))/length; // sin(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|  =  sin(a)*|x-x1,y-y1|  =  r
 					if (Math.abs(r)>profile.maxR) return false;
 					
@@ -213,7 +216,8 @@ public interface ExtraNormalFunction {
 			public static class Arc extends ProfileXYbasedLineElement {
 		
 				private final double xC,yC,r,aStart,aEnd, xS,yS,xE,yE;
-		
+				private final BoundingRectangle bounds;
+
 				public Arc(double xC, double yC, double r, double aStart, double aEnd, ProfileXY profile) {
 					super(profile);
 					this.xC = xC;
@@ -221,11 +225,31 @@ public interface ExtraNormalFunction {
 					this.r = r;
 					this.aStart = aStart;
 					this.aEnd = aEnd;
+					Debug.Assert(Double.isFinite(this.xC    ));
+					Debug.Assert(Double.isFinite(this.yC    ));
+					Debug.Assert(Double.isFinite(this.r     ));
+					Debug.Assert(Double.isFinite(this.aStart));
+					Debug.Assert(Double.isFinite(this.aEnd  ));
+					Debug.Assert(this.r>=0);
+					Debug.Assert(this.aStart<this.aEnd);
 					xS = r*Math.cos(this.aStart);
 					yS = r*Math.sin(this.aStart);
 					xE = r*Math.cos(this.aEnd);
 					yE = r*Math.sin(this.aEnd);
+					
+					double x1 = this.xC + this.r * Math.cos(this.aStart);
+					double y1 = this.yC + this.r * Math.sin(this.aStart);
+					double x2 = this.xC + this.r * Math.cos(this.aEnd);
+					double y2 = this.yC + this.r * Math.sin(this.aEnd);
+					BoundingRectangle tempBounds = new BoundingRectangle(Math.min(x1,x2), Math.min(y1,y2), Math.max(x1,x2), Math.max(y1,y2));
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd,        0  )) tempBounds = tempBounds.add(this.xC+this.r,this.yC);
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd,  Math.PI  )) tempBounds = tempBounds.add(this.xC-this.r,this.yC);
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd,  Math.PI/2)) tempBounds = tempBounds.add(this.xC,this.yC+this.r);
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd, -Math.PI/2)) tempBounds = tempBounds.add(this.xC,this.yC-this.r);
+					bounds = tempBounds;
 				}
+				
+				@Override public BoundingRectangle getBoundingRectangle() { return bounds; }
 		
 				@Override
 				public Distance getDistance(double x, double y) {
@@ -248,14 +272,304 @@ public interface ExtraNormalFunction {
 		
 				@Override
 				public boolean isInsideBounds(double x, double y) {
+					if (!bounds.isInside(x,y)) return false;
 					Distance dC = Distance.compute(xC,yC,x,y);
 					if (Math.abs(dC.r-r)>profile.maxR) return false;
 					if (BumpMapping.isInsideAngleRange(aStart, aEnd, dC.w)) return true;
 					return Distance.computeR(xS,yS,x,y)<=profile.maxR || Distance.computeR(xE,yE,x,y)<=profile.maxR;
 				}
 			}
+
+			public static class LineGroup extends ProfileXYbasedLineElement {
+			
+				protected final Vector<ProfileXYbasedLineElement> elements;
+				private BoundingRectangle bounds;
+				
+				public LineGroup(ProfileXY profile) {
+					super(profile);
+					this.elements = new Vector<>();
+					bounds = null;
+				}
+				
+				@Override public BoundingRectangle getBoundingRectangle() { return bounds; }
+				
+				public void addLine(double x1, double y1, double x2, double y2) {
+					add(new Line(x1,y1,x2,y2,profile));
+				}
+
+				public void addArc(double xC, double yC, double r, double aStart, double aEnd) {
+					add(new Arc(xC,yC, r,aStart,aEnd, profile));
+				}
+
+				private void add(ProfileXYbasedLineElement element) {
+					elements.add(element);
+					if (bounds==null) bounds = element.getBoundingRectangle();
+					else bounds = bounds.add(element.getBoundingRectangle());
+				}
+				
+				@Override
+				public Distance getDistance(double x, double y) {
+					Distance d0 = null;
+					for (ProfileXYbasedLineElement el:elements) {
+						Distance d = el.getDistance(x,y);
+						if (d!=null && (d0==null || d0.r>d.r)) d0=d;
+					}
+					return d0;
+				}
+			
+				@Override
+				public boolean isInsideBounds(double x, double y) {
+					if (!bounds.isInside(x,y)) return false;
+					for (ProfileXYbasedLineElement el:elements)
+						if (el.isInsideBounds(x, y))
+							return true;
+					return false;
+				}
+			}
+		}
+		
+		public static class AlphaCharSquence implements Cart {
+			
+			private double x;
+			private double y;
+			private double scale;
+			private ProfileXY profile;
+			private String text;
+			private final Vector<AlphaChar> chars;
+
+			public AlphaCharSquence(double x, double y, double scale, ProfileXY profile, String text) {
+				chars = new Vector<>();
+				set(x, y, scale, profile, text);
+			}
+
+			public void set(double x, double y, double scale, ProfileXY profile, String text) {
+				this.x = x;
+				this.y = y;
+				this.scale = scale;
+				this.profile = profile;
+				this.text = text;
+				Debug.Assert(Double.isFinite(this.x));
+				Debug.Assert(Double.isFinite(this.y));
+				Debug.Assert(Double.isFinite(this.scale));
+				Debug.Assert(this.scale>0);
+				Debug.Assert(this.profile!=null);
+				Debug.Assert(this.text!=null);
+				Debug.Assert(!this.text.isEmpty());
+				updateChars();
+			}
+
+			public void setX      (double x          ) { set(x, y, scale, profile, text); }
+			public void setY      (double y          ) { set(x, y, scale, profile, text); }
+			public void setPos    (double x, double y) { set(x, y, scale, profile, text); }
+			public void setScale  (double scale      ) { set(x, y, scale, profile, text); }
+			public void setProfile(ProfileXY profile ) { set(x, y, scale, profile, text); }
+			public void setText   (String text       ) { set(x, y, scale, profile, text); }
+
+			private void updateChars() {
+				chars.clear();
+				double pos = x;
+				double whitespaceOffset = 40*scale;
+				double charOffset       = 10*scale;
+				boolean lastCharWasSpace = true;
+				for (char ch:text.toCharArray()) {
+					if (ch==' ') { pos += whitespaceOffset; lastCharWasSpace = true; continue; }
+					if (!lastCharWasSpace) pos += charOffset;
+					lastCharWasSpace = false;
+					pos += profile.maxR;
+					AlphaChar alphaChar = new AlphaChar(pos, y, scale, profile, ch);
+					XRange range = alphaChar.getRange();
+					pos += range.maxX + profile.maxR;
+					chars.add(alphaChar);
+				}
+			}
+
+			@Override
+			public Normal getNormal(double x, double y) {
+				for (AlphaChar alphaChar:chars)
+					if (alphaChar.isInsideBounds(x,y)) {
+						Normal n = alphaChar.getNormal(x,y);
+						if (n!=null) return n;
+					}
+				return null;
+			}
+
+			@Override
+			public boolean isInsideBounds(double x, double y) {
+				for (AlphaChar alphaChar:chars)
+					if (alphaChar.isInsideBounds(x,y)) return true;
+				return false;
+			}
+		}
+		
+		public static class AlphaChar extends ProfileXYbasedLineElement.LineGroup {
+			
+			private XRange range;
+			private final Form[] lineSets;
+			private final double x,y;
+			private double scale;
+
+			public AlphaChar(double x, double y, double scale, ProfileXY profile, char letter) {
+				super(profile);
+				this.x = x;
+				this.y = y;
+				this.scale = scale;
+				Debug.Assert(Double.isFinite(this.x));
+				Debug.Assert(Double.isFinite(this.y));
+				Debug.Assert(Double.isFinite(this.scale));
+				lineSets = getLineSet(letter);
+				updateLines();
+			}
+			
+			private static Form[] getLineSet(char letter) {
+				//  top:   0
+				//  mid:  40
+				// base: 100
+				switch (letter) {
+				case 'X': return new Form[] { new Line(0, 0,50,100), new Line(50, 0,0,100) };
+				case 'x': return new Form[] { new Line(0,40,50,100), new Line(50,40,0,100) };
+				case 'M': return new Form[] { new PolyLine(0,100).add(0,0).add(35,60).add(70,0).add(70,100) };
+				case 'B': return new Form[] { new Line(0,0,0,100), new Line(0,0,20,0), new Line(0,40,20,40), new Line(0,100,20,100), new Arc(20,20,20,-Math.PI/2,Math.PI/2), new Arc(20,70,30,-Math.PI/2,Math.PI/2) };
+				}
+				return new Form[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100) };
+			}
+			
+			public void setScale(double scale) {
+				this.scale = scale;
+				Debug.Assert(Double.isFinite(this.scale));
+				updateLines();
+			}
+
+			private void updateLines() {
+				elements.clear();
+				XRange tempRange = null;
+				for (Form form:lineSets) {
+					if (tempRange==null) tempRange = form.getXRange(scale);
+					else tempRange = tempRange.add(form.getXRange(scale));
+					form.addTo(this,x,y,scale);
+				}
+				range = tempRange;
+			}
+
+			public XRange getRange() {
+				return range;
+			}
+
+			public interface Form {
+				void addTo(ProfileXYbasedLineElement.LineGroup lineGroup, double x, double y, double scale);
+				XRange getXRange(double scale);
+			}
+			
+			public static class XRange {
+				public final double minX,maxX;
+				public XRange(double minX, double maxX) {
+					this.minX = minX;
+					this.maxX = maxX;
+					Debug.Assert(!Double.isNaN(this.minX));
+					Debug.Assert(!Double.isNaN(this.maxX));
+					Debug.Assert(this.minX<=this.maxX);
+				}
+				public XRange add(double x) {
+					return add(x,x);
+				}
+				public XRange add(XRange other) {
+					return other==null ? this : add(other.minX, other.maxX);
+				}
+				public XRange add(double minX, double maxX) {
+					return new XRange(Math.min(this.minX, minX), Math.max(this.maxX, maxX));
+				}
+				public XRange mul(double f) {
+					return new XRange(minX*f,this.maxX*f);
+				}
+			}
+			
+			public static class PolyLine implements Form {
+				
+				private final Vector<Point> points;
+				private XRange range;
+				
+				public PolyLine(double xStart, double yStart) {
+					Debug.Assert(Double.isFinite(xStart));
+					Debug.Assert(Double.isFinite(yStart));
+					points = new Vector<>();
+					points.add(new Point(xStart,yStart));
+					range = new XRange(xStart,xStart);
+				}
+				
+				public PolyLine add(double x, double y) {
+					points.add(new Point(x,y));
+					range =  range.add(x);
+					return this;
+				}
+				
+				@Override
+				public void addTo(ProfileXYbasedLineElement.LineGroup lineGroup, double x, double y, double scale) {
+					for (int i=1; i<points.size(); i++) {
+						Point p1 = points.get(i-1);
+						Point p2 = points.get(i);
+						lineGroup.addLine(x+p1.x*scale, y+p1.y*scale, x+p2.x*scale, y+p2.y*scale);
+					}
+				}
+
+				@Override
+				public XRange getXRange(double scale) {
+					return range.mul(scale);
+				}
+				
+				private static class Point {
+					final double x,y;
+					private Point(double x, double y) { this.x = x; this.y = y; }
+				}
+			}
+			
+			public static class Line implements Form {
+				private final double x1, y1, x2, y2;
+				private final XRange range;
+				public Line(double x1, double y1, double x2, double y2) {
+					this.x1 = x1;
+					this.y1 = y1;
+					this.x2 = x2;
+					this.y2 = y2;
+					Debug.Assert(Double.isFinite(this.x1));
+					Debug.Assert(Double.isFinite(this.y1));
+					Debug.Assert(Double.isFinite(this.x2));
+					Debug.Assert(Double.isFinite(this.y2));
+					Debug.Assert(this.x1!=this.x2 || this.y1!=this.y2);
+					this.range = new XRange(Math.min(x1,x2), Math.max(x1,x2));
+				}
+				@Override public void addTo(ProfileXYbasedLineElement.LineGroup lineGroup, double x, double y, double scale) { lineGroup.addLine(x+x1*scale, y+y1*scale, x+x2*scale, y+y2*scale); }
+				@Override public XRange getXRange(double scale) { return range.mul(scale); }
+			}
+			
+			public static class Arc implements Form {
+				private final double xC,yC,r,aStart,aEnd;
+				private final XRange range;
+				public Arc(double xC, double yC, double r, double aStart, double aEnd) {
+					this.xC     = xC;
+					this.yC     = yC;
+					this.r      = r;
+					this.aStart = aStart;
+					this.aEnd   = aEnd;
+					Debug.Assert(Double.isFinite(this.xC    ));
+					Debug.Assert(Double.isFinite(this.yC    ));
+					Debug.Assert(Double.isFinite(this.r     ));
+					Debug.Assert(Double.isFinite(this.aStart));
+					Debug.Assert(Double.isFinite(this.aEnd  ));
+					Debug.Assert(this.r>=0);
+					Debug.Assert(this.aStart<this.aEnd);
+					double x1 = this.xC + this.r * Math.cos(this.aStart);
+					double x2 = this.xC + this.r * Math.cos(this.aEnd);
+					XRange tempRange = new XRange(Math.min(x1,x2), Math.max(x1,x2));
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd,       0)) tempRange = tempRange.add(this.xC + this.r);
+					if (BumpMapping.isInsideAngleRange(aStart, aEnd, Math.PI)) tempRange = tempRange.add(this.xC - this.r);
+					this.range = tempRange;
+				}
+				@Override public void addTo(ProfileXYbasedLineElement.LineGroup lineGroup, double x, double y, double scale) { lineGroup.addArc(x+xC*scale, y+yC*scale, r*scale, aStart, aEnd); }
+				@Override public XRange getXRange(double scale) { return range.mul(scale); }
+			}
+			
 		}
 	}
+	
 	public interface Polar extends ExtraNormalFunction {
 		@Override public default Normal getNormal(double x, double y, double width, double height) {
 			double y1 = y-height/2.0;
