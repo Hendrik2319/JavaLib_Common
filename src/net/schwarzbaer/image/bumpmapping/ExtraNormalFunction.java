@@ -763,18 +763,28 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 		
 		public static class BentCartExtra implements Polar {
 			
-			private final double zeroYRadius;
-			private final double zeroXAngle;
+			private double zeroYRadius;
+			private double zeroXAngle;
 			private final Cart extra;
 
 			public BentCartExtra(double zeroYRadius, double zeroXAngle, Cart extra) {
-				this.zeroYRadius = zeroYRadius;
-				this.zeroXAngle = zeroXAngle;
+				setZeroYRadius(zeroYRadius);
+				setZeroXAngle(zeroXAngle);
 				this.extra = extra;
-				Debug.Assert(Double.isFinite(this.zeroYRadius));
-				Debug.Assert(Double.isFinite(this.zeroXAngle));
-				Debug.Assert(this.zeroYRadius>=0);
 				Debug.Assert(this.extra!=null);
+			}
+
+			public double getZeroYRadius() { return zeroYRadius; }
+			public double getZeroXAngle () { return zeroXAngle ; }
+			
+			public void setZeroYRadius(double zeroYRadius) {
+				this.zeroYRadius = zeroYRadius;
+				Debug.Assert(Double.isFinite(this.zeroYRadius));
+				Debug.Assert(this.zeroYRadius>=0);
+			}
+			public void setZeroXAngle(double zeroXAngle) {
+				this.zeroXAngle  = zeroXAngle ;
+				Debug.Assert(Double.isFinite(this.zeroXAngle));
 			}
 
 			@Override
@@ -782,7 +792,9 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				w = BumpMapping.normalizeAngle(zeroXAngle,w);
 				double x = (w-zeroXAngle)*zeroYRadius;
 				double y = zeroYRadius-r;
-				return extra.getNormal(x,y);
+				Normal n = extra.getNormal(x,y);
+				if (n!=null) n = n.rotateZ(w+Math.PI/2);
+				return n;
 			}
 
 			@Override
