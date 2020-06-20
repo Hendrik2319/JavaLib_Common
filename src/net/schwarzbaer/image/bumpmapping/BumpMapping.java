@@ -305,6 +305,10 @@ public class BumpMapping {
 		
 		return w<=maxW;
 	}
+	
+	public interface NormalFunctionBase {
+		public Normal getNormal(double x, double y, double width, double height);
+	}
 
 	public static class MutableNormal {
 		public double x,y,z;

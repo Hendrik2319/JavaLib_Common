@@ -5,10 +5,10 @@ import java.awt.Color;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Colorizer;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.MutableNormal;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Normal;
+import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalFunctionBase;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalXY;
 
-public interface NormalFunction {
-	public Normal getNormal(double x, double y, double width, double height);
+public interface NormalFunction extends NormalFunctionBase {
 	public void forceNormalCreation(boolean force);
 	
 	public static class Simple implements NormalFunction {
@@ -27,11 +27,13 @@ public interface NormalFunction {
 		
 	}
 	
-	public static class NormalMap implements NormalFunction {
+	public static class NormalMap implements NormalFunction, ExtraNormalFunction.Host {
 		
 		protected NormalMapData normalMap;
 		protected boolean forceNormalCreation;
 		protected boolean centered;
+		protected boolean showExtrasOnly;
+		protected ExtraNormalFunction extras;
 		
 		public interface Constructor { NormalMap create(NormalMapData normalMap, boolean centered); }
 		public static class NormalMapData {
@@ -59,13 +61,29 @@ public interface NormalFunction {
 			this.normalMap = normalMap;
 			this.centered = centered;
 			forceNormalCreation = true;
+			showExtrasOnly = false;
 		}
+		
+		@Override
+		public void showExtrasOnly(boolean showExtrasOnly) {
+			this.showExtrasOnly = showExtrasOnly;
+		}
+
+		@Override
+		public NormalMap setExtras(ExtraNormalFunction extras) {
+			this.extras = extras;
+			Debug.Assert(this.extras!=null);
+			return this;
+		}
+
 		@Override
 		public Normal getNormal(double x, double y, double width, double height) {
 			int xi = (int) Math.round(x + (centered ? (normalMap.width -width )/2 : 0));
 			int yi = (int) Math.round(y + (centered ? (normalMap.height-height)/2 : 0));
 			Normal n = normalMap.get(xi, yi);
-			return n==null && forceNormalCreation ? new Normal(0,0,1) : n;
+			if (n==null && forceNormalCreation) n = new Normal(0,0,1);
+			Normal n_ = n;
+			return ExtraNormalFunction.Host.getMergedNormal(x,y,width,height, showExtrasOnly, forceNormalCreation, extras, (x_,y_,w_,h_) -> n_);
 		}
 		@Override public void forceNormalCreation(boolean forceNormalCreation) {
 			this.forceNormalCreation = forceNormalCreation;
@@ -150,7 +168,7 @@ public interface NormalFunction {
 			double yi = y + (centered ? (mapHeight-height)/2 : 0);
 			int x0 = (int) Math.floor(xi); int x1 = x0+1;
 			int y0 = (int) Math.floor(yi); int y1 = y0+1;
-			Normal n = null;
+			Normal n;
 			if (-1<=x0 && x1<=mapWidth && -1<=y0 && y1<=mapHeight) {
 				Normal n00 = normalMap.get(x0,y0);
 				Normal n10 = normalMap.get(x1,y0);
@@ -172,8 +190,9 @@ public interface NormalFunction {
 					base.color = new Color(r,g,b);
 				}
 				n = base.toNormal().normalize();
-			}
-			return n==null && forceNormalCreation ? new Normal(0,0,1) : n;
+			} else
+				n = forceNormalCreation ? new Normal(0,0,1) : null;
+			return ExtraNormalFunction.Host.getMergedNormal(x,y,width,height, showExtrasOnly, forceNormalCreation, extras, (x_,y_,w_,h_) -> n);
 		}
 		
 		private static void addNormal(MutableNormal base, Normal n, double scale) {

@@ -4,10 +4,11 @@ import java.util.Vector;
 
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Filter;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Normal;
+import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalFunctionBase;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalXY;
 import net.schwarzbaer.image.bumpmapping.ExtraNormalFunction.Cart.AlphaChar.XRange;
 
-public interface ExtraNormalFunction {
+public interface ExtraNormalFunction extends NormalFunctionBase {
 
 	public static Normal merge(Normal n, Normal en) {
 		if (en==null) return  n;
@@ -23,62 +24,56 @@ public interface ExtraNormalFunction {
 		return en;
 	}
 	
-	public Normal  getNormal     (double x, double y, double width, double height);
 	public boolean isInsideBounds(double x, double y, double width, double height);
+	
+	public static class Centerer implements ExtraNormalFunction {
+		private Cart extras;
+		public Centerer(Cart extras) { this.extras = extras; Debug.Assert(this.extras!=null); }
+		@Override public Normal  getNormal     (double x, double y, double width, double height) { return extras.getNormal     (x-width/2, y-height/2); }
+		@Override public boolean isInsideBounds(double x, double y, double width, double height) { return extras.isInsideBounds(x-width/2, y-height/2); }
+	}
 	
 	public interface Host {
 		public void showExtrasOnly(boolean showExtrasOnly);
 		public Object setExtras(ExtraNormalFunction extras);
+		
+		public static Normal getMergedNormal(double x, double y, double width, double height, boolean showExtrasOnly, boolean forceNormalCreation, ExtraNormalFunction extras, NormalFunctionBase base) {
+			boolean showAll = !showExtrasOnly;
+			Normal n=null, en=null;
+			if (extras!=null                              ) en = extras.getNormal(x,y,width,height);
+			if (en!=null || showAll || forceNormalCreation) n = base.getNormal(x,y,width,height);
+			if (en!=null                                  ) n = merge( n, en );
+			if (forceNormalCreation && n==null            ) n = new Normal(0,0,1);
+			return n;
+		}
 	}
 	
 	public interface CartHost {
 		public void showExtrasOnly(boolean showExtrasOnly);
-		public Object setExtras(ExtraNormalFunction.Cart extras);
+		public Object setExtras(Cart extras);
 		
-		public static Normal getMergedNormal(double x, double y, boolean showExtrasOnly, boolean forceNormalCreation, ExtraNormalFunction.Cart extras, NormalFunction.CartBase base) {
+		public static Normal getMergedNormal(double x, double y, boolean showExtrasOnly, boolean forceNormalCreation, Cart extras, NormalFunction.CartBase base) {
 			boolean showAll = !showExtrasOnly;
-			
-			Normal n = null;
-			Normal en = null;
-			
-			if (extras!=null)
-				en = extras.getNormal(x,y);
-			
-			if (en!=null || showAll || forceNormalCreation)
-				n = base.getNormal(x,y);
-			
-			if (en!=null)
-				n = merge( n, en );
-			
-			if (forceNormalCreation && n==null)
-				n = new Normal(0,0,1);
-			
+			Normal n=null, en=null;
+			if (extras!=null                              ) en = extras.getNormal(x,y);
+			if (en!=null || showAll || forceNormalCreation) n = base.getNormal(x,y);
+			if (en!=null                                  ) n = merge( n, en );
+			if (forceNormalCreation && n==null            ) n = new Normal(0,0,1);
 			return n;
 		}
 	}
 	
 	public interface PolarHost {
 		public void showExtrasOnly(boolean showExtrasOnly);
-		public Object setExtras(ExtraNormalFunction.Polar extras);
+		public Object setExtras(Polar extras);
 		
-		public static Normal getMergedNormal(double w, double r, boolean showExtrasOnly, boolean forceNormalCreation, ExtraNormalFunction.Polar extras, NormalFunction.PolarBase base) {
+		public static Normal getMergedNormal(double w, double r, boolean showExtrasOnly, boolean forceNormalCreation, Polar extras, NormalFunction.PolarBase base) {
 			boolean showAll = !showExtrasOnly;
-			
-			Normal n = null;
-			Normal en = null;
-			
-			if (extras!=null)
-				en = extras.getNormal(w,r);
-			
-			if (en!=null || showAll || forceNormalCreation)
-				n = base.getNormal(w,r);
-			
-			if (en!=null)
-				n = merge( n, en );
-			
-			if (forceNormalCreation && n==null)
-				n = new Normal(0,0,1);
-			
+			Normal n=null, en=null;
+			if (extras!=null                              ) en = extras.getNormal(w,r);
+			if (en!=null || showAll || forceNormalCreation) n = base.getNormal(w,r);
+			if (en!=null                                  ) n = merge( n, en );
+			if (forceNormalCreation && n==null            ) n = new Normal(0,0,1);
 			return n;
 		}
 	}
@@ -285,9 +280,9 @@ public interface ExtraNormalFunction {
 					super(profile);
 					this.xC = xC;
 					this.yC = yC;
-					this.r = r;
+					this.r  =  r;
 					this.aStart = aStart;
-					this.aEnd = aEnd;
+					this.aEnd   = aEnd;
 					Debug.Assert(Double.isFinite(this.xC    ));
 					Debug.Assert(Double.isFinite(this.yC    ));
 					Debug.Assert(Double.isFinite(this.r     ));
@@ -295,20 +290,21 @@ public interface ExtraNormalFunction {
 					Debug.Assert(Double.isFinite(this.aEnd  ));
 					Debug.Assert(this.r>=0);
 					Debug.Assert(this.aStart<this.aEnd);
-					xS = r*Math.cos(this.aStart);
-					yS = r*Math.sin(this.aStart);
-					xE = r*Math.cos(this.aEnd);
-					yE = r*Math.sin(this.aEnd);
+					xS = this.r*Math.cos(this.aStart);
+					yS = this.r*Math.sin(this.aStart);
+					xE = this.r*Math.cos(this.aEnd);
+					yE = this.r*Math.sin(this.aEnd);
 					
-					double x1 = this.xC + this.r * Math.cos(this.aStart);
-					double y1 = this.yC + this.r * Math.sin(this.aStart);
-					double x2 = this.xC + this.r * Math.cos(this.aEnd);
-					double y2 = this.yC + this.r * Math.sin(this.aEnd);
+					double x1 = this.xC+xS;
+					double y1 = this.yC+yS;
+					double x2 = this.xC+xE;
+					double y2 = this.yC+yE;
+					double R = this.r+this.profile.maxR;
 					BoundingRectangle tempBounds = new BoundingRectangle(Math.min(x1,x2), Math.min(y1,y2), Math.max(x1,x2), Math.max(y1,y2));
-					if (BumpMapping.isInsideAngleRange(aStart, aEnd,        0  )) tempBounds = tempBounds.add(this.xC+this.r,this.yC);
-					if (BumpMapping.isInsideAngleRange(aStart, aEnd,  Math.PI  )) tempBounds = tempBounds.add(this.xC-this.r,this.yC);
-					if (BumpMapping.isInsideAngleRange(aStart, aEnd,  Math.PI/2)) tempBounds = tempBounds.add(this.xC,this.yC+this.r);
-					if (BumpMapping.isInsideAngleRange(aStart, aEnd, -Math.PI/2)) tempBounds = tempBounds.add(this.xC,this.yC-this.r);
+					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd,       0  )) tempBounds = tempBounds.add(this.xC+R,this.yC  );
+					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd, Math.PI  )) tempBounds = tempBounds.add(this.xC-R,this.yC  );
+					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd, Math.PI/2)) tempBounds = tempBounds.add(this.xC  ,this.yC+R);
+					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd,-Math.PI/2)) tempBounds = tempBounds.add(this.xC  ,this.yC-R);
 					bounds = tempBounds;
 				}
 				
@@ -497,7 +493,7 @@ public interface ExtraNormalFunction {
 				case 'M': return new Form[] { new PolyLine(0,100).add(0,0).add(35,60).add(70,0).add(70,100) };
 				case 'B': return new Form[] { new Line(0,0,0,100), new Line(0,0,20,0), new Line(0,40,20,40), new Line(0,100,20,100), new Arc(20,20,20,-Math.PI/2,Math.PI/2), new Arc(20,70,30,-Math.PI/2,Math.PI/2) };
 				}
-				return new Form[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100) };
+				return new Form[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100), new Line(0, 0,50,100), new Line(50, 0,0,100) };
 			}
 			
 			public void setScale(double scale) {
