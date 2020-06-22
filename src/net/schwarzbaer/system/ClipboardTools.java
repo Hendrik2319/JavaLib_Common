@@ -2,7 +2,9 @@ package net.schwarzbaer.system;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
 import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.image.BufferedImage;
@@ -15,14 +17,19 @@ import javax.activation.DataHandler;
 public class ClipboardTools {
 
 	public static boolean copyToClipBoard(BufferedImage image) {
-		return copyToClipBoard(new TransferableImage(image));
+		return copyToClipBoard(new TransferableImage(image), null);
 	}
 
 	public static boolean copyToClipBoard(String str) {
-		return copyToClipBoard(new DataHandler(str,"text/plain"));
+		return copyToClipBoard(new DataHandler(str,"text/plain"), null);
 	}
 
-	public static boolean copyToClipBoard(Transferable content) {
+	public static boolean copyStringSelectionToClipBoard(String str) {
+		StringSelection data = new StringSelection(str);
+		return copyToClipBoard(data,data);
+	}
+
+	public static boolean copyToClipBoard(Transferable content, ClipboardOwner owner) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
 		if (toolkit==null) return false;
 		Clipboard clipboard = toolkit.getSystemClipboard();
@@ -47,9 +54,26 @@ public class ClipboardTools {
 		
 	}
 
+	@SuppressWarnings("unused")
+	private static String getStringFromClipBoard_simple() {
+		Clipboard systemClip = Toolkit.getDefaultToolkit().getSystemClipboard();
+		if (systemClip.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+			try {
+				Object obj = systemClip.getData(DataFlavor.stringFlavor);
+				if ( (obj!=null) && (obj instanceof String))
+					return obj.toString();
+			}
+			catch (UnsupportedFlavorException ex) {}
+			catch (IOException ex) {}
+		}
+		return null;
+	}
+
 	public static String getStringFromClipBoard(boolean showOtherDataFlavors) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		if (toolkit==null) return null;
 		Clipboard clipboard = toolkit.getSystemClipboard();
+		if (clipboard==null) return null;
 		Transferable transferable = clipboard.getContents(null);
 		if (transferable==null) return null;
 		
