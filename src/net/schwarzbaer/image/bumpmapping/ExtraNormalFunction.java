@@ -1,7 +1,9 @@
 package net.schwarzbaer.image.bumpmapping;
 
+import java.util.HashMap;
 import java.util.Vector;
 
+import net.schwarzbaer.image.alphachar.Form;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Filter;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Normal;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.NormalFunctionBase;
@@ -395,20 +397,22 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 			private ProfileXY profile;
 			private String text;
 			private BoundingRectangle bounds;
+			private HashMap<Character, Form[]> font;
 
-			public AlphaCharSquence(double x, double y, double scale, ProfileXY profile, String text) {
+			public AlphaCharSquence(double x, double y, double scale, ProfileXY profile, String text, HashMap<Character,Form[]> font) {
 				super(null);
 				bounds = null;
-				set(x, y, scale, profile, text);
+				set(x, y, scale, profile, text, font);
 			}
 			@Override protected AlphaCharSquence getThis() { return this; }
 
-			public void set(double x, double y, double scale, ProfileXY profile, String text) {
+			public void set(double x, double y, double scale, ProfileXY profile, String text, HashMap<Character,Form[]> font) {
 				this.x = x;
 				this.y = y;
 				this.scale = scale;
 				this.profile = profile;
 				this.text = text;
+				this.font = font;
 				Debug.Assert(Double.isFinite(this.x));
 				Debug.Assert(Double.isFinite(this.y));
 				Debug.Assert(Double.isFinite(this.scale));
@@ -416,15 +420,17 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				Debug.Assert(this.profile!=null);
 				Debug.Assert(this.text!=null);
 				Debug.Assert(!this.text.isEmpty());
+				Debug.Assert(this.font!=null);
 				updateChars();
 			}
 
-			public void setX      (double x          ) { set(x, y, scale, profile, text); }
-			public void setY      (double y          ) { set(x, y, scale, profile, text); }
-			public void setPos    (double x, double y) { set(x, y, scale, profile, text); }
-			public void setScale  (double scale      ) { set(x, y, scale, profile, text); }
-			public void setProfile(ProfileXY profile ) { set(x, y, scale, profile, text); }
-			public void setText   (String text       ) { set(x, y, scale, profile, text); }
+			public void setX      (double x                      ) { set(x, y, scale, profile, text, font); }
+			public void setY      (double y                      ) { set(x, y, scale, profile, text, font); }
+			public void setPos    (double x, double y            ) { set(x, y, scale, profile, text, font); }
+			public void setScale  (double scale                  ) { set(x, y, scale, profile, text, font); }
+			public void setProfile(ProfileXY profile             ) { set(x, y, scale, profile, text, font); }
+			public void setText   (String text                   ) { set(x, y, scale, profile, text, font); }
+			public void setFont   (HashMap<Character,Form[]> font) { set(x, y, scale, profile, text, font); }
 
 			private void updateChars() {
 				elements.clear();
@@ -438,7 +444,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					if (!lastCharWasSpace) pos += charOffset;
 					lastCharWasSpace = false;
 					pos += profile.maxR;
-					AlphaChar alphaChar = new AlphaChar(pos, y, scale, profile, ch);
+					AlphaChar alphaChar = new AlphaChar(pos, y, scale, profile, font.get(ch));
 					XRange range = alphaChar.getRange();
 					pos += range.maxX + profile.maxR;
 					add(alphaChar);
@@ -446,7 +452,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					else bounds = bounds.add( alphaChar.getBoundingRectangle() );
 				}
 			}
-
+			
 			@Override
 			public Normal getNormal(double x, double y) {
 				for (AlphaChar alphaChar:elements)
@@ -467,11 +473,11 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 		public static class AlphaChar extends ProfileXYbasedLineElement.LineGroup {
 			
 			private XRange range;
-			private final Form[] lineSets;
+			private final LineForm[] lineSets;
 			private final double x,y;
 			private double scale;
 
-			public AlphaChar(double x, double y, double scale, ProfileXY profile, char letter) {
+			public AlphaChar(double x, double y, double scale, ProfileXY profile, Form[] forms) {
 				super(profile);
 				this.x = x;
 				this.y = y;
@@ -479,21 +485,35 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				Debug.Assert(Double.isFinite(this.x));
 				Debug.Assert(Double.isFinite(this.y));
 				Debug.Assert(Double.isFinite(this.scale));
-				lineSets = getLineSet(letter);
+				lineSets = getLineSet(forms);
 				updateLines();
 			}
 			
-			private static Form[] getLineSet(char letter) {
+			private static LineForm[] getLineSet(Form[] forms) {
+				if (forms==null)
+					return new LineForm[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100), new Line(0, 0,50,100), new Line(50, 0,0,100) };
+				
+				LineForm[] lineForms = new LineForm[forms.length];
+				for (int i=0; i<lineForms.length; i++) {
+					if (forms[i] instanceof Form.PolyLine) lineForms[i] = new PolyLine((Form.PolyLine) forms[i]);
+					if (forms[i] instanceof Form.Line    ) lineForms[i] = new Line    ((Form.Line    ) forms[i]);
+					if (forms[i] instanceof Form.Arc     ) lineForms[i] = new Arc     ((Form.Arc     ) forms[i]);
+				}
+				return lineForms;
+			}
+
+			@SuppressWarnings("unused")
+			private static LineForm[] getLineSet(char letter) {
 				//  top:   0
 				//  mid:  40
 				// base: 100
 				switch (letter) {
-				case 'X': return new Form[] { new Line(0, 0,50,100), new Line(50, 0,0,100) };
-				case 'x': return new Form[] { new Line(0,40,50,100), new Line(50,40,0,100) };
-				case 'M': return new Form[] { new PolyLine(0,100).add(0,0).add(35,60).add(70,0).add(70,100) };
-				case 'B': return new Form[] { new Line(0,0,0,100), new Line(0,0,20,0), new Line(0,40,20,40), new Line(0,100,20,100), new Arc(20,20,20,-Math.PI/2,Math.PI/2), new Arc(20,70,30,-Math.PI/2,Math.PI/2) };
+				case 'X': return new LineForm[] { new Line(0, 0,50,100), new Line(50, 0,0,100) };
+				case 'x': return new LineForm[] { new Line(0,40,50,100), new Line(50,40,0,100) };
+				case 'M': return new LineForm[] { new PolyLine(0,100).add(0,0).add(35,60).add(70,0).add(70,100) };
+				case 'B': return new LineForm[] { new Line(0,0,0,100), new Line(0,0,20,0), new Line(0,40,20,40), new Line(0,100,20,100), new Arc(20,20,20,-Math.PI/2,Math.PI/2), new Arc(20,70,30,-Math.PI/2,Math.PI/2) };
 				}
-				return new Form[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100), new Line(0, 0,50,100), new Line(50, 0,0,100) };
+				return new LineForm[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100), new Line(0, 0,50,100), new Line(50, 0,0,100) };
 			}
 			
 			public void setScale(double scale) {
@@ -505,7 +525,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 			private void updateLines() {
 				elements.clear();
 				range = null;
-				for (Form form:lineSets) {
+				for (LineForm form:lineSets) {
 					if (range==null) range = form.getXRange(scale);
 					else range = range.add(form.getXRange(scale));
 					form.addTo(this,x,y,scale);
@@ -516,7 +536,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				return range;
 			}
 
-			public interface Form {
+			public interface LineForm {
 				void addTo(ProfileXYbasedLineElement.LineGroup lineGroup, double x, double y, double scale);
 				XRange getXRange(double scale);
 			}
@@ -544,7 +564,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				}
 			}
 			
-			public static class PolyLine implements Form {
+			public static class PolyLine implements LineForm {
 				
 				private final Vector<Point> points;
 				private XRange range;
@@ -557,6 +577,14 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					range = new XRange(xStart,xStart);
 				}
 				
+				public PolyLine(Form.PolyLine polyLine) {
+					this(polyLine.getFirstX(),polyLine.getFirstY());
+					for (int i=1; i<polyLine.size(); ++i) {
+						Form.PolyLine.Point p = polyLine.get(i);
+						add(p.getX(),p.getY());
+					}
+				}
+
 				public PolyLine add(double x, double y) {
 					points.add(new Point(x,y));
 					range =  range.add(x);
@@ -583,9 +611,10 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				}
 			}
 			
-			public static class Line implements Form {
+			public static class Line implements LineForm {
 				private final double x1, y1, x2, y2;
 				private final XRange range;
+				public Line(Form.Line line) { this(line.x1,line.y1,line.x2,line.y2); }
 				public Line(double x1, double y1, double x2, double y2) {
 					this.x1 = x1;
 					this.y1 = y1;
@@ -602,9 +631,10 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 				@Override public XRange getXRange(double scale) { return range.mul(scale); }
 			}
 			
-			public static class Arc implements Form {
+			public static class Arc implements LineForm {
 				private final double xC,yC,r,aStart,aEnd;
 				private final XRange range;
+				public Arc(Form.Arc arc) { this(arc.xC,arc.yC,arc.r,arc.aStart,arc.aEnd); }
 				public Arc(double xC, double yC, double r, double aStart, double aEnd) {
 					this.xC     = xC;
 					this.yC     = yC;

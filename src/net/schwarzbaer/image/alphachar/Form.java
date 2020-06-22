@@ -19,6 +19,11 @@ public interface Form {
 			points.add(new Point(xStart,yStart));
 		}
 		
+		public Point get(int i) { return points.get(i); }
+		public int size() { return points.size(); }
+		public double getFirstX() { return points.get(0).x; }
+		public double getFirstY() { return points.get(0).y; }
+		
 		public PolyLine add(double x, double y) {
 			points.add(new Point(x,y));
 			return this;
@@ -38,14 +43,16 @@ public interface Form {
 		@Override public double[] getValues() { throw new UnsupportedOperationException(); }
 		@Override public PolyLine setValues(double[] values) { throw new UnsupportedOperationException(); }
 
-		private static class Point {
+		public static class Point {
 			double x,y;
 			private Point(double x, double y) { this.x = x; this.y = y; }
+			public double getX() { return x; }
+			public double getY() { return y; }
 		}
 	}
 	
 	public static class Line implements Form {
-		private double x1, y1, x2, y2;
+		public double x1, y1, x2, y2;
 		public Line() { this(0,0,0,0); }
 		public Line(double x1, double y1, double x2, double y2) {
 			this.x1 = x1;
@@ -67,7 +74,7 @@ public interface Form {
 	}
 	
 	public static class Arc implements Form {
-		private double xC,yC,r,aStart,aEnd;
+		public double xC,yC,r,aStart,aEnd;
 		public Arc() { this(0,0,0,0,0); }
 		public Arc(double xC, double yC, double r, double aStart, double aEnd) {
 			this.xC     = xC;
