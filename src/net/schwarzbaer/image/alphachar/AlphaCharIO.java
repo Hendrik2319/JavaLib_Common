@@ -27,6 +27,9 @@ public class AlphaCharIO {
 		writeAlphaCharToFile(file2, alphabet2);
 	}
 
+	public static HashMap<Character, Form[]> readDefaultAlphaCharFont() {
+		return readAlphaCharFont("default");
+	}
 	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName) {
 		return readAlphaCharFromResource(fontName+".AlphaCharFont");
 	}
