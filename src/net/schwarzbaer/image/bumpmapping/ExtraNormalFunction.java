@@ -581,7 +581,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					this(polyLine.getFirstX(),polyLine.getFirstY());
 					for (int i=1; i<polyLine.size(); ++i) {
 						Form.PolyLine.Point p = polyLine.get(i);
-						add(p.getX(),p.getY());
+						add(p.x,p.y);
 					}
 				}
 
