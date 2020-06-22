@@ -11,13 +11,17 @@ public interface Form {
 	double[] getValues();
 	Form setValues(double[] values);
 	
+	public interface Factory {
+		PolyLine createPolyLine(double[] values);
+		Line     createLine    (double[] values);
+		Arc      createArc     (double[] values);
+	}
+	
 	public static class PolyLine implements Form {
 		
 		private final Vector<Point> points;
-		public PolyLine(double xStart, double yStart) {
-			points = new Vector<>();
-			points.add(new Point(xStart,yStart));
-		}
+		public PolyLine() { points = new Vector<>(); }
+		public PolyLine(double xStart, double yStart) { this(); points.add(new Point(xStart,yStart)); }
 		
 		public Point get(int i) { return points.get(i); }
 		public int size() { return points.size(); }
@@ -29,19 +33,23 @@ public interface Form {
 			return this;
 		}
 		
-		public Line[] toLineArray() {
-			if (points.size()<=1) return new Line[0];
-			Line[] lines = new Line[points.size()-1];
-			for (int i=1; i<points.size(); ++i) {
-				Point p1 = points.get(i-1);
-				Point p2 = points.get(i);
-				lines[i-1] = new Line(p1.x, p1.y, p2.x, p2.y);
+		@Override public double[] getValues() {
+			double[] values = new double[points.size()*2];
+			for (int i=0; i<points.size(); i++) {
+				Point p = points.get(i);
+				values[i*2+0] = p.x;
+				values[i*2+1] = p.y;
 			}
-			return lines;
+			return values;
 		}
-		
-		@Override public double[] getValues() { throw new UnsupportedOperationException(); }
-		@Override public PolyLine setValues(double[] values) { throw new UnsupportedOperationException(); }
+		@Override public PolyLine setValues(double[] values) {
+			Assert(values!=null);
+			Assert((values.length&1)==0);
+			points.clear();
+			for (int i=0; i<values.length; i+=2)
+				points.add(new Point(values[i], values[i+1]));
+			return this;
+		}
 
 		public static class Point {
 			double x,y;

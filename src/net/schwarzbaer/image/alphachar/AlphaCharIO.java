@@ -23,34 +23,48 @@ public class AlphaCharIO {
 
 	public static void test(HashMap<Character, Form[]> alphabet1, File file1, File file2) {
 		writeAlphaCharToFile(file1, alphabet1);
-		HashMap<Character, Form[]> alphabet2 = readAlphaCharFromFile(file1);
+		HashMap<Character, Form[]> alphabet2 = readAlphaCharFromFile(file1,null);
 		writeAlphaCharToFile(file2, alphabet2);
 	}
 
-	public static HashMap<Character, Form[]> readDefaultAlphaCharFont() {
-		return readAlphaCharFont("default");
-	}
-	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName) {
-		return readAlphaCharFromResource(fontName+".AlphaCharFont");
+	public static void rewriteDefaultAlphaCharFont(File file) {
+		HashMap<Character, Form[]> alphabet2 = AlphaCharIO.readDefaultAlphaCharFont(null);
+		if (alphabet2==null)
+			System.out.println("No \"default\" font.");
+		else
+			AlphaCharIO.writeAlphaCharToFile(file, alphabet2);
 	}
 
-	public static HashMap<Character,Form[]> readAlphaCharFromResource(String resPath) {
+	public static HashMap<Character, Form[]> readDefaultAlphaCharFont(Form.Factory formFactory) {
+		return readAlphaCharFont("default",formFactory);
+	}
+	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName, Form.Factory formFactory) {
+		return readAlphaCharFromResource(fontName+".AlphaCharFont",formFactory);
+	}
+
+	public static HashMap<Character,Form[]> readAlphaCharFromResource(String resPath, Form.Factory formFactory) {
 		InputStream stream = AlphaCharIO.class.getResourceAsStream(resPath);
-		if (stream != null) return readAlphaCharFromFile(stream);
+		if (stream != null) return readAlphaCharFromFile(stream,formFactory);
 		return null;
 	}
 
-	public static HashMap<Character,Form[]> readAlphaCharFromFile(File file) {
+	public static HashMap<Character,Form[]> readAlphaCharFromFile(File file, Form.Factory formFactory) {
 		try (FileInputStream stream = new FileInputStream(file)) {
-			return readAlphaCharFromFile(stream);
+			return readAlphaCharFromFile(stream,formFactory);
 		}
 		catch (FileNotFoundException e) {  e.printStackTrace(); }
 		catch (IOException e) { e.printStackTrace(); }
 		return null;
 	}
 
-	public static HashMap<Character, Form[]> readAlphaCharFromFile(InputStream stream) {
+	public static HashMap<Character, Form[]> readAlphaCharFromFile(InputStream stream, Form.Factory formFactory) {
 		HashMap<Character, Form[]> alphabet = new HashMap<Character,Form[]>();
+		if (formFactory==null)
+			formFactory = new Form.Factory() {
+				@Override public Form.PolyLine createPolyLine(double[] values) { return new Form.PolyLine().setValues(values); }
+				@Override public Form.Line     createLine    (double[] values) { return new Form.Line    ().setValues(values); }
+				@Override public Form.Arc      createArc     (double[] values) { return new Form.Arc     ().setValues(values); }
+			};
 		
 		try (BufferedReader in = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
 			
@@ -64,8 +78,9 @@ public class AlphaCharIO {
 					Assert(value.length()==1);
 					ch = value.charAt(0);
 				}
-				if ( (value=getValue(line,"Line="))!=null ) forms.add(new Form.Line().setValues(toArray(value)));
-				if ( (value=getValue(line,"Arc=" ))!=null ) forms.add(new Form.Arc ().setValues(toArray(value)));
+				if ( (value=getValue(line,"PolyLine="))!=null ) forms.add(new Form.PolyLine().setValues(toArray(value)));
+				if ( (value=getValue(line,"Line="    ))!=null ) forms.add(new Form.Line    ().setValues(toArray(value)));
+				if ( (value=getValue(line,"Arc="     ))!=null ) forms.add(new Form.Arc     ().setValues(toArray(value)));
 				if (line.isEmpty()) { addTo(alphabet,ch,forms); ch = null; }
 			}
 			addTo(alphabet,ch,forms);
@@ -122,17 +137,11 @@ public class AlphaCharIO {
 	}
 
 	private static void writeForms(PrintWriter out, Form[] forms) {
-		for (Form form:forms)
-			if (form instanceof Form.PolyLine)
-				writeForms(out,((Form.PolyLine)form).toLineArray());
-			else
-				writeForm(out,form);
-	}
-
-	private static void writeForm(PrintWriter out, Form form) {
-		double[] values = form.getValues();
-		String name = form.getClass().getSimpleName();
-		String valuesStr = String.join(";", Arrays.stream(values).mapToObj(d->Double.toString(d)).toArray(String[]::new));
-		out.printf("%s=%s%n", name, valuesStr);
+		for (Form form:forms) {
+			double[] values = form.getValues();
+			String name = form.getClass().getSimpleName();
+			String valuesStr = String.join(";", Arrays.stream(values).mapToObj(d->Double.toString(d)).toArray(String[]::new));
+			out.printf("%s=%s%n", name, valuesStr);
+		}
 	}
 }
