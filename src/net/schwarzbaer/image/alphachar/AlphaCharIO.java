@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -26,9 +27,29 @@ public class AlphaCharIO {
 		writeAlphaCharToFile(file2, alphabet2);
 	}
 
+	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName) {
+		return readAlphaCharFromResource(fontName+".AlphaCharFont");
+	}
+
+	public static HashMap<Character,Form[]> readAlphaCharFromResource(String resPath) {
+		InputStream stream = AlphaCharIO.class.getResourceAsStream(resPath);
+		if (stream != null) return readAlphaCharFromFile(stream);
+		return null;
+	}
+
 	public static HashMap<Character,Form[]> readAlphaCharFromFile(File file) {
+		try (FileInputStream stream = new FileInputStream(file)) {
+			return readAlphaCharFromFile(stream);
+		}
+		catch (FileNotFoundException e) {  e.printStackTrace(); }
+		catch (IOException e) { e.printStackTrace(); }
+		return null;
+	}
+
+	public static HashMap<Character, Form[]> readAlphaCharFromFile(InputStream stream) {
 		HashMap<Character, Form[]> alphabet = new HashMap<Character,Form[]>();
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+		
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
 			
 			String line, value;
 			Character ch = null;
@@ -47,7 +68,6 @@ public class AlphaCharIO {
 			addTo(alphabet,ch,forms);
 			
 		}
-		catch (FileNotFoundException e) {}
 		catch (IOException e) { e.printStackTrace(); }
 		
 		return alphabet;
