@@ -14,19 +14,22 @@ import javax.activation.DataHandler;
 
 public class ClipboardTools {
 
-	public static void copyToClipBoard(BufferedImage image) {
-		copyToClipBoard(new TransferableImage(image));
+	public static boolean copyToClipBoard(BufferedImage image) {
+		return copyToClipBoard(new TransferableImage(image));
 	}
 
-	public static void copyToClipBoard(String str) {
-		copyToClipBoard(new DataHandler(str,"text/plain"));
+	public static boolean copyToClipBoard(String str) {
+		return copyToClipBoard(new DataHandler(str,"text/plain"));
 	}
 
-	public static void copyToClipBoard(Transferable content) {
+	public static boolean copyToClipBoard(Transferable content) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
+		if (toolkit==null) return false;
 		Clipboard clipboard = toolkit.getSystemClipboard();
+		if (clipboard==null) return false;
 		try { clipboard.setContents(content,null); }
-		catch (IllegalStateException e1) { e1.printStackTrace(); }
+		catch (IllegalStateException e1) { e1.printStackTrace(); return false; }
+		return true;
 	}
 
 	private static class TransferableImage implements Transferable {
