@@ -89,17 +89,17 @@ public class ClipboardTools {
 		
 		if (textFlavor==null) return null;
 		
-		Reader reader;
-		try { reader = textFlavor.getReaderForText(transferable); }
-		catch (UnsupportedFlavorException | IOException e) { return null; }
-		StringWriter sw = new StringWriter();
-		
-		int n; char[] cbuf = new char[100000];
-		try { while ((n=reader.read(cbuf))>=0) if (n>0) sw.write(cbuf, 0, n); }
-		catch (IOException e) {}
-		
-		try { reader.close(); } catch (IOException e) {}
-		return sw.toString();
+		try (Reader reader = textFlavor.getReaderForText(transferable);) {
+			
+			StringWriter sw = new StringWriter();
+			int n; char[] cbuf = new char[100000];
+			while ((n=reader.read(cbuf))>=0) if (n>0) sw.write(cbuf, 0, n);
+			return sw.toString();
+			
+		} catch (IOException | UnsupportedFlavorException e1) {
+			e1.printStackTrace();
+			return null;
+		}
 	}
 
 	private static String toString(DataFlavor[] dataFlavors) {
