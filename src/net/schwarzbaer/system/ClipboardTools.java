@@ -10,7 +10,7 @@ import java.io.StringWriter;
 
 import javax.activation.DataHandler;
 
-public class Clipboard {
+public class ClipboardTools {
 
 	public static void copyToClipBoard(String str) {
 		Toolkit toolkit = Toolkit.getDefaultToolkit();
