@@ -2,9 +2,6 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.io.IOException;
 import java.util.Enumeration;
@@ -32,6 +29,7 @@ import org.w3c.dom.Text;
 import org.xml.sax.SAXException;
 
 import net.schwarzbaer.gui.StandardMainWindow.DefaultCloseOperation;
+import net.schwarzbaer.system.ClipboardTools;
 
 public class NewXMLTreeView extends JTree {
 	private static final long serialVersionUID = -8743556098414758509L;
@@ -104,14 +102,7 @@ public class NewXMLTreeView extends JTree {
 	}
 	
 	public static boolean copyToClipBoard(String str) {
-		Toolkit toolkit = Toolkit.getDefaultToolkit();
-		if (toolkit==null) { return false; }
-		Clipboard clipboard = toolkit.getSystemClipboard();
-		if (clipboard==null) { return false; }
-		
-		StringSelection content = new StringSelection(str);
-		clipboard.setContents(content,content);
-		return true;
+		return ClipboardTools.copyToClipBoard(str);
 	}
 	
 	public class NodeContextMenu extends TreeContextMenu<DOMTreeNode> {
