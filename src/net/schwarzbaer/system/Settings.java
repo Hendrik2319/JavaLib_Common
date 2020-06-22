@@ -1,6 +1,8 @@
 package net.schwarzbaer.system;
 
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Point;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -39,6 +41,13 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	public Color   getColor (ValueKey key              ) { return new Color(getInt(key, Color.BLACK.getRGB()), true); }
 	public Color   getColor (ValueKey key, Color def   ) { return new Color(getInt(key,         def.getRGB()), true); }
 	public void    putColor (ValueKey key, Color value ) { putInt(key, value.getRGB()); }
+
+	public Dimension getDimension(ValueKey keyW, ValueKey keyH, int defW, int defH) { int w=getInt(keyW,defW); int h=getInt(keyH,defH); return new Dimension(w,h); }
+	public Dimension getDimension(ValueKey keyW, ValueKey keyH                    ) { int w=getInt(keyW     ); int h=getInt(keyH     ); return new Dimension(w,h); }
+	public void      putDimension(ValueKey keyW, ValueKey keyH, Dimension size    ) { putInt(keyW, size.width ); putInt(keyH, size.height); }
+	
+	public Point getPoint(ValueKey keyX, ValueKey keyY                ) { int x=getInt(keyX); int y=getInt(keyY); return new Point(x,y); }
+	public void  putPoint(ValueKey keyX, ValueKey keyY, Point location) { putInt(keyX, location.x); putInt(keyY, location.y); }
 
 
 	private boolean contains(String[] prefkeys, ValueKey key) {
