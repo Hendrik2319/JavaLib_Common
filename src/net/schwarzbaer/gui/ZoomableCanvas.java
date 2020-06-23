@@ -235,8 +235,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private float sphereRadius;
 		private float fixedMapScalingX;
 		private float fixedMapScalingY;
+		private float vAxisSign;
 
 		protected boolean debug_showChanges_scalePixelPerLength;
+
 
 		protected ViewState(ZoomableCanvas<?> canvas, float lowerZoomLimit) {
 			this.canvas = canvas;
@@ -248,6 +250,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			sphereRadius = Float.NaN;
 			fixedMapScalingX = 1;
 			fixedMapScalingY = 1;
+			vAxisSign = -1;
 			
 			debug_showChanges_scalePixelPerLength = false;
 		}
@@ -265,6 +268,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			this.sphereRadius     = Float.NaN;
 			this.fixedMapScalingX = fixedMapScalingX;
 			this.fixedMapScalingY = fixedMapScalingY;
+		}
+		
+		public void setVertAxisDownPositive(boolean vertAxisIsDownPositive) {
+			vAxisSign = !mapIsSpherical && vertAxisIsDownPositive ? 1 : -1;
 		}
 		
 		protected void clearValues() {
@@ -339,8 +346,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		boolean pan(Point offsetOnScreen) {
 			if (!isOk()) return false;
 			
-			center.latitude_y  -= convertLength_ScreenToAngle_LatY (-offsetOnScreen.y);
-			center.longitude_x -= convertLength_ScreenToAngle_LongX( offsetOnScreen.x);
+			center.latitude_y  -= convertLength_ScreenToAngle_LatY (vAxisSign*offsetOnScreen.y);
+			center.longitude_x -= convertLength_ScreenToAngle_LongX(          offsetOnScreen.x);
 			updateScaleLengthPerAngle();
 			
 			return true;
@@ -373,12 +380,12 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 		
 		public int convertPos_AngleToScreen_LongX(float longitude_x) {
-			float x = canvas.width /2f + convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
+			float x = canvas.width /2f +             convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
 			if (tempPanOffset!=null) x += tempPanOffset.x;
 			return Math.round(x);
 		}
 		public int convertPos_AngleToScreen_LatY (float latitude_y) {
-			float y = canvas.height/2f - convertLength_AngleToScreen_LatY (latitude_y  - center.latitude_y );
+			float y = canvas.height/2f + vAxisSign * convertLength_AngleToScreen_LatY (latitude_y  - center.latitude_y );
 			if (tempPanOffset!=null) y += tempPanOffset.y;
 			return Math.round(y);
 		}
@@ -393,11 +400,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 		public float convertPos_ScreenToAngle_LongX(int x) {
 			if (tempPanOffset!=null) x -= tempPanOffset.x;
-			return center.longitude_x + convertLength_ScreenToAngle_LongX(x - canvas.width /2f);
+			return center.longitude_x +             convertLength_ScreenToAngle_LongX(x - canvas.width /2f);
 		}
 		public float convertPos_ScreenToAngle_LatY(int y) {
 			if (tempPanOffset!=null) y -= tempPanOffset.y;
-			return center.latitude_y  - convertLength_ScreenToAngle_LatY(y - canvas.height/2f);
+			return center.latitude_y  + vAxisSign * convertLength_ScreenToAngle_LatY (y - canvas.height/2f);
 		}
 		public float convertLength_ScreenToAngle_LongX(float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLongX; }
 		public float convertLength_ScreenToAngle_LatY (float length_px) { return length_px / scalePixelPerLength / scaleLengthPerAngleLatY ; }
