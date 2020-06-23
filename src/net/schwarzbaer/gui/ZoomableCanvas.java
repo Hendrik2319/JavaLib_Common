@@ -27,6 +27,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	private boolean withLeftAxis;
 	
 	protected ZoomableCanvas() {
+		setPreferredSize(20,50);
+		
 		viewState = createViewState();
 		panStart = null;
 		
