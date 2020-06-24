@@ -78,9 +78,9 @@ public class AlphaCharIO {
 					Assert(value.length()==1);
 					ch = value.charAt(0);
 				}
-				if ( (value=getValue(line,"PolyLine="))!=null ) forms.add(new Form.PolyLine().setValues(toArray(value)));
-				if ( (value=getValue(line,"Line="    ))!=null ) forms.add(new Form.Line    ().setValues(toArray(value)));
-				if ( (value=getValue(line,"Arc="     ))!=null ) forms.add(new Form.Arc     ().setValues(toArray(value)));
+				if ( (value=getValue(line,"PolyLine="))!=null ) forms.add(formFactory.createPolyLine(toArray(value)));
+				if ( (value=getValue(line,"Line="    ))!=null ) forms.add(formFactory.createLine    (toArray(value)));
+				if ( (value=getValue(line,"Arc="     ))!=null ) forms.add(formFactory.createArc     (toArray(value)));
 				if (line.isEmpty()) { addTo(alphabet,ch,forms); ch = null; }
 			}
 			addTo(alphabet,ch,forms);
