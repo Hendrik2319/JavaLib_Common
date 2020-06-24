@@ -363,6 +363,9 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			}
 		}
 
+		public float convertLength_ScreenToLength(float length_px) {
+			return length_px / scalePixelPerLength;
+		}
 		public Integer convertLength_LengthToScreen(Float length_u) {
 			if (length_u==null || Float.isNaN(length_u)) return null;
 			return Math.round( length_u * scalePixelPerLength );
