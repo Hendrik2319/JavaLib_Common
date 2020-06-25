@@ -5,13 +5,14 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.geom.Rectangle2D;
 import java.util.Locale;
 
-import javax.swing.event.MouseInputAdapter;
-
-public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas {
+public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas implements MouseListener, MouseMotionListener, MouseWheelListener {
 	private static final long serialVersionUID = -1282219829667604150L;
 
 	protected VS viewState;
@@ -41,21 +42,20 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		withBottomAxis = false;
 		withLeftAxis = false;
 		
-		MouseInputAdapter mouse = new MouseInputAdapter() {
-			@Override public void mousePressed   (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) startPan  (e.getPoint()); }
-			@Override public void mouseDragged   (MouseEvent e) { proceedPan(e.getPoint());  }
-			@Override public void mouseReleased  (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) stopPan   (e.getPoint());  }
-			@Override public void mouseWheelMoved(MouseWheelEvent e) { zoom(e.getPoint(),e.getPreciseWheelRotation()); }
-			
-			@Override public void mouseEntered(MouseEvent e) { ZoomableCanvas.this.mouseEntered(e); }
-			@Override public void mouseMoved  (MouseEvent e) { ZoomableCanvas.this.mouseMoved  (e); }
-			@Override public void mouseExited (MouseEvent e) { ZoomableCanvas.this.mouseExited (e); }
-			@Override public void mouseClicked(MouseEvent e) { ZoomableCanvas.this.mouseClicked(e); }
-		};
-		addMouseListener(mouse);
-		addMouseMotionListener(mouse);
-		addMouseWheelListener(mouse);
+		addMouseListener(this);
+		addMouseMotionListener(this);
+		addMouseWheelListener(this);
 	}
+	@Override public void mousePressed   (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) startPan  (e.getPoint()); }
+	@Override public void mouseDragged   (MouseEvent e) { proceedPan(e.getPoint());  }
+	@Override public void mouseReleased  (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) stopPan   (e.getPoint());  }
+	@Override public void mouseWheelMoved(MouseWheelEvent e) { zoom(e.getPoint(),e.getPreciseWheelRotation()); }
+	
+	@Override public void mouseEntered(MouseEvent e) {}
+	@Override public void mouseMoved  (MouseEvent e) {}
+	@Override public void mouseExited (MouseEvent e) {}
+	@Override public void mouseClicked(MouseEvent e) {}
+	
 	protected abstract VS createViewState();
 	
 	protected void activateMapScale(Color color, String unit) {
@@ -88,11 +88,6 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		if (horizontalAxes!=null) horizontalAxes.setUnitScaling(horizUnitScaling);
 		updateAxes();
 	}
-	
-	protected void mouseEntered(MouseEvent e) {}
-	protected void mouseMoved  (MouseEvent e) {}
-	protected void mouseExited (MouseEvent e) {}
-	protected void mouseClicked(MouseEvent e) {}
 
 	public void reset() {
 		if (viewState.reset()) {
