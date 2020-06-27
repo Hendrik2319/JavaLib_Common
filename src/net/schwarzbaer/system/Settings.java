@@ -22,6 +22,8 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		return contains(valueGroup.getKeys());
 	}
 	
+	public void    remove   (ValueKey key               ) {        preferences.remove    (key.toString()       ); }
+	
 	public boolean getBool  (ValueKey key               ) { return preferences.getBoolean(key.toString(), true ); }
 	public boolean getBool  (ValueKey key, boolean def  ) { return preferences.getBoolean(key.toString(), def  ); }
 	public void    putBool  (ValueKey key, boolean value) {        preferences.putBoolean(key.toString(), value); }
