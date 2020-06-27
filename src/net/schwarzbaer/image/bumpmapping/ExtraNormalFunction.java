@@ -490,7 +490,7 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 			}
 			
 			private static LineForm[] getLineSet(Form[] forms) {
-				if (forms==null)
+				if (forms==null || forms.length==0)
 					return new LineForm[] { new PolyLine(0,100).add(0,0).add(50,0).add(50,100).add(0,100), new Line(0, 0,50,100), new Line(50, 0,0,100) };
 				
 				LineForm[] lineForms = new LineForm[forms.length];
