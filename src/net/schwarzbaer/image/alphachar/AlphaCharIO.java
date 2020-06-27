@@ -17,6 +17,8 @@ import java.util.Vector;
 
 public class AlphaCharIO {
 	
+	public static final String ALPHACHARFONT_EXTENSION = "AlphaCharFont";
+
 	private static void Assert(boolean condition) {
 		if (!condition) throw new IllegalStateException();
 	}
@@ -39,7 +41,7 @@ public class AlphaCharIO {
 		return readAlphaCharFont("default",formFactory,verbose);
 	}
 	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName, Form.Factory formFactory, boolean verbose) {
-		return readAlphaCharFontFromResource(fontName+".AlphaCharFont",formFactory,verbose);
+		return readAlphaCharFontFromResource(fontName+"."+ALPHACHARFONT_EXTENSION,formFactory,verbose);
 	}
 
 	public static HashMap<Character,Form[]> readAlphaCharFontFromResource(String resPath, Form.Factory formFactory, boolean verbose) {
