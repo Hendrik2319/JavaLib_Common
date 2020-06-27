@@ -22,42 +22,54 @@ public class AlphaCharIO {
 	}
 
 	public static void test(HashMap<Character, Form[]> alphabet1, File file1, File file2) {
-		writeAlphaCharToFile(file1, alphabet1);
-		HashMap<Character, Form[]> alphabet2 = readAlphaCharFromFile(file1,null);
-		writeAlphaCharToFile(file2, alphabet2);
+		writeAlphaCharToFile(file1, alphabet1, true);
+		HashMap<Character, Form[]> alphabet2 = readAlphaCharFontFromFile(file1, null, true);
+		writeAlphaCharToFile(file2, alphabet2, true);
 	}
 
 	public static void rewriteDefaultAlphaCharFont(File file) {
-		HashMap<Character, Form[]> alphabet2 = AlphaCharIO.readDefaultAlphaCharFont(null);
+		HashMap<Character, Form[]> alphabet2 = AlphaCharIO.readDefaultAlphaCharFont(null, true);
 		if (alphabet2==null)
 			System.out.println("No \"default\" font.");
 		else
-			AlphaCharIO.writeAlphaCharToFile(file, alphabet2);
+			AlphaCharIO.writeAlphaCharToFile(file, alphabet2, true);
 	}
 
-	public static HashMap<Character, Form[]> readDefaultAlphaCharFont(Form.Factory formFactory) {
-		return readAlphaCharFont("default",formFactory);
+	public static HashMap<Character, Form[]> readDefaultAlphaCharFont(Form.Factory formFactory, boolean verbose) {
+		return readAlphaCharFont("default",formFactory,verbose);
 	}
-	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName, Form.Factory formFactory) {
-		return readAlphaCharFromResource(fontName+".AlphaCharFont",formFactory);
+	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName, Form.Factory formFactory, boolean verbose) {
+		return readAlphaCharFontFromResource(fontName+".AlphaCharFont",formFactory,verbose);
 	}
 
-	public static HashMap<Character,Form[]> readAlphaCharFromResource(String resPath, Form.Factory formFactory) {
+	public static HashMap<Character,Form[]> readAlphaCharFontFromResource(String resPath, Form.Factory formFactory, boolean verbose) {
+		if (verbose) System.out.printf("Read AlphaChar Font from resource path \"%s\" ...%n", resPath);
 		InputStream stream = AlphaCharIO.class.getResourceAsStream(resPath);
-		if (stream != null) return readAlphaCharFromFile(stream,formFactory);
+		if (stream != null) {
+			HashMap<Character, Form[]> alphabet = readAlphaCharFontFromStream(stream,formFactory);
+			if (verbose) System.out.printf("... done%n");
+			return alphabet;
+		}
+		if (verbose) System.err.printf("Can't find resource path \"%s\".%n", resPath);
 		return null;
 	}
 
-	public static HashMap<Character,Form[]> readAlphaCharFromFile(File file, Form.Factory formFactory) {
+	public static HashMap<Character,Form[]> readAlphaCharFontFromFile(File file, Form.Factory formFactory, boolean verbose) {
+		if (verbose) System.out.printf("Read AlphaChar Font from file \"%s\" ...%n", file);
 		try (FileInputStream stream = new FileInputStream(file)) {
-			return readAlphaCharFromFile(stream,formFactory);
+			HashMap<Character, Form[]> alphabet = readAlphaCharFontFromStream(stream,formFactory);
+			if (verbose) System.out.printf("... done%n");
+			return alphabet;
 		}
-		catch (FileNotFoundException e) {  e.printStackTrace(); }
+		catch (FileNotFoundException e) {
+			if (verbose) System.err.printf("Can't find file \"%s\".%n", file);
+			e.printStackTrace();
+		}
 		catch (IOException e) { e.printStackTrace(); }
 		return null;
 	}
 
-	public static HashMap<Character, Form[]> readAlphaCharFromFile(InputStream stream, Form.Factory formFactory) {
+	public static HashMap<Character, Form[]> readAlphaCharFontFromStream(InputStream stream, Form.Factory formFactory) {
 		HashMap<Character, Form[]> alphabet = new HashMap<Character,Form[]>();
 		if (formFactory==null)
 			formFactory = new Form.Factory() {
@@ -119,7 +131,9 @@ public class AlphaCharIO {
 		return line;
 	}
 	
-	public static void writeAlphaCharToFile(File file, HashMap<Character,Form[]> alphabet) {
+	public static void writeAlphaCharToFile(File file, HashMap<Character,Form[]> alphabet, boolean verbose) {
+		if (verbose) System.out.printf("Write AlphaChar Font to file \"%s\" ...%n", file);
+		
 		try (PrintWriter out = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
 			
 			Vector<Character> keys = new Vector<>(alphabet.keySet());
@@ -134,6 +148,8 @@ public class AlphaCharIO {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+		
+		if (verbose) System.out.printf("... done%n");
 	}
 
 	private static void writeForms(PrintWriter out, Form[] forms) {
