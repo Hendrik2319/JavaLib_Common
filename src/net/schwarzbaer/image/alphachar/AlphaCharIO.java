@@ -37,7 +37,7 @@ public class AlphaCharIO {
 			AlphaCharIO.writeAlphaCharToFile(file, alphabet2, true);
 	}
 
-	public static HashMap<Character, Form[]> readDefaultAlphaCharFont(Form.Factory formFactory, boolean verbose) {
+	public static HashMap<Character,Form[]> readDefaultAlphaCharFont(Form.Factory formFactory, boolean verbose) {
 		return readAlphaCharFont("default",formFactory,verbose);
 	}
 	public static HashMap<Character,Form[]> readAlphaCharFont(String fontName, Form.Factory formFactory, boolean verbose) {
