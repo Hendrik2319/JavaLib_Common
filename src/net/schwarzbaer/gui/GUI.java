@@ -2,6 +2,7 @@
 package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -26,6 +27,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -365,6 +369,14 @@ public final class GUI {
 	public static <E> JComboBox<E> createComboBox_Gen( E[] items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
     }
+	public static <E> JComboBox<E> createComboBox_Gen( E[] items, int selected, boolean enabled, Consumer<E> action) {
+        JComboBox<E> comp = new JComboBox<E>( items );
+		return setComboBox_Gen( comp, selected, null, enabled, e->{
+			int i = comp.getSelectedIndex();
+			if (i<0) action.accept(null);
+			else action.accept(items[i]);
+		});
+	}
 	public static <E> JComboBox<E> createComboBox_Gen( Vector<E> items, int selected, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox_Gen( new JComboBox<E>( items ), selected, commandStr, enabled, actionListener);
     }
@@ -379,7 +391,7 @@ public final class GUI {
         return cmbBx;
 	}
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static JComboBox createComboBox( ComboBoxModel comboBoxModel, String commandStr, boolean enabled, ActionListener actionListener ) {
         return setComboBox( new JComboBox( comboBoxModel ), commandStr, enabled, actionListener);
     }
@@ -630,6 +642,48 @@ public final class GUI {
         textfield.setEnabled(enabled);
         return textfield;
     }
+
+    public static JTextField createTextField_Int(int initValue, int columns, Predicate<Integer> isOK, Consumer<Integer> action) {
+		Function<String, Integer> parse = str->{ try { return Integer.parseInt(str); } catch (NumberFormatException e) { return null; } };
+		return createTextField(Integer.toString(initValue), columns, true, parse, v->v!=null&&isOK.test(v), action);
+    }
+    public static JTextField createTextField_Double(double initValue, int columns, Predicate<Double> isOK, Consumer<Double> action) {
+		Function<String, Double> parse = str->{ try { return Double.parseDouble(str); } catch (NumberFormatException e) { return null; } };
+		return createTextField(Double.toString(initValue), columns, true, parse, v->v!=null&&isOK.test(v), action);
+    }
+    public static <V> JTextField createTextField(String text, int columns, boolean waitOnFinalInput, Function<String,V> parse, Predicate<V> isOK, Consumer<V> action) {
+    	return setTextField(new JTextField(text,columns), waitOnFinalInput, parse, isOK, action);
+    }
+    public static JTextField createTextField(String text, int columns, boolean waitOnFinalInput, Consumer<String> action) {
+    	return setTextField(new JTextField(text,columns), waitOnFinalInput, action);
+    }
+	public static JTextField createTextField(String text, int columns, Consumer<String> onChange, Consumer<String> onInput) {
+		return setTextField(new JTextField(text,columns), onChange, onInput);
+	}
+	public static <V> JTextField setTextField(JTextField comp, boolean waitOnFinalInput, Function<String, V> parse, Predicate<V> isOK, Consumer<V> action) {
+		Color defaultBG = comp.getBackground();
+		return setTextField(comp, waitOnFinalInput, (Consumer<String>) str->{
+			V value = parse.apply(str);
+		    if (isOK.test(value)) { action.accept(value); comp.setBackground(defaultBG); }
+		    else { comp.setBackground(Color.RED); }
+		});
+	}
+
+	public static JTextField setTextField(JTextField comp, boolean waitOnFinalInput, Consumer<String> action) {
+		return setTextField(comp, action, waitOnFinalInput ? null : action);
+	}
+	public static JTextField setTextField(JTextField comp, Consumer<String> onChange, Consumer<String> onInput) {
+		if (onChange!=null) {
+			comp.addActionListener(e->onChange.accept(comp.getText()));
+			comp.addFocusListener(new FocusListener() {
+				@Override public void focusLost(FocusEvent e) { onChange.accept(comp.getText()); }
+				@Override public void focusGained(FocusEvent e) {}
+			});
+		}
+		if (onInput!=null)
+			comp.addCaretListener(e->onInput.accept(comp.getText()));
+		return comp;
+	}
 
 //	public static class JTextField_HS extends JTextField {
 //		private static final long serialVersionUID = -1107252015179183026L;
