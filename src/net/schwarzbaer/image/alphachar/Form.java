@@ -19,7 +19,7 @@ public interface Form {
 	
 	public static class PolyLine implements Form {
 		
-		protected final Vector<Point> points;
+		public final Vector<Point> points;
 		public PolyLine() { points = new Vector<>(); }
 		public PolyLine(double xStart, double yStart) { this(); points.add(new Point(xStart,yStart)); }
 		
