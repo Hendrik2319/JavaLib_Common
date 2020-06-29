@@ -1,6 +1,9 @@
 package net.schwarzbaer.image.alphachar;
 
+import java.util.Locale;
 import java.util.Vector;
+
+import net.schwarzbaer.image.alphachar.Form.PolyLine.Point;
 
 public interface Form {
 	
@@ -53,7 +56,8 @@ public interface Form {
 
 		public static class Point {
 			public double x,y;
-			public Point(double x, double y) { this.x = x; this.y = y; }
+			public Point(double x, double y) { set(x,y); }
+			public void set(double x, double y) { this.x = x; this.y = y; }
 		}
 	}
 	
@@ -77,6 +81,29 @@ public interface Form {
 			this.y2 = values[3];
 			return this;
 		}
+		
+		public Point computePoint(double f) {
+			return new Point( x1*(1-f)+x2*f, y1*(1-f)+y2*f );
+		}
+		public LineDistance getDistance(double x, double y) {
+			return new LineDistance(x,y);
+		}
+		
+		public class LineDistance {
+			public final double r;
+			public final double f;
+			LineDistance(double x, double y) {
+				double length = Math.sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+				f =          ((x2-x1)*(x-x1)+(y2-y1)*(y-y1))/length/length; // cos(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|² -> (x1,y1) ..f.. (x2,y2)
+				r = Math.abs(((x2-x1)*(y-y1)-(y2-y1)*(x-x1))/length      ); // sin(a)*|x-x1,y-y1|*|x2-x1,y2-y1| / |x2-x1,y2-y1|  =  sin(a)*|x-x1,y-y1|  =  r
+			}
+			@Override
+			public String toString() {
+				return String.format(Locale.ENGLISH, "(r:%1.3f,f:%1.3f)", r, f);
+			}
+			
+		}
+		
 	}
 	
 	public static class Arc implements Form {
