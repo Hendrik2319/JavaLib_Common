@@ -794,9 +794,9 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 		
 		public static class BentCartExtra implements Polar {
 			
-			private double zeroYRadius;
-			private double zeroXAngle;
-			private final Cart extra;
+			protected double zeroYRadius;
+			protected double zeroXAngle;
+			protected final Cart extra;
 
 			public BentCartExtra(double zeroYRadius, double zeroXAngle, Cart extra) {
 				setZeroYRadius(zeroYRadius);
@@ -820,10 +820,6 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 
 			@Override
 			public Normal getNormal(double w, double r) {
-//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-//				double x = (w-zeroXAngle)*zeroYRadius;
-//				double y = zeroYRadius-r;
-//				Normal n = extra.getNormal(x,y);
 				Normal n = convert(w,r, extra::getNormal);
 				if (n!=null) n = n.rotateZ(w+Math.PI/2);
 				return n;
@@ -831,73 +827,54 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 
 			@Override
 			public boolean isInsideBounds(double w, double r) {
-//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-//				double x = (w-zeroXAngle)*zeroYRadius;
-//				double y = zeroYRadius-r;
-//				return extra.isInsideBounds(x,y);
 				return convert(w,r, extra::isInsideBounds);
 			}
 			
-			private <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
-				w = BumpMapping.normalizeAngle(zeroXAngle,w); // fdgfdg
-				double x = (w-zeroXAngle)*zeroYRadius; // fdgfdg
-				double y = zeroYRadius-r; // fdgfdg
-				return getCartValue.apply(x,y); // fdgfdg
+			protected <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
+				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+				double x = (w-zeroXAngle)*zeroYRadius;
+				double y = zeroYRadius-r;
+				return getCartValue.apply(x,y);
 			}
 			
 		}
 		
-		public static class SpiralBentCartExtra implements Polar {
+		public static class SpiralBentCartExtra extends BentCartExtra {
 			
-			private double zeroYRadius;
-			private double zeroXAngle;
-			private final Cart extra;
+			private double rowHeight;
+			private double radiusOffset;
 
-			public SpiralBentCartExtra(double zeroYRadius, double zeroXAngle, Cart extra) {
-				setZeroYRadius(zeroYRadius);
-				setZeroXAngle(zeroXAngle);
-				this.extra = extra;
-				Debug.Assert(this.extra!=null);
+			public SpiralBentCartExtra(double zeroYRadius, double zeroXAngle, double rowHeight, double radiusOffset, Cart extra) {
+				super(zeroYRadius, zeroXAngle, extra);
+				setRowHeight(rowHeight);
 			}
-
-			public double getZeroYRadius() { return zeroYRadius; }
-			public double getZeroXAngle () { return zeroXAngle ; }
 			
-			public void setZeroYRadius(double zeroYRadius) {
-				this.zeroYRadius = zeroYRadius;
-				Debug.Assert(Double.isFinite(this.zeroYRadius));
-				Debug.Assert(this.zeroYRadius>=0);
+			public double getRowHeight   () { return rowHeight   ; }
+			public double getRadiusOffset() { return radiusOffset; }
+			
+			public void setRowHeight(double rowHeight) {
+				this.rowHeight = rowHeight;
+				Debug.Assert(Double.isFinite(this.rowHeight));
+				Debug.Assert(this.rowHeight>0);
 			}
-			public void setZeroXAngle(double zeroXAngle) {
-				this.zeroXAngle  = zeroXAngle ;
-				Debug.Assert(Double.isFinite(this.zeroXAngle));
+			public void setRadiusOffset(double radiusOffset) {
+				this.radiusOffset = radiusOffset;
+				Debug.Assert(Double.isFinite(this.radiusOffset));
 			}
-
+			
 			@Override
-			public Normal getNormal(double w, double r) {
-//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-//				double x = (w-zeroXAngle)*zeroYRadius;
-//				double y = zeroYRadius-r;
-//				Normal n = extra.getNormal(x,y);
-				Normal n = convert(w,r, extra::getNormal);
-				if (n!=null) n = n.rotateZ(w+Math.PI/2);
-				return n;
-			}
-
-			@Override
-			public boolean isInsideBounds(double w, double r) {
-//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-//				double x = (w-zeroXAngle)*zeroYRadius;
-//				double y = zeroYRadius-r;
-//				return extra.isInsideBounds(x,y);
-				return convert(w,r, extra::isInsideBounds);
-			}
-			
-			private <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
-				w = BumpMapping.normalizeAngle(zeroXAngle,w); // fdgfdg
-				double x = (w-zeroXAngle)*zeroYRadius; // fdgfdg
-				double y = zeroYRadius-r; // fdgfdg
-				return getCartValue.apply(x,y); // fdgfdg
+			protected <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
+				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+				r = r-radiusOffset;
+				double rBase = zeroYRadius - (w-zeroXAngle)/2/Math.PI*rowHeight;
+				double i = Math.floor((rBase-r)/rowHeight);
+				
+				double y = rBase - i*rowHeight - r;
+				
+				double wx = w - zeroXAngle + i*2*Math.PI;
+				double x = wx*zeroYRadius - wx*wx/2 * rowHeight/2/Math.PI;
+				
+				return getCartValue.apply(x,y);
 			}
 			
 		}
