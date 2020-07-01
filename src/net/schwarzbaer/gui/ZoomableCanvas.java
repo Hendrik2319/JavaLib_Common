@@ -361,9 +361,15 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		public float convertLength_ScreenToLength(float length_px) {
 			return length_px / scalePixelPerLength;
 		}
+		
 		public Integer convertLength_LengthToScreen(Float length_u) {
+			Float length_px = convertLength_LengthToScreenF(length_u);
+			if (length_px==null) return null;
+			return Math.round( length_px );
+		}
+		public Float convertLength_LengthToScreenF(Float length_u) {
 			if (length_u==null || Float.isNaN(length_u)) return null;
-			return Math.round( length_u * scalePixelPerLength );
+			return length_u * scalePixelPerLength;
 		}
 
 		public Point convertPos_AngleToScreen(MapLatLong location) {
@@ -377,16 +383,21 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			);
 		}
 		
-		public int convertPos_AngleToScreen_LongX(float longitude_x) {
+		public float convertPos_AngleToScreen_LongXf(float longitude_x) {
 			float x = canvas.width /2f +             convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
 			if (tempPanOffset!=null) x += tempPanOffset.x;
-			return Math.round(x);
+			return x;
 		}
-		public int convertPos_AngleToScreen_LatY (float latitude_y) {
+
+		public float convertPos_AngleToScreen_LatYf(float latitude_y) {
 			float y = canvas.height/2f + vAxisSign * convertLength_AngleToScreen_LatY (latitude_y  - center.latitude_y );
 			if (tempPanOffset!=null) y += tempPanOffset.y;
-			return Math.round(y);
+			return y;
 		}
+
+		public int convertPos_AngleToScreen_LongX(float longitude_x) { return Math.round(convertPos_AngleToScreen_LongXf(longitude_x)); }
+		public int convertPos_AngleToScreen_LatY (float  latitude_y) { return Math.round(convertPos_AngleToScreen_LatYf ( latitude_y)); }
+
 		private float convertLength_AngleToScreen_LongX(float length_a) { return length_a * scaleLengthPerAngleLongX * scalePixelPerLength; }
 		private float convertLength_AngleToScreen_LatY (float length_a) { return length_a * scaleLengthPerAngleLatY  * scalePixelPerLength; }
 		
