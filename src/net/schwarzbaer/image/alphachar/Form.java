@@ -1,5 +1,6 @@
 package net.schwarzbaer.image.alphachar;
 
+import java.awt.geom.Point2D;
 import java.util.Locale;
 import java.util.Vector;
 
@@ -58,6 +59,7 @@ public interface Form {
 			public double x,y;
 			public Point(double x, double y) { set(x,y); }
 			public void set(double x, double y) { this.x = x; this.y = y; }
+			public void set(Point2D.Float p) { this.x = p.x; this.y = p.y; }
 		}
 	}
 	
