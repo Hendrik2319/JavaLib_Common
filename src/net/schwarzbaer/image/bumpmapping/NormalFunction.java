@@ -260,7 +260,7 @@ public interface NormalFunction extends NormalFunctionBase {
 			private boolean showExtrasOnly;
 		
 			public AbstractPolar() {
-				this.colorizer = null;
+				colorizer = null;
 				extras = null;
 				forceNormalCreation = false;
 			}
@@ -268,7 +268,6 @@ public interface NormalFunction extends NormalFunctionBase {
 		
 			public MyClass setColorizer(Colorizer.Polar colorizer) {
 				this.colorizer = colorizer;
-				Debug.Assert(this.colorizer!=null);
 				return getThis();
 			}
 			
@@ -284,7 +283,6 @@ public interface NormalFunction extends NormalFunctionBase {
 			@Override
 			public MyClass setExtras(ExtraNormalFunction.Polar extras) {
 				this.extras = extras;
-				Debug.Assert(this.extras!=null);
 				return getThis();
 			}
 		
