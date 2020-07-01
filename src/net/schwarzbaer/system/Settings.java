@@ -22,23 +22,23 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		return contains(valueGroup.getKeys());
 	}
 	
-	public void    remove   (ValueKey key               ) {        preferences.remove    (key.toString()       ); }
+	public void    remove   (ValueKey key               ) {        preferences.remove    (key.name()       ); }
 	
-	public boolean getBool  (ValueKey key               ) { return preferences.getBoolean(key.toString(), true ); }
-	public boolean getBool  (ValueKey key, boolean def  ) { return preferences.getBoolean(key.toString(), def  ); }
-	public void    putBool  (ValueKey key, boolean value) {        preferences.putBoolean(key.toString(), value); }
-	public float   getFloat (ValueKey key               ) { return preferences.getFloat  (key.toString(), 0    ); }
-	public float   getFloat (ValueKey key, float def    ) { return preferences.getFloat  (key.toString(), def  ); }
-	public void    putFloat (ValueKey key, float value  ) {        preferences.putFloat  (key.toString(), value); }
-	public double  getDouble(ValueKey key               ) { return preferences.getDouble (key.toString(), 0    ); }
-	public double  getDouble(ValueKey key, double def   ) { return preferences.getDouble (key.toString(), def  ); }
-	public void    putDouble(ValueKey key, double value ) {        preferences.putDouble (key.toString(), value); }
-	public int     getInt   (ValueKey key               ) { return preferences.getInt    (key.toString(), 0    ); }
-	public int     getInt   (ValueKey key, int def      ) { return preferences.getInt    (key.toString(), def  ); }
-	public void    putInt   (ValueKey key, int value    ) {        preferences.putInt    (key.toString(), value); }
-	public String  getString(ValueKey key               ) { return preferences.get       (key.toString(), null ); }
-	public String  getString(ValueKey key, String def   ) { return preferences.get       (key.toString(), def  ); }
-	public void    putString(ValueKey key, String value ) {        preferences.put       (key.toString(), value); }
+	public boolean getBool  (ValueKey key               ) { return preferences.getBoolean(key.name(), true ); }
+	public boolean getBool  (ValueKey key, boolean def  ) { return preferences.getBoolean(key.name(), def  ); }
+	public void    putBool  (ValueKey key, boolean value) {        preferences.putBoolean(key.name(), value); }
+	public float   getFloat (ValueKey key               ) { return preferences.getFloat  (key.name(), 0    ); }
+	public float   getFloat (ValueKey key, float def    ) { return preferences.getFloat  (key.name(), def  ); }
+	public void    putFloat (ValueKey key, float value  ) {        preferences.putFloat  (key.name(), value); }
+	public double  getDouble(ValueKey key               ) { return preferences.getDouble (key.name(), 0    ); }
+	public double  getDouble(ValueKey key, double def   ) { return preferences.getDouble (key.name(), def  ); }
+	public void    putDouble(ValueKey key, double value ) {        preferences.putDouble (key.name(), value); }
+	public int     getInt   (ValueKey key               ) { return preferences.getInt    (key.name(), 0    ); }
+	public int     getInt   (ValueKey key, int def      ) { return preferences.getInt    (key.name(), def  ); }
+	public void    putInt   (ValueKey key, int value    ) {        preferences.putInt    (key.name(), value); }
+	public String  getString(ValueKey key               ) { return preferences.get       (key.name(), null ); }
+	public String  getString(ValueKey key, String def   ) { return preferences.get       (key.name(), def  ); }
+	public void    putString(ValueKey key, String value ) { if (value==null) remove(key); else preferences.put(key.name(), value); }
 
 	public Color   getColor (ValueKey key              ) { return new Color(getInt(key, Color.BLACK.getRGB()), true); }
 	public Color   getColor (ValueKey key, Color def   ) { return new Color(getInt(key,         def.getRGB()), true); }
@@ -51,12 +51,21 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	public Point getPoint(ValueKey keyX, ValueKey keyY                ) { int x=getInt(keyX); int y=getInt(keyY); return new Point(x,y); }
 	public void  putPoint(ValueKey keyX, ValueKey keyY, Point location) { putInt(keyX, location.x); putInt(keyY, location.y); }
 
+	public <E extends Enum<E>> E    getEnum(ValueKey key       , Class<E> enumClass ) { return convert(getString(key,null),null, enumClass); }
+	public <E extends Enum<E>> E    getEnum(ValueKey key, E def, Class<E> enumClass ) { return convert(getString(key,null),def , enumClass); }
+	public <E extends Enum<E>> void putEnum(ValueKey key, E value ) { putString(key, value==null ? null : value.name()); }
+	
+	private <E extends Enum<E>> E convert(String string, E def, Class<E> enumClass) {
+		if (string==null) return def;
+		try { return Enum.valueOf(enumClass, string); }
+		catch (Exception e) { return def; }
+	}
 
 	private boolean contains(String[] prefkeys, ValueKey key) {
 		if (key==null) return true;
 		if (prefkeys==null) return false;
 		for (String prefkey:prefkeys)
-			if (prefkey.equals(key.toString()))
+			if (prefkey.equals(key.name()))
 				return true;
 		return false;
 	}
