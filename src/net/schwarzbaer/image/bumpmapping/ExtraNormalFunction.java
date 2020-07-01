@@ -293,21 +293,23 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					Debug.Assert(Double.isFinite(this.aEnd  ));
 					Debug.Assert(this.r>=0);
 					Debug.Assert(this.aStart<this.aEnd);
-					xS = this.r*Math.cos(this.aStart);
-					yS = this.r*Math.sin(this.aStart);
-					xE = this.r*Math.cos(this.aEnd);
-					yE = this.r*Math.sin(this.aEnd);
+					xS = this.xC+this.r*Math.cos(this.aStart);
+					yS = this.yC+this.r*Math.sin(this.aStart);
+					xE = this.xC+this.r*Math.cos(this.aEnd);
+					yE = this.yC+this.r*Math.sin(this.aEnd);
 					
-					double x1 = this.xC+xS;
-					double y1 = this.yC+yS;
-					double x2 = this.xC+xE;
-					double y2 = this.yC+yE;
+					double xMin = Math.min(xS,xE)-this.profile.maxR;
+					double yMin = Math.min(yS,yE)-this.profile.maxR;
+					double xMax = Math.max(xS,xE)+this.profile.maxR;
+					double yMax = Math.max(yS,yE)+this.profile.maxR;
+					BoundingRectangle tempBounds = new BoundingRectangle(xMin, yMin, xMax, yMax);
+					
 					double R = this.r+this.profile.maxR;
-					BoundingRectangle tempBounds = new BoundingRectangle(Math.min(x1,x2), Math.min(y1,y2), Math.max(x1,x2), Math.max(y1,y2));
 					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd,       0  )) tempBounds = tempBounds.add(this.xC+R,this.yC  );
 					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd, Math.PI  )) tempBounds = tempBounds.add(this.xC-R,this.yC  );
 					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd, Math.PI/2)) tempBounds = tempBounds.add(this.xC  ,this.yC+R);
 					if (BumpMapping.isInsideAngleRange(this.aStart,this.aEnd,-Math.PI/2)) tempBounds = tempBounds.add(this.xC  ,this.yC-R);
+					
 					bounds = tempBounds;
 				}
 				
@@ -319,8 +321,8 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 					if (Math.abs(dC.r-r)>profile.maxR) return null;
 					
 					if (BumpMapping.isInsideAngleRange(aStart, aEnd, dC.w)) {
-						if (dC.r>r) return new Distance(dC.r-r,  dC.w);
-						return             new Distance(r-dC.r, -dC.w);
+						if (dC.r>r) return new Distance(dC.r-r, dC.w);
+						return             new Distance(r-dC.r, dC.w+Math.PI);
 					}
 					Distance dS = Distance.compute(xS,yS,x,y);
 					Distance dE = Distance.compute(xE,yE,x,y);
