@@ -2,6 +2,7 @@ package net.schwarzbaer.image.bumpmapping;
 
 import java.util.HashMap;
 import java.util.Vector;
+import java.util.function.BiFunction;
 
 import net.schwarzbaer.image.alphachar.Form;
 import net.schwarzbaer.image.bumpmapping.BumpMapping.Filter;
@@ -819,20 +820,84 @@ public interface ExtraNormalFunction extends NormalFunctionBase {
 
 			@Override
 			public Normal getNormal(double w, double r) {
-				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-				double x = (w-zeroXAngle)*zeroYRadius;
-				double y = zeroYRadius-r;
-				Normal n = extra.getNormal(x,y);
+//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+//				double x = (w-zeroXAngle)*zeroYRadius;
+//				double y = zeroYRadius-r;
+//				Normal n = extra.getNormal(x,y);
+				Normal n = convert(w,r, extra::getNormal);
 				if (n!=null) n = n.rotateZ(w+Math.PI/2);
 				return n;
 			}
 
 			@Override
 			public boolean isInsideBounds(double w, double r) {
-				w = BumpMapping.normalizeAngle(zeroXAngle,w);
-				double x = (w-zeroXAngle)*zeroYRadius;
-				double y = zeroYRadius-r;
-				return extra.isInsideBounds(x,y);
+//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+//				double x = (w-zeroXAngle)*zeroYRadius;
+//				double y = zeroYRadius-r;
+//				return extra.isInsideBounds(x,y);
+				return convert(w,r, extra::isInsideBounds);
+			}
+			
+			private <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
+				w = BumpMapping.normalizeAngle(zeroXAngle,w); // fdgfdg
+				double x = (w-zeroXAngle)*zeroYRadius; // fdgfdg
+				double y = zeroYRadius-r; // fdgfdg
+				return getCartValue.apply(x,y); // fdgfdg
+			}
+			
+		}
+		
+		public static class SpiralBentCartExtra implements Polar {
+			
+			private double zeroYRadius;
+			private double zeroXAngle;
+			private final Cart extra;
+
+			public SpiralBentCartExtra(double zeroYRadius, double zeroXAngle, Cart extra) {
+				setZeroYRadius(zeroYRadius);
+				setZeroXAngle(zeroXAngle);
+				this.extra = extra;
+				Debug.Assert(this.extra!=null);
+			}
+
+			public double getZeroYRadius() { return zeroYRadius; }
+			public double getZeroXAngle () { return zeroXAngle ; }
+			
+			public void setZeroYRadius(double zeroYRadius) {
+				this.zeroYRadius = zeroYRadius;
+				Debug.Assert(Double.isFinite(this.zeroYRadius));
+				Debug.Assert(this.zeroYRadius>=0);
+			}
+			public void setZeroXAngle(double zeroXAngle) {
+				this.zeroXAngle  = zeroXAngle ;
+				Debug.Assert(Double.isFinite(this.zeroXAngle));
+			}
+
+			@Override
+			public Normal getNormal(double w, double r) {
+//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+//				double x = (w-zeroXAngle)*zeroYRadius;
+//				double y = zeroYRadius-r;
+//				Normal n = extra.getNormal(x,y);
+				Normal n = convert(w,r, extra::getNormal);
+				if (n!=null) n = n.rotateZ(w+Math.PI/2);
+				return n;
+			}
+
+			@Override
+			public boolean isInsideBounds(double w, double r) {
+//				w = BumpMapping.normalizeAngle(zeroXAngle,w);
+//				double x = (w-zeroXAngle)*zeroYRadius;
+//				double y = zeroYRadius-r;
+//				return extra.isInsideBounds(x,y);
+				return convert(w,r, extra::isInsideBounds);
+			}
+			
+			private <V> V convert(double w, double r, BiFunction<Double,Double,V> getCartValue) {
+				w = BumpMapping.normalizeAngle(zeroXAngle,w); // fdgfdg
+				double x = (w-zeroXAngle)*zeroYRadius; // fdgfdg
+				double y = zeroYRadius-r; // fdgfdg
+				return getCartValue.apply(x,y); // fdgfdg
 			}
 			
 		}
