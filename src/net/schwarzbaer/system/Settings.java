@@ -3,6 +3,7 @@ package net.schwarzbaer.system;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.io.File;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -43,6 +44,10 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	public Color   getColor (ValueKey key              ) { return new Color(getInt(key, Color.BLACK.getRGB()), true); }
 	public Color   getColor (ValueKey key, Color def   ) { return new Color(getInt(key,         def.getRGB()), true); }
 	public void    putColor (ValueKey key, Color value ) { putInt(key, value.getRGB()); }
+
+	public File    getFile  (ValueKey key              ) { return getFile(key,null); }
+	public File    getFile  (ValueKey key, File def    ) { String str = getString(key,null); if (str==null) return def ; return new File(str); }
+	public void    putFile  (ValueKey key, File value  ) { putString(key, value.getAbsolutePath()); }
 
 	public Dimension getDimension(ValueKey keyW, ValueKey keyH, int defW, int defH) { int w=getInt(keyW,defW); int h=getInt(keyH,defH); return new Dimension(w,h); }
 	public Dimension getDimension(ValueKey keyW, ValueKey keyH                    ) { int w=getInt(keyW     ); int h=getInt(keyH     ); return new Dimension(w,h); }
@@ -94,5 +99,30 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			if (!contains(prefkeys, key))
 				return false;
 		return true;
+	}
+	
+	public static class Global extends Settings<Global.ValueGroup,Global.ValueKey> {
+		
+		private static Global instance = null;
+		public static Global getInstance() {
+			if (instance==null)
+				instance = new Global();
+			return instance;
+		}
+
+		public enum ValueGroup implements Settings.GroupKeys<ValueKey> {
+			;
+			ValueKey[] keys;
+			ValueGroup(ValueKey...keys) { this.keys = keys;}
+			@Override public ValueKey[] getKeys() { return keys; }
+		}
+
+		public enum ValueKey {
+			VrmlViewer
+		}
+
+		public Global() {
+			super(Global.class);
+		}
 	}
 }
