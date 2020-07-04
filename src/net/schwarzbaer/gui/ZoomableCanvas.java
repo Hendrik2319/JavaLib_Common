@@ -58,11 +58,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	
 	protected abstract VS createViewState();
 	
-	protected void activateMapScale(Color color, String unit) {
-		activateMapScale(color, unit, 1);
-	}
-	protected void activateMapScale(Color color, String unit, float unitScaling) {
-		mapScale = new Scale(viewState, color, unit, unitScaling);
+	protected void activateMapScale(Color color, String unit                       ) { activateMapScale(color, unit,          1f,         false); }
+	protected void activateMapScale(Color color, String unit, float unitScaling    ) { activateMapScale(color, unit, unitScaling,         false); }
+	protected void activateMapScale(Color color, String unit, boolean showZoomValue) { activateMapScale(color, unit,          1f, showZoomValue); }
+	protected void activateMapScale(Color color, String unit, float unitScaling, boolean showZoomValue) {
+		mapScale = new Scale(viewState, color, unit, unitScaling, showZoomValue);
 	}
 	protected void activateAxes(Color color, boolean withTopAxis, boolean withRightAxis, boolean withBottomAxis, boolean withLeftAxis) {
 		activateAxes(color, withTopAxis, withRightAxis, withBottomAxis, withLeftAxis, 1, 1);
@@ -140,7 +140,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 
 	private void zoom(Point point, double preciseWheelRotation) {
 		float f = (float) Math.pow(1.1f, preciseWheelRotation);
-		if (viewState.zoom(point,f)) {
+		addZoom(point, f);
+	}
+	protected void addZoom(Point zoomCenter, float f) {
+		if (viewState.zoom(zoomCenter,f)) {
 			updateAxes();
 			updateMapScale();
 			repaint();
@@ -585,12 +588,15 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private Color scaleColor;
 		private String unit;
 		private float unitScaling;
+		private float zoomValue;
+		private boolean showZoomValue;
 	
-		Scale(ViewState viewState, Color scaleColor, String unit, float unitScaling) {
+		Scale(ViewState viewState, Color scaleColor, String unit, float unitScaling, boolean showZoomValue) {
 			this.viewState = viewState;
 			this.scaleColor = scaleColor;
 			this.unit = unit;
 			this.unitScaling = unitScaling;
+			this.showZoomValue = showZoomValue;
 			scaleLength_px = minScaleLength_px;
 			scaleLength_u = 1;
 		}
@@ -629,6 +635,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 					if (viewState.convertLength_LengthToScreen(base*0.10f/unitScaling) > minScaleLength_px) scaleLength_u = base*0.10f;
 				}
 			scaleLength_px = viewState.convertLength_LengthToScreen(scaleLength_u/unitScaling);
+			zoomValue = viewState.convertLength_LengthToScreenF(1f);
 		}
 		
 		private String getScaleLengthStr() {
@@ -653,14 +660,27 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			
 			g2.setColor(scaleColor);
 			
-			g2.drawLine(x+w, y  , x+w, y+h);
-			g2.drawLine(x+w, y+h, x+w-scaleLength_px, y+h);
-			g2.drawLine(x+w-scaleLength_px, y+h, x+w-scaleLength_px, y);
+			int x2 = x+w;
+			int y2 = y+h;
+			int x1 = x2-scaleLength_px;
+			g2.drawLine(x2, y , x2, y2);
+			g2.drawLine(x2, y2, x1, y2);
+			g2.drawLine(x1, y2, x1, y );
 			
 			String str = getScaleLengthStr();
 			Rectangle2D bounds = getBounds(g2, str);
 			
-			g2.drawString( str, (float)(x+w-bounds.getX()-bounds.getWidth()-3), (float)(y+h-bounds.getY()-bounds.getHeight()-3) );
+			float textX = (float)(x2-bounds.getX()-bounds.getWidth ()-3);
+			float textY = (float)(y2-bounds.getY()-bounds.getHeight()-3);
+			g2.drawString( str, textX, textY );
+			
+			if (showZoomValue) {
+				str = String.format(Locale.ENGLISH, "%1.1f%%", zoomValue*100);
+				Rectangle2D bounds2 = getBounds(g2, str);
+				float textX2 = (float)(x2-bounds2.getX()-bounds2.getWidth ()-3);
+				float textY2 = (float)(y -bounds2.getY()-bounds2.getHeight()-3);
+				g2.drawString( str, textX2, textY2 );
+			}
 		}
 	}
 }
