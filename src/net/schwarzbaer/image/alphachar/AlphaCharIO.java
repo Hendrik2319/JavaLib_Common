@@ -65,7 +65,7 @@ public class AlphaCharIO {
 		}
 		catch (FileNotFoundException e) {
 			if (verbose) System.err.printf("Can't find file \"%s\".%n", file);
-			e.printStackTrace();
+			//e.printStackTrace();
 		}
 		catch (IOException e) { e.printStackTrace(); }
 		return null;
