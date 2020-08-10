@@ -14,6 +14,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	
 	private BufferedImage image;
 	
+	public ImageView(int width, int height) { this(null, width, height); }
 	public ImageView(BufferedImage image, int width, int height) {
 		this.image = image;
 		setPreferredSize(width, height);
@@ -21,6 +22,11 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		activateAxes(COLOR_AXIS, true,true,true,true);
 	}
 	
+	public void setImage(BufferedImage image) {
+		this.image = image;
+		reset();
+	}
+
 	public void setZoom(float zoom) {
 		float currentZoom = viewState.convertLength_LengthToScreenF(1f);
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
@@ -31,24 +37,26 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		//g.setColor(COLOR_BACKGROUND);
 		//g.fillRect(x, y, width, height);
 		
-		if (g instanceof Graphics2D) {
+		if (g instanceof Graphics2D && viewState.isOk()) {
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setClip(x, y, width, height);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			
-			int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
-			int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
-			int imageWidth  = viewState.convertPos_AngleToScreen_LongX(image.getWidth ()) - imageX;
-			int imageHeight = viewState.convertPos_AngleToScreen_LatY (image.getHeight()) - imageY;
-			
-			g2.setColor(COLOR_AXIS);
-			g2.drawLine(imageX, y, imageX, y+height);
-			g2.drawLine(x, imageY, x+width, imageY);
-			g2.drawLine(imageX+imageWidth, y, imageX+imageWidth, y+height);
-			g2.drawLine(x, imageY+imageHeight, x+width, imageY+imageHeight);
-			
-			g2.drawImage(image, x+imageX, y+imageY, imageWidth+1, imageHeight+1, null);
+			if (image!=null) {
+				int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
+				int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
+				int imageWidth  = viewState.convertPos_AngleToScreen_LongX(image.getWidth ()) - imageX;
+				int imageHeight = viewState.convertPos_AngleToScreen_LatY (image.getHeight()) - imageY;
+				
+				g2.setColor(COLOR_AXIS);
+				g2.drawLine(imageX, y, imageX, y+height);
+				g2.drawLine(x, imageY, x+width, imageY);
+				g2.drawLine(imageX+imageWidth, y, imageX+imageWidth, y+height);
+				g2.drawLine(x, imageY+imageHeight, x+width, imageY+imageHeight);
+				
+				g2.drawImage(image, x+imageX, y+imageY, imageWidth+1, imageHeight+1, null);
+			}
 			
 			drawMapDecoration(g2, x, y, width, height);
 		}
