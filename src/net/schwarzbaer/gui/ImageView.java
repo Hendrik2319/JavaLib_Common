@@ -5,7 +5,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 
 public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private static final long serialVersionUID = 4779060880687788367L;
@@ -20,6 +26,14 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		setPreferredSize(width, height);
 		activateMapScale(COLOR_AXIS, "px", true);
 		activateAxes(COLOR_AXIS, true,true,true,true);
+		
+		ContextMenu contextMenu = new ContextMenu(this);
+		addMouseListener(new MouseAdapter() {
+			@Override public void mouseClicked(MouseEvent e) {
+				if (e.getButton()==MouseEvent.BUTTON3)
+					contextMenu.show(ImageView.this, e.getX(), e.getY());
+			}
+		});
 	}
 	
 	public void setImage(BufferedImage image) {
@@ -79,8 +93,34 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		protected void determineMinMax(MapLatLong min, MapLatLong max) {
 			min.longitude_x = (float) 0;
 			min.latitude_y  = (float) 0;
-			max.longitude_x = (float) image.getWidth();
-			max.latitude_y  = (float) image.getHeight();
+			max.longitude_x = (float) (image==null ? 100 : image.getWidth ());
+			max.latitude_y  = (float) (image==null ? 100 : image.getHeight());
 		}
+	}
+	
+	private static class ContextMenu extends JPopupMenu{
+		private static final long serialVersionUID = 4090306246829034171L;
+
+		public ContextMenu(ImageView imageView) {
+			add(createMenuItem("10%",e->imageView.setZoom(0.10f)));
+			add(createMenuItem("25%",e->imageView.setZoom(0.25f)));
+			add(createMenuItem("50%",e->imageView.setZoom(0.50f)));
+			add(createMenuItem("75%",e->imageView.setZoom(0.75f)));
+			addSeparator();
+			add(createMenuItem("100%",e->imageView.setZoom(1)));
+			addSeparator();
+			add(createMenuItem("150%",e->imageView.setZoom(1.5f)));
+			add(createMenuItem("200%",e->imageView.setZoom(2.0f)));
+			add(createMenuItem("300%",e->imageView.setZoom(3.0f)));
+			add(createMenuItem("400%",e->imageView.setZoom(4.0f)));
+			add(createMenuItem("600%",e->imageView.setZoom(6.0f)));
+		}
+
+		private JMenuItem createMenuItem(String title, ActionListener al) {
+			JMenuItem comp = new JMenuItem(title);
+			if (al!=null) comp.addActionListener(al);
+			return comp;
+		}
+		
 	}
 }
