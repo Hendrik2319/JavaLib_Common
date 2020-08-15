@@ -8,9 +8,9 @@ import java.util.Random;
 
 public class SteganographyContainer {
 	
-	private final BufferedImage image;
-	private final int width;
-	private final int height;
+	public final BufferedImage image;
+	public final int width;
+	public final int height;
 
 	public SteganographyContainer(BufferedImage image) {
 		this.image = image;
