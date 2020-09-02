@@ -2,10 +2,16 @@ package net.schwarzbaer.gui;
 
 import java.awt.Dimension;
 import java.awt.HeadlessException;
+import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Vector;
 
+import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -123,7 +129,30 @@ public class StandardMainWindow extends JFrame implements WindowListener {
     }
 
     public interface CloseListener {
-        public void windowClosing(WindowEvent e);
-    }
+	    public void windowClosing(WindowEvent e);
+	}
+
+	public void setIconImagesFromResource(String basePath, String... imageFileNames) {
+		if (basePath==null) basePath="";
+		if (imageFileNames.length==0) return;
+		
+		Vector<Image> icons = new Vector<>();
+		for (String name:imageFileNames) {
+			name = basePath+name;
+			try {
+				InputStream stream = getClass().getResourceAsStream(name);
+				if (stream==null) {
+					System.err.printf("Can't find application icon \"%s\" in resources.%n", name);
+					continue;
+				}
+				BufferedImage image = ImageIO.read(stream);
+				icons.add(image);
+			} catch (IOException e1) {
+				System.err.printf("Can't read application icon \"%s\" from resources: %s%n", name, e1.getMessage());
+			}
+		}
+		
+		setIconImages(icons);
+	}
 
 }
