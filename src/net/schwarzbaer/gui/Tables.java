@@ -778,6 +778,8 @@ public class Tables {
 		public Object getCellEditorValue() {
 			return currentValue;
 		}
+		
+		protected void updateAtEditStart() {}
 
 		@Override
 		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
@@ -796,6 +798,8 @@ public class Tables {
 				currentValue = cmbbx.getSelectedItem();
 				fireEditingStopped();
 			});
+			
+			updateAtEditStart();
 			
 			return cmbbx;
 		}
