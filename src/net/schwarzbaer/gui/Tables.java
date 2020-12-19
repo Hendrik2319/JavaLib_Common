@@ -779,11 +779,15 @@ public class Tables {
 			return currentValue;
 		}
 		
-		protected void updateAtEditStart() {}
+		protected void updateAtEditStart(int rowM, int columnM) {}
 
 		@Override
 		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
 			this.currentValue = value;
+			
+			int rowM    = table.convertRowIndexToModel(row);
+			int columnM = table.convertColumnIndexToModel(column);
+			updateAtEditStart(rowM,columnM);
 			
 			JComboBox<T> cmbbx;
 			if      (valueArray         !=null) cmbbx = new JComboBox<T>(valueArray);
@@ -798,8 +802,6 @@ public class Tables {
 				currentValue = cmbbx.getSelectedItem();
 				fireEditingStopped();
 			});
-			
-			updateAtEditStart();
 			
 			return cmbbx;
 		}

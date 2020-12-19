@@ -27,7 +27,7 @@ public class ImageSimilarity<ImageID> {
 		}
 		
 		int[] sortedIndexes = Arrays.stream(images)
-				.sorted(Comparator.comparing(img->img.similarity))
+				.sorted(Comparator.comparing(img->Double.isNaN(img.similarity) ? null : img.similarity, Comparator.nullsLast(Comparator.naturalOrder())))
 				.mapToInt(img->img.index)
 				.toArray();
 		return sortedIndexes;
@@ -45,6 +45,9 @@ public class ImageSimilarity<ImageID> {
 		}
 
 		private double computeSimilarityTo(ComparableImage other) {
+			if (this .raster==null) return Double.NaN;
+			if (other.raster==null) return Double.NaN;
+			
 			Rectangle bounds      = this .raster.getBounds();
 			Rectangle otherBounds = other.raster.getBounds();
 			if (!bounds.equals(otherBounds))
