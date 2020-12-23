@@ -6,6 +6,7 @@
 package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
@@ -15,7 +16,6 @@ import java.awt.Window;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
-import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -52,7 +52,7 @@ public class StandardDialog extends JDialog implements WindowListener {
 	@Override public void windowActivated   (WindowEvent e) { /*System.out.printf("[%08X] dialogActivated  \r\n", this.hashCode());*/ }
 	@Override public void windowDeactivated (WindowEvent e) { /*System.out.printf("[%08X] dialogDeactivated\r\n", this.hashCode());*/ }
 
-	public void createGUI( JComponent contentPane, AbstractButton... buttons ) {
+	public void createGUI( JComponent contentPane, Component... buttons ) {
 		
 		JPanel buttonPanel = new JPanel(new GridBagLayout());
 		GridBagConstraints c = new GridBagConstraints();
@@ -61,7 +61,7 @@ public class StandardDialog extends JDialog implements WindowListener {
 		c.weightx = 1;
 		buttonPanel.add(new JLabel(),c);
 		c.weightx = 0;
-		for (AbstractButton btn:buttons)
+		for (Component btn:buttons)
 			if (btn!=null) buttonPanel.add(btn,c);
 		
 		JPanel dlgContentPane = new JPanel(new BorderLayout(3,3));
