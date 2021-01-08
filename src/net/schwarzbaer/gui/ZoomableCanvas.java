@@ -291,6 +291,12 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		protected abstract void  determineMinMax(MapLatLong min, MapLatLong max);
 		
 		protected boolean reset() {
+			
+			if (canvas.width==0 || canvas.height==0) {
+				clearValues();
+				return false;
+			}
+			
 			MapLatLong min = new MapLatLong();
 			MapLatLong max = new MapLatLong();
 			determineMinMax(min, max);
