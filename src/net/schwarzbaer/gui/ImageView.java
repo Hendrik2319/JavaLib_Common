@@ -1,6 +1,7 @@
 package net.schwarzbaer.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -10,6 +11,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
+import javax.swing.Icon;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
@@ -19,10 +21,12 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	//private static final Color COLOR_BACKGROUND = Color.WHITE;
 	
 	private BufferedImage image;
+	private Color bgColor;
 	
 	public ImageView(int width, int height) { this(null, width, height); }
 	public ImageView(BufferedImage image, int width, int height) {
 		this.image = image;
+		bgColor = null;
 		setPreferredSize(width, height);
 		activateMapScale(COLOR_AXIS, "px", true);
 		activateAxes(COLOR_AXIS, true,true,true,true);
@@ -46,6 +50,11 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
 	}
 
+	public void setBgColor(Color bgColor) {
+		this.bgColor = bgColor;
+		repaint();
+	}
+	
 	@Override
 	protected void paintCanvas(Graphics g, int x, int y, int width, int height) {
 		//g.setColor(COLOR_BACKGROUND);
@@ -63,11 +72,16 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				int imageWidth  = viewState.convertPos_AngleToScreen_LongX(image.getWidth ()) - imageX;
 				int imageHeight = viewState.convertPos_AngleToScreen_LatY (image.getHeight()) - imageY;
 				
+				if (bgColor!=null) {
+					g2.setColor(bgColor);
+					g2.fillRect(x+imageX, y+imageY, imageWidth, imageHeight);
+				}
+				
 				g2.setColor(COLOR_AXIS);
-				g2.drawLine(imageX, y, imageX, y+height);
-				g2.drawLine(x, imageY, x+width, imageY);
-				g2.drawLine(imageX+imageWidth, y, imageX+imageWidth, y+height);
-				g2.drawLine(x, imageY+imageHeight, x+width, imageY+imageHeight);
+				g2.drawLine(x+imageX, y, x+imageX, y+height);
+				g2.drawLine(x, y+imageY, x+width, y+imageY);
+				g2.drawLine(x+imageX+imageWidth, y, x+imageX+imageWidth, y+height);
+				g2.drawLine(x, y+imageY+imageHeight, x+width, y+imageY+imageHeight);
 				
 				g2.drawImage(image, x+imageX, y+imageY, imageWidth+1, imageHeight+1, null);
 			}
@@ -114,12 +128,66 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			add(createMenuItem("300%",e->imageView.setZoom(3.0f)));
 			add(createMenuItem("400%",e->imageView.setZoom(4.0f)));
 			add(createMenuItem("600%",e->imageView.setZoom(6.0f)));
+			addSeparator();
+			add(createSetBgColorMenuItem(imageView,Color.BLACK  , "Set Background to Black"));
+			add(createSetBgColorMenuItem(imageView,Color.WHITE  , "Set Background to White"));
+			add(createSetBgColorMenuItem(imageView,Color.MAGENTA, "Set Background to Magenta"));
+			add(createSetBgColorMenuItem(imageView,Color.GREEN  , "Set Background to Green"));
+			add(createSetBgColorMenuItem(imageView,null         , "Remove Background Color"));
 		}
 
 		private JMenuItem createMenuItem(String title, ActionListener al) {
 			JMenuItem comp = new JMenuItem(title);
 			if (al!=null) comp.addActionListener(al);
 			return comp;
+		}
+
+		private JMenuItem createSetBgColorMenuItem(ImageView imageView, Color color, String title) {
+			JMenuItem comp = createMenuItem(title, e->imageView.setBgColor(color));
+			comp.setIcon(new ColorIcon(color,32,16,3));
+			return comp;
+		}
+
+		private static class ColorIcon implements Icon {
+		
+			private final Color color;
+			private final int width;
+			private final int height;
+			private final int cornerRadius;
+		
+			public ColorIcon(Color color, int width, int height, int cornerRadius) {
+				this.color = color;
+				this.width = width;
+				this.height = height;
+				this.cornerRadius = cornerRadius;
+			}
+			@Override public int getIconWidth () { return width;  }
+			@Override public int getIconHeight() { return height; }
+		
+			@Override
+			public void paintIcon(Component c, Graphics g, int x, int y) {
+				if (g instanceof Graphics2D) {
+					Graphics2D g2 = (Graphics2D) g;
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					if (color==null) {
+						g2.setColor(Color.BLACK);
+						g2.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
+					} else {
+						g2.setColor(color);
+						g2.fillRoundRect(x, y, width, height, cornerRadius*2, cornerRadius*2);
+					}
+				} else {
+					if (color==null) {
+						g.setColor(Color.BLACK);
+						g.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
+					} else {
+						g.setColor(color);
+						g.fillRoundRect(x, y, width, height, cornerRadius*2, cornerRadius*2);
+					}
+				}
+			}
+		
+		
 		}
 		
 	}
