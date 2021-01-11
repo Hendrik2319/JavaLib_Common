@@ -17,14 +17,17 @@ import javax.activation.DataHandler;
 public class ClipboardTools {
 
 	public static boolean copyToClipBoard(BufferedImage image) {
+		if (image==null) return false;
 		return copyToClipBoard(new TransferableImage(image), null);
 	}
 
 	public static boolean copyToClipBoard(String str) {
+		if (str==null) return false;
 		return copyToClipBoard(new DataHandler(str,"text/plain"), null);
 	}
 
 	public static boolean copyStringSelectionToClipBoard(String str) {
+		if (str==null) return false;
 		StringSelection data = new StringSelection(str);
 		return copyToClipBoard(data,data);
 	}
