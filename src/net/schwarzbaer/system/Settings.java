@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.io.File;
+import java.util.Collection;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -53,13 +54,17 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		return strings2file(getStrings(key, System.getProperty("path.separator")));
 	}
 
+	public void putFiles(ValueKey appSettingsKey, Collection<File> files) {
+		if (files==null) return;
+		putFiles(appSettingsKey, files.toArray(new File[files.size()]));
+	}
 	public void putFiles(ValueKey key, File... files) {
-		if (files==null) return; 
+		if (files==null) return;
 		putStrings(key, System.getProperty("path.separator"), files2strings(files));
 	}
 
 	public void addFiles(ValueKey key, File... files) {
-		if (files==null || files.length==0) return; 
+		if (files==null || files.length==0) return;
 		addStrings(key, System.getProperty("path.separator"), files2strings(files));
 	}
 
@@ -86,12 +91,12 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	}
 
 	public void putStrings(ValueKey key, String delimiter, String... strs) {
-		if (key==null) return; 
+		if (key==null || delimiter==null || strs==null) return; 
 		putString(key, String.join(delimiter,strs));
 	}
 
 	public void addStrings(ValueKey key, String delimiter, String... strs) {
-		if (delimiter==null || strs==null || strs.length==0) return;
+		if (key==null || delimiter==null || strs==null || strs.length==0) return;
 		String newStr = String.join(delimiter,strs);
 		String oldStr = getString(key,null);
 		if (oldStr==null) putString(key, newStr);
