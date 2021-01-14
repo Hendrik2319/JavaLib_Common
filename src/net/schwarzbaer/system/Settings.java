@@ -49,6 +49,55 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	public File    getFile  (ValueKey key, File def    ) { String str = getString(key,null); if (str==null) return def ; return new File(str); }
 	public void    putFile  (ValueKey key, File value  ) { putString(key, value.getAbsolutePath()); }
 
+	public File[] getFiles(ValueKey key) {
+		return strings2file(getStrings(key, System.getProperty("path.separator")));
+	}
+
+	public void putFiles(ValueKey key, File... files) {
+		if (files==null) return; 
+		putStrings(key, System.getProperty("path.separator"), files2strings(files));
+	}
+
+	public void addFiles(ValueKey key, File... files) {
+		if (files==null || files.length==0) return; 
+		addStrings(key, System.getProperty("path.separator"), files2strings(files));
+	}
+
+	public File[] strings2file(String[] filePaths) {
+		if (filePaths==null) return null;
+		File[] files = new File[filePaths.length];
+		for (int i=0; i<filePaths.length; i++)
+			files[i] = filePaths[i]==null ? null : new File(filePaths[i]);
+		return files;
+	}
+
+	public String[] files2strings(File[] files) {
+		if (files==null) return null;
+		String[] filePaths = new String[files.length];
+		for (int i=0; i<files.length; i++)
+			filePaths[i] = files[i]==null ? null : files[i].getAbsolutePath();
+		return filePaths;
+	}
+
+	public String[] getStrings(ValueKey key, String delimiter) {
+		String str = getString(key,null);
+		if (str!=null) return str.split(delimiter);
+		return null;
+	}
+
+	public void putStrings(ValueKey key, String delimiter, String... strs) {
+		if (key==null) return; 
+		putString(key, String.join(delimiter,strs));
+	}
+
+	public void addStrings(ValueKey key, String delimiter, String... strs) {
+		if (delimiter==null || strs==null || strs.length==0) return;
+		String newStr = String.join(delimiter,strs);
+		String oldStr = getString(key,null);
+		if (oldStr==null) putString(key, newStr);
+		else putString(key, oldStr+delimiter+newStr);
+	}
+
 	public Dimension getDimension(ValueKey keyW, ValueKey keyH, int defW, int defH) { int w=getInt(keyW,defW); int h=getInt(keyH,defH); return new Dimension(w,h); }
 	public Dimension getDimension(ValueKey keyW, ValueKey keyH                    ) { int w=getInt(keyW     ); int h=getInt(keyH     ); return new Dimension(w,h); }
 	public void      putDimension(ValueKey keyW, ValueKey keyH, Dimension size    ) { putInt(keyW, size.width ); putInt(keyH, size.height); }
