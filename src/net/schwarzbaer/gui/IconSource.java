@@ -2,6 +2,8 @@ package net.schwarzbaer.gui;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -141,6 +143,19 @@ public class IconSource<E extends Enum<E>> {
 		BufferedImage image = bufferedImage.getSubimage(x,y,w,h);
 		
 		return new ImageIcon(image);
+	}
+
+	public static Icon getScaledIcon(BufferedImage image, int width, int height) {
+		BufferedImage bufferedImage = getScaledImage(image, width, height);
+		return new ImageIcon(bufferedImage);
+	}
+
+	public static BufferedImage getScaledImage(BufferedImage image, int width, int height) {
+		BufferedImage bufferedImage = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g2 = bufferedImage.createGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g2.drawImage(image, 0, 0, width, height, null);
+		return bufferedImage;
 	}
 
 	public static Icon combine(Icon icon1, Icon icon2) {
