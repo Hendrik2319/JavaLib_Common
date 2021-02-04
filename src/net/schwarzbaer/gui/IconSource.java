@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumMap;
+import java.util.Vector;
 import java.util.function.Function;
 
 import javax.imageio.ImageIO;
@@ -178,22 +179,33 @@ public class IconSource<E extends Enum<E>> {
 		return new ImageIcon(bufferedImage);
 	}
 
-	public static Icon setSideBySide(Icon icon1, Icon icon2) {
-		return setSideBySide(icon1, icon2, false);
+	public static Icon setSideBySide(Icon... icons) {
+		return setSideBySide(false, 0, icons);
 	}
-
 	public static Icon setSideBySide(Icon icon1, Icon icon2, boolean verticallyCentered) {
-		if (icon1==null) return icon2;
-		if (icon2==null) return icon1;
+		return setSideBySide(verticallyCentered, 0, icon1, icon2);
+	}
+	public static Icon setSideBySide(boolean verticallyCentered, int hSpacing, Icon... icons) {
+		Vector<Icon> vec = new Vector<>();
+		for (Icon icon:icons) if (icon!=null) vec.add(icon);
+		if (vec.isEmpty()) return null;
+		if (vec.size()==1) return vec.firstElement();
 		
-		int width  = icon1.getIconWidth() + icon2.getIconWidth();
-		int height = Math.max( icon1.getIconHeight(), icon2.getIconHeight() );
-		int offsetY1 = !verticallyCentered ? 0 : Math.max( 0, (icon2.getIconHeight()-icon1.getIconHeight()) >> 1 );
-		int offsetY2 = !verticallyCentered ? 0 : Math.max( 0, (icon1.getIconHeight()-icon2.getIconHeight()) >> 1 );
+		int width = 0;
+		int height = 0;
+		for (Icon icon:vec) {
+			width += (width>0 ? hSpacing : 0) + icon.getIconWidth();
+			height = Math.max( height, icon.getIconHeight() );
+		}
+		
 		BufferedImage bufferedImage = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
 		Graphics g = bufferedImage.getGraphics();
-		icon1.paintIcon(null, g, 0,                    offsetY1);
-		icon2.paintIcon(null, g, icon1.getIconWidth(), offsetY2);
+		int pos = 0;
+		for (Icon icon:vec) {
+			int offsetY = !verticallyCentered ? 0 : ((height-icon.getIconHeight()) >> 1);
+			icon.paintIcon(null, g, pos, offsetY);
+			pos += icon.getIconWidth() + hSpacing;
+		}
 		
 		return new ImageIcon(bufferedImage);
 	}
