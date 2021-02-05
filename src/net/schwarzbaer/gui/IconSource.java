@@ -1,6 +1,7 @@
 package net.schwarzbaer.gui;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -214,6 +215,14 @@ public class IconSource<E extends Enum<E>> {
 		IconSource<E> source = new IconSource<E>(iconWidth,iconHeight);
 		source.readIconsFromResource(resourcePath);
 		return source.cacheIcons(keys);
+	}
+
+	public static Icon createEmptyIcon(int iconWidth, int iconHeight) {
+		return new Icon() {
+			@Override public void paintIcon(Component c, Graphics g, int x, int y) {}
+			@Override public int getIconWidth () { return iconWidth; }
+			@Override public int getIconHeight() { return iconHeight; }
+		};
 	}
 
 	private enum Dummy {}
