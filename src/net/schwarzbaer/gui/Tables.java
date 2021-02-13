@@ -714,53 +714,6 @@ public class Tables {
 		}
 	}
 	
-	public interface ComboboxCellRendererConfigurator {
-		static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
-		static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK);
-		
-		default void configureRendererComp(JList<?> list, int index, boolean isSelected, boolean hasFocus) {
-			if (index<0) {
-				setOpaque(false);
-				setForeground(list.getForeground());
-				if (isSelected) setBorder(DASHED_BORDER);
-				else            setBorder(EMPTY_BORDER);
-			} else {
-				if (hasFocus) setBorder(DASHED_BORDER);
-				else          setBorder(EMPTY_BORDER);
-				setOpaque(true);
-				if (isSelected) {
-					setBackground(list.getSelectionBackground());
-					setForeground(list.getSelectionForeground());
-				} else {
-					setBackground(list.getBackground());
-					setForeground(list.getForeground());
-				}
-			}
-		}
-
-		void setBorder(Border border);
-		void setOpaque(boolean isOpaque);
-		void setForeground(Color color);
-		void setBackground(Color color);
-		
-		static ComboboxCellRendererConfigurator create(JComponent rendererComp) {
-			return new ComboboxCellRendererConfigurator() {
-				@Override public void setBorder    (Border  border  ) { rendererComp.setBorder    (border  ); }
-				@Override public void setOpaque    (boolean isOpaque) { rendererComp.setOpaque    (isOpaque); }
-				@Override public void setForeground(Color   color   ) { rendererComp.setForeground(color   ); }
-				@Override public void setBackground(Color   color   ) { rendererComp.setBackground(color   ); }
-			};
-		}
-		static ComboboxCellRendererConfigurator create(Consumer<Border> setBorder, Consumer<Boolean> setOpaque, Consumer<Color> setForeground, Consumer<Color> setBackground) {
-			return new ComboboxCellRendererConfigurator() {
-				@Override public void setBorder    (Border  border  ) { setBorder    .accept(border  ); }
-				@Override public void setOpaque    (boolean isOpaque) { setOpaque    .accept(isOpaque); }
-				@Override public void setForeground(Color   color   ) { setForeground.accept(color   ); }
-				@Override public void setBackground(Color   color   ) { setBackground.accept(color   ); }
-			};
-		}
-	}
-	
 	public static class ComboboxCellEditor<T> extends AbstractCellEditor implements TableCellEditor {
 		private static final long serialVersionUID = 8936989376730045132L;
 
@@ -915,33 +868,96 @@ public class Tables {
 		}
 	}
 
+	public interface RendererConfigurator {
+		static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
+		static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK);
+		
+		default void configureAsTableCRC(JTable table, boolean isSelected, boolean hasFocus) {
+			configureAsTableCRC(table, isSelected, hasFocus, null, null);
+		}
+		default void configureAsTableCRC(JTable table, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+			setOpaque(true);
+			if (isSelected) {
+				setBackground(table.getSelectionBackground());
+				setForeground(table.getSelectionForeground());
+			} else {
+				Color background = getCustomBackground==null ? null : getCustomBackground.get();
+				Color foreground = getCustomForeground==null ? null : getCustomForeground.get();
+				setBackground(background==null ? table.getBackground() : background);
+				setForeground(foreground==null ? table.getForeground() : foreground);
+			}
+		}
+		default void configureAsListCRC(JList<?> list, int index, boolean isSelected, boolean hasFocus) {
+			configureAsListCRC(list, index, isSelected, hasFocus, null, null);
+		}
+		default void configureAsListCRC(JList<?> list, int index, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			if (index<0) {
+				setOpaque(false);
+				setForeground(list.getForeground());
+				setBorder(isSelected ? DASHED_BORDER : EMPTY_BORDER);
+			} else {
+				setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
+				setOpaque(true);
+				if (isSelected) {
+					setBackground(list.getSelectionBackground());
+					setForeground(list.getSelectionForeground());
+				} else {
+					Color background = getCustomBackground==null ? null : getCustomBackground.get();
+					Color foreground = getCustomForeground==null ? null : getCustomForeground.get();
+					setBackground(background==null ? list.getBackground() : background);
+					setForeground(foreground==null ? list.getForeground() : foreground);
+				}
+			}
+		}
+	
+		void setBorder(Border border);
+		void setOpaque(boolean isOpaque);
+		void setForeground(Color color);
+		void setBackground(Color color);
+		
+		static RendererConfigurator create(JComponent rendererComp) {
+			return new RendererConfigurator() {
+				@Override public void setBorder    (Border  border  ) { rendererComp.setBorder    (border  ); }
+				@Override public void setOpaque    (boolean isOpaque) { rendererComp.setOpaque    (isOpaque); }
+				@Override public void setForeground(Color   color   ) { rendererComp.setForeground(color   ); }
+				@Override public void setBackground(Color   color   ) { rendererComp.setBackground(color   ); }
+			};
+		}
+		static RendererConfigurator create(Consumer<Border> setBorder, Consumer<Boolean> setOpaque, Consumer<Color> setForeground, Consumer<Color> setBackground) {
+			return new RendererConfigurator() {
+				@Override public void setBorder    (Border  border  ) { setBorder    .accept(border  ); }
+				@Override public void setOpaque    (boolean isOpaque) { setOpaque    .accept(isOpaque); }
+				@Override public void setForeground(Color   color   ) { setForeground.accept(color   ); }
+				@Override public void setBackground(Color   color   ) { setBackground.accept(color   ); }
+			};
+		}
+	}
+
 	public static class CheckBoxRendererComponent extends JCheckBox {
 		private static final long serialVersionUID = -1094682628853018055L;
-		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
-		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
-		private ComboboxCellRendererConfigurator rendConf;
+		private RendererConfigurator rendConf;
 		
 		public CheckBoxRendererComponent() {
-			rendConf = ComboboxCellRendererConfigurator.create(this);
+			rendConf = RendererConfigurator.create(this);
 		}
 		
 		public void configureAsTableCellRendererComponent(JTable table, boolean isChecked, String valueStr, boolean isSelected, boolean hasFocus) {
+			configureAsTableCellRendererComponent(table, isChecked, valueStr, isSelected, hasFocus, null, null);
+		}
+		public void configureAsTableCellRendererComponent(JTable table, boolean isChecked, String valueStr, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			rendConf.configureAsTableCRC(table, isSelected, hasFocus, getCustomForeground, getCustomBackground);
 			setSelected(isChecked);
 			setText(valueStr);
-			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
-			setOpaque(true);
-			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 		}
 		
 		public void configureAsListCellRendererComponent(JList<?> list, boolean isChecked, String valueStr, int index, boolean isSelected, boolean hasFocus) {
-			rendConf.configureRendererComp(list, index, isSelected, hasFocus);
+			configureAsListCellRendererComponent(list, isChecked, valueStr, index, isSelected, hasFocus, null, null);
+		}
+		public void configureAsListCellRendererComponent(JList<?> list, boolean isChecked, String valueStr, int index, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			rendConf.configureAsListCRC(list, index, isSelected, hasFocus, getCustomForeground, getCustomBackground);
 			setSelected(isChecked);
 			setText(valueStr);
-			//setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
-			//setOpaque(isSelected);
-			//setBackground(isSelected ? list.getSelectionBackground() : null);
-			//setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
 		}
 
 		@Override public void revalidate() {}
@@ -966,31 +982,28 @@ public class Tables {
 
 	public static class LabelRendererComponent extends JLabel {
 		private static final long serialVersionUID = -4524101782848184348L;
-		private static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK, 1, 1);
-		private static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
-		private ComboboxCellRendererConfigurator rendConf;
+		private RendererConfigurator rendConf;
 		
 		public LabelRendererComponent() {
-			rendConf = ComboboxCellRendererConfigurator.create(this);
+			rendConf = RendererConfigurator.create(this);
 		}
 		
 		public void configureAsTableCellRendererComponent(JTable table, Icon icon, String valueStr, boolean isSelected, boolean hasFocus) {
+			configureAsTableCellRendererComponent(table, icon, valueStr, isSelected, hasFocus, null, null);
+		}
+		public void configureAsTableCellRendererComponent(JTable table, Icon icon, String valueStr, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsTableCRC(table, isSelected, hasFocus, getCustomForeground, getCustomBackground);
 			setIcon(icon);
 			setText(valueStr);
-			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
-			setOpaque(true);
-			setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-			setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 		}
 		
 		public void configureAsListCellRendererComponent(JList<?> list, Icon icon, String valueStr, int index, boolean isSelected, boolean hasFocus) {
-			rendConf.configureRendererComp(list, index, isSelected, hasFocus);
+			configureAsListCellRendererComponent(list, icon, valueStr, index, isSelected, hasFocus, null, null);
+		}
+		public void configureAsListCellRendererComponent(JList<?> list, Icon icon, String valueStr, int index, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsListCRC(list, index, isSelected, hasFocus, getCustomForeground, getCustomBackground);
 			setIcon(icon);
 			setText(valueStr);
-			//setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
-			//setOpaque(isSelected);
-			//setBackground(isSelected ? list.getSelectionBackground() : null);
-			//setForeground(isSelected ? list.getSelectionForeground() : list.getForeground());
 		}
 
 		@Override public void revalidate() {}
