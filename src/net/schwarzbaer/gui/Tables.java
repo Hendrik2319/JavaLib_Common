@@ -19,6 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -709,6 +710,44 @@ public class Tables {
 			comp.setOpaque(true);
 			comp.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
 			comp.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		}
+	}
+	
+	public interface ComboboxCellRendererConfigurator {
+		static final Border EMPTY_BORDER  = BorderFactory.createEmptyBorder(1,1,1,1);
+		static final Border DASHED_BORDER = BorderFactory.createDashedBorder(Color.BLACK);
+		
+		default void configureRendererComp(JList<?> list, int index, boolean isSelected, boolean hasFocus) {
+			if (index<0) {
+				setOpaque(false);
+				setForeground(list.getForeground());
+				if (isSelected) setBorder(DASHED_BORDER);
+				else            setBorder(EMPTY_BORDER);
+			} else {
+				setBorder(EMPTY_BORDER);
+				setOpaque(true);
+				if (isSelected) {
+					setBackground(list.getSelectionBackground());
+					setForeground(list.getSelectionForeground());
+				} else {
+					setBackground(list.getBackground());
+					setForeground(list.getForeground());
+				}
+			}
+		}
+
+		void setBorder(Border border);
+		void setOpaque(boolean isOpaque);
+		void setForeground(Color color);
+		void setBackground(Color color);
+		
+		static ComboboxCellRendererConfigurator create(Consumer<Border> setBorder, Consumer<Boolean> setOpaque, Consumer<Color> setForeground, Consumer<Color> setBackground) {
+			return new ComboboxCellRendererConfigurator() {
+				@Override public void setBorder    (Border  border  ) { setBorder    .accept(border  ); }
+				@Override public void setOpaque    (boolean isOpaque) { setOpaque    .accept(isOpaque); }
+				@Override public void setForeground(Color   color   ) { setForeground.accept(color   ); }
+				@Override public void setBackground(Color   color   ) { setBackground.accept(color   ); }
+			};
 		}
 	}
 	
