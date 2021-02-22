@@ -80,9 +80,8 @@ public class ProgressDialog extends StandardDialog {
 					monitorObj.notifyAll();
 				}
 			}
-			@Override public void windowClosed(WindowEvent e) {
-				cancel();
-			}
+			@Override public void windowClosed (WindowEvent e) { cancel(); }
+			@Override public void windowClosing(WindowEvent e) { cancel(); }
 		});
 		
 		JPanel progressbarPane = new JPanel(new BorderLayout(3,3));
@@ -182,7 +181,7 @@ public class ProgressDialog extends StandardDialog {
 	}
 
 	private void cancel() {
-		for (CancelListener cl:cancelListeners) cl.cancelTask();
+		if (!canceled) for (CancelListener cl:cancelListeners) cl.cancelTask();
 		canceled = true;
 	}
 
