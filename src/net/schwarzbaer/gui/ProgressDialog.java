@@ -5,9 +5,12 @@ import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Vector;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
@@ -20,7 +23,10 @@ public class ProgressDialog extends StandardDialog {
 	private static final long serialVersionUID = 1401683964054921965L;
 
 	public static void runWithProgressDialog(Window parent, String title, int minWidth, Consumer<ProgressDialog> useProgressDialog) {
-		ProgressDialog pd = new ProgressDialog(parent,title,minWidth);
+		runWithProgressDialog(parent, title, minWidth, false, useProgressDialog);
+	}
+	public static void runWithProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Consumer<ProgressDialog> useProgressDialog) {
+		ProgressDialog pd = new ProgressDialog(parent,title,minWidth,allowSwitchToBackground);
 		Thread thread = new Thread(()->{
 			pd.waitUntilDialogIsVisible();
 			useProgressDialog.accept(pd);
@@ -31,18 +37,20 @@ public class ProgressDialog extends StandardDialog {
 		pd.showDialog();
 	}
 	
+	private final int minWidth;
+	private final boolean allowSwitchToBackground;
+	private final Vector<CancelListener> cancelListeners;
 	private JLabel taskTitle;
 	private JProgressBar progressbar;
-	private Vector<CancelListener> cancelListeners;
 	private boolean canceled;
 	private boolean wasOpened;
-	private String monitorObj;
-	private int minWidth;
+	private final String monitorObj;
 	private ProgressDisplay progressDisplay;
 	
-	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality) {
+	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality, boolean allowSwitchToBackground) {
 		super(parent, title, modality);
 		this.minWidth = minWidth;
+		this.allowSwitchToBackground = allowSwitchToBackground;
 		createGUI();
 		this.cancelListeners = new Vector<CancelListener>();
 		this.canceled = false;
@@ -51,10 +59,16 @@ public class ProgressDialog extends StandardDialog {
 		this.progressDisplay = ProgressDisplay.None;
 	}
 
+	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality) {
+		this(parent, title, minWidth, modality, false);
+	}
 	public ProgressDialog(Window parent, String title, ModalityType modality) {
 		this(parent, title, -1, modality);
 	}
 
+	public ProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground) {
+		this(parent, title, minWidth, Dialog.ModalityType.APPLICATION_MODAL, allowSwitchToBackground);
+	}
 	public ProgressDialog(Window parent, String title, int minWidth) {
 		this(parent, title, minWidth, Dialog.ModalityType.APPLICATION_MODAL);
 	}
@@ -89,14 +103,10 @@ public class ProgressDialog extends StandardDialog {
 		progressbarPane.add(taskTitle = new JLabel("  "), BorderLayout.NORTH);
 		progressbarPane.add(progressbar = new JProgressBar(JProgressBar.HORIZONTAL), BorderLayout.CENTER);
 		
-		JButton cancelButton = new JButton("Cancel");
-		cancelButton.addActionListener(e->{
-			cancel();
-			closeDialog();
-		});
-		
 		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,5,5));
-		southPanel.add(cancelButton);
+		if (allowSwitchToBackground)
+			southPanel.add(createButton("Switch to Background", (e,btn)->{ setVisible(false); setModalityType(Dialog.ModalityType.MODELESS); btn.setEnabled(false); setVisible(true); }));
+		southPanel.add(createButton("Cancel", e->{ cancel(); closeDialog(); }));
 		
 		JPanel contentPane = new JPanel(new BorderLayout(3,3));
 		contentPane.setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
@@ -109,6 +119,18 @@ public class ProgressDialog extends StandardDialog {
 		
 		super.createGUI( contentPane );
 		super.setSizeAsMinSize();
+	}
+	
+	private static JButton createButton(String title, ActionListener al) {
+		JButton comp = new JButton(title);
+		if (al!=null) comp.addActionListener(al);
+		return comp;
+	}
+	
+	private static JButton createButton(String title, BiConsumer<ActionEvent,JButton> al) {
+		JButton comp = new JButton(title);
+		if (al!=null) comp.addActionListener(e->al.accept(e,comp));
+		return comp;
 	}
 
 	//	@Override
