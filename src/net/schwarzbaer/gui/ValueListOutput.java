@@ -33,7 +33,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	}
 	public String generateOutput(String baseIndent) {
 		HashMap<Integer,Integer> labelLengths = new HashMap<>();
-		for (ValueListOutput.Entry entry:this)
+		for (Entry entry:this)
 			if (entry!=null){
 				Integer maxLength = labelLengths.get(entry.indentLevel);
 				if (maxLength==null) maxLength=0;
@@ -49,7 +49,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 		}
 		
 		StringBuilder sb = new StringBuilder();
-		for (ValueListOutput.Entry entry:this)
+		for (Entry entry:this)
 			if (entry == null)
 				sb.append(String.format("%n"));
 			else {
