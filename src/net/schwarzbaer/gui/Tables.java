@@ -284,6 +284,13 @@ public class Tables {
 			this.currentWidth = currentWidth;
 			this.hasSpecialSorting = hasSpecialSorting;
 		}
+		
+		public static int getSumOfPrefWidths(SimplifiedColumnConfig[] arr) {
+			int sum = 0;
+			for (SimplifiedColumnConfig conf:arr)
+				if (conf.prefWidth>0) sum += conf.prefWidth;
+			return sum;
+		}
 	}
 
 	public static interface SimplifiedColumnIDInterface {
