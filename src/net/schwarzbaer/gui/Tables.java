@@ -275,6 +275,9 @@ public class Tables {
 		public SimplifiedColumnConfig(String name, Class<?> columnClass, int minWidth, int maxWidth, int prefWidth, int currentWidth) {
 			this(name, columnClass, minWidth, maxWidth, prefWidth, currentWidth, false);
 		}
+		public SimplifiedColumnConfig(SimplifiedColumnConfig other) {
+			this(other.name, other.columnClass, other.minWidth, other.maxWidth, other.prefWidth, other.currentWidth, other.hasSpecialSorting);
+		}
 		public SimplifiedColumnConfig(String name, Class<?> columnClass, int minWidth, int maxWidth, int prefWidth, int currentWidth, boolean hasSpecialSorting) {
 			this.name = name;
 			this.columnClass = columnClass;
