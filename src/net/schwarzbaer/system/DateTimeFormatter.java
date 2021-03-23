@@ -23,9 +23,7 @@ public class DateTimeFormatter {
 				formatParts.add("%1$tb" );
 				formatParts.add("%1$tY,");
 			} else{
-				formatParts.add("%1$td.");
-				formatParts.add("%1$tm.");
-				formatParts.add("%1$ty,");
+				formatParts.add("%1$td.%1$tm.%1$ty,");
 			}
 		}
 		if (withTime) formatParts.add("%1$tT");
