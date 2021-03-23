@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.util.Vector;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -26,15 +27,34 @@ public class ProgressDialog extends StandardDialog {
 		runWithProgressDialog(parent, title, minWidth, false, useProgressDialog);
 	}
 	public static void runWithProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Consumer<ProgressDialog> useProgressDialog) {
-		ProgressDialog pd = new ProgressDialog(parent,title,minWidth,allowSwitchToBackground);
-		Thread thread = new Thread(()->{
-			pd.waitUntilDialogIsVisible();
-			useProgressDialog.accept(pd);
-			pd.closeDialog();
-		});
-		pd.addCancelListener(thread::interrupt);
-		thread.start();
-		pd.showDialog();
+		new ProgressDialogWrapper<Object>()
+				.runWithProgressDialog(parent, title, minWidth, allowSwitchToBackground, pd->{ useProgressDialog.accept(pd); return null; });
+	}
+	public static <ReturnValue> ReturnValue runWithProgressDialog(Window parent, String title, int minWidth, Function<ProgressDialog,ReturnValue> useProgressDialog) {
+		return runWithProgressDialog(parent, title, minWidth, false, useProgressDialog);
+	}
+	public static <ReturnValue> ReturnValue runWithProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Function<ProgressDialog,ReturnValue> useProgressDialog) {
+		return new ProgressDialogWrapper<ReturnValue>()
+				.runWithProgressDialog(parent, title, minWidth, allowSwitchToBackground, useProgressDialog);
+	}
+	
+	private static class ProgressDialogWrapper<ReturnValue> {
+		
+		private ReturnValue result;
+
+		ReturnValue runWithProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Function<ProgressDialog,ReturnValue> useProgressDialog) {
+			result = null;
+			ProgressDialog pd = new ProgressDialog(parent,title,minWidth,allowSwitchToBackground);
+			Thread thread = new Thread(()->{
+				pd.waitUntilDialogIsVisible();
+				result = useProgressDialog.apply(pd);
+				pd.closeDialog();
+			});
+			pd.addCancelListener(thread::interrupt);
+			thread.start();
+			pd.showDialog();
+			return result;
+		}
 	}
 	
 	private final int minWidth;
