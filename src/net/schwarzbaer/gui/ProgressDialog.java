@@ -30,10 +30,10 @@ public class ProgressDialog extends StandardDialog {
 		new ProgressDialogWrapper<Object>()
 				.runWithProgressDialog(parent, title, minWidth, allowSwitchToBackground, pd->{ useProgressDialog.accept(pd); return null; });
 	}
-	public static <ReturnValue> ReturnValue runWithProgressDialog(Window parent, String title, int minWidth, Function<ProgressDialog,ReturnValue> useProgressDialog) {
-		return runWithProgressDialog(parent, title, minWidth, false, useProgressDialog);
+	public static <ReturnValue> ReturnValue runWithProgressDialogRV(Window parent, String title, int minWidth, Function<ProgressDialog,ReturnValue> useProgressDialog) {
+		return runWithProgressDialogRV(parent, title, minWidth, false, useProgressDialog);
 	}
-	public static <ReturnValue> ReturnValue runWithProgressDialog(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Function<ProgressDialog,ReturnValue> useProgressDialog) {
+	public static <ReturnValue> ReturnValue runWithProgressDialogRV(Window parent, String title, int minWidth, boolean allowSwitchToBackground, Function<ProgressDialog,ReturnValue> useProgressDialog) {
 		return new ProgressDialogWrapper<ReturnValue>()
 				.runWithProgressDialog(parent, title, minWidth, allowSwitchToBackground, useProgressDialog);
 	}
