@@ -3,8 +3,10 @@ package net.schwarzbaer.gui;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Vector;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
+import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 
 public class Disabler<ActionCommands> {
@@ -97,6 +99,14 @@ public class Disabler<ActionCommands> {
 		if (list==null) throw new UnsupportedOperationException("Disabler: Can't use method setEnable on ActionCommand "+actionCommand+".");
 		for (JComponent c:list)
 			c.setEnabled(enabled);
+	}
+
+	public void configureAbstractButton(ActionCommands actionCommand, Consumer<AbstractButton> configure) {
+		Vector<JComponent> list = map.get(actionCommand);
+		if (list==null) throw new UnsupportedOperationException("Disabler: Can't use method configureAbstractButton on ActionCommand "+actionCommand+".");
+		for (JComponent c:list)
+			if (c instanceof AbstractButton)
+				configure.accept((AbstractButton) c);
 	}
 
 	public Set<ActionCommands> keySet() {

@@ -84,7 +84,7 @@ public class FileChooser extends JFileChooser {
 	}
 	
 	public void suggestFileName(String fileName) {
-		if (addCorrectExt && hasCorrectExt(fileName))
+		if (addCorrectExt && !hasCorrectExt(fileName))
 			fileName = addCorrectExt(fileName);
 		setSelectedFile(new File(getCurrentDirectory(),fileName));
 	}
