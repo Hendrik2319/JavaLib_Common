@@ -32,4 +32,18 @@ public class DateTimeFormatter {
 		String format = String.join(" ", formatParts);
 		return String.format(Locale.ENGLISH, format, cal);
 	}
+	
+	public static String getDurationStr(long duration_sec) {
+		long s =  duration_sec      %60;
+		long m = (duration_sec/60  )%60;
+		long h =  duration_sec/3600;
+		
+		if (duration_sec < 60)
+			return String.format("%d s", s);
+		
+		if (duration_sec < 3600)
+			return String.format("%d:%02d min", m, s);
+		
+		return String.format("%d:%02d:%02d h", h, m, s);
+	}
 }
