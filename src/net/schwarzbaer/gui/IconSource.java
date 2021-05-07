@@ -217,6 +217,12 @@ public class IconSource<E extends Enum<E>> {
 		return source.cacheIcons(keys);
 	}
 
+	public static <E extends Enum<E>> CachedIcons<E> createCachedIcons(int iconWidth, int iconHeight, int columnCount, String resourcePath, E[] keys) {
+		IconSource<E> source = new IconSource<E>(iconWidth,iconHeight,columnCount);
+		source.readIconsFromResource(resourcePath);
+		return source.cacheIcons(keys);
+	}
+
 	public static Icon createEmptyIcon(int iconWidth, int iconHeight) {
 		return new Icon() {
 			@Override public void paintIcon(Component c, Graphics g, int x, int y) {}
