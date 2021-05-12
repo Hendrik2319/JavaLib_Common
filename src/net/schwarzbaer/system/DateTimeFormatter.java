@@ -15,6 +15,14 @@ public class DateTimeFormatter {
 
 	public String getTimeStr(long millis, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		cal.setTimeInMillis(millis);
+		return getTimeStr(cal, Locale.ENGLISH, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
+	}
+
+	public static String getTimeStr(Calendar cal, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
+		return getTimeStr(cal, Locale.ENGLISH, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
+	}
+
+	public static String getTimeStr(Calendar cal, Locale locale, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		Vector<String> formatParts = new Vector<>(10);
 		if (withTextDay) formatParts.add("%1$tA,");
 		if (withDate) {
@@ -30,7 +38,7 @@ public class DateTimeFormatter {
 		if (withTimeZone) formatParts.add("[%1$tZ:%1$tz]");
 		
 		String format = String.join(" ", formatParts);
-		return String.format(Locale.ENGLISH, format, cal);
+		return String.format(locale, format, cal);
 	}
 	
 	public static String getDurationStr(long duration_sec) {
