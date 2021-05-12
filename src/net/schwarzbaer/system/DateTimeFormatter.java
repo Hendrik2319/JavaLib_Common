@@ -7,7 +7,7 @@ import java.util.Vector;
 
 public class DateTimeFormatter {
 	
-	private Calendar cal;
+	private final Calendar cal;
 
 	public DateTimeFormatter() {
 		cal = Calendar.getInstance(TimeZone.getTimeZone("CET"), Locale.GERMANY);
@@ -16,6 +16,11 @@ public class DateTimeFormatter {
 	public String getTimeStr(long millis, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		cal.setTimeInMillis(millis);
 		return getTimeStr(cal, Locale.ENGLISH, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
+	}
+
+	public String getTimeStr(long millis, Locale locale, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
+		cal.setTimeInMillis(millis);
+		return getTimeStr(cal, locale, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
 	}
 
 	public static String getTimeStr(Calendar cal, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
@@ -53,5 +58,10 @@ public class DateTimeFormatter {
 			return String.format("%d:%02d min", m, s);
 		
 		return String.format("%d:%02d:%02d h", h, m, s);
+	}
+
+	public long getTimeInMillis(int year, int month, int date, int hourOfDay, int minute, int second) {
+		cal.set(year, month-1, date, hourOfDay, minute, second);
+		return cal.getTimeInMillis();
 	}
 }
