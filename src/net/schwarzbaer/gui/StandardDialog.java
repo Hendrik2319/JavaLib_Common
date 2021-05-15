@@ -85,12 +85,15 @@ public class StandardDialog extends JDialog implements WindowListener {
     
     public void createGUI( JComponent contentPane, Position position, Dimension preferredSize ) {
         setContentPane( contentPane );
-        if (preferredSize!=null) setPreferredSize(preferredSize);
+        setPositionAndSize(position, preferredSize);
+    }
+
+    public void setPositionAndSize(Position position, Dimension preferredSize) {
+		if (preferredSize!=null) setPreferredSize(preferredSize);
         pack();
         if (position==null) position = Position.PARENT_CENTER;
         setPosition(position);
-        
-    }
+	}
 
 	private void setPosition(Position position) {
 		Rectangle p = parent.getBounds();
