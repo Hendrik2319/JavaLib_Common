@@ -23,11 +23,21 @@ public class DateTimeFormatter {
 		return getTimeStr(cal, locale, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
 	}
 
+	public String getTimeStr(long millis, Locale locale, String format) {
+		cal.setTimeInMillis(millis);
+		return String.format(locale, format, cal);
+	}
+
 	public static String getTimeStr(Calendar cal, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		return getTimeStr(cal, Locale.ENGLISH, withTextDay, withDate, dateIsLong, withTime, withTimeZone);
 	}
 
 	public static String getTimeStr(Calendar cal, Locale locale, boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
+		String format = getFormatStr(withTextDay, withDate, dateIsLong, withTime, withTimeZone);
+		return String.format(locale, format, cal);
+	}
+
+	public static String getFormatStr(boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		Vector<String> formatParts = new Vector<>(10);
 		if (withTextDay) formatParts.add("%1$tA,");
 		if (withDate) {
@@ -43,7 +53,7 @@ public class DateTimeFormatter {
 		if (withTimeZone) formatParts.add("[%1$tZ:%1$tz]");
 		
 		String format = String.join(" ", formatParts);
-		return String.format(locale, format, cal);
+		return format;
 	}
 	
 	public static String getDurationStr(long duration_sec) {
