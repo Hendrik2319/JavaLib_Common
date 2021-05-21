@@ -71,6 +71,7 @@ public class DateTimeFormatter {
 	}
 
 	public long getTimeInMillis(int year, int month, int date, int hourOfDay, int minute, int second) {
+		cal.clear();
 		cal.set(year, month-1, date, hourOfDay, minute, second);
 		return cal.getTimeInMillis();
 	}
