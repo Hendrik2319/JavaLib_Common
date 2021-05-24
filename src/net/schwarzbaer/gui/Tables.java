@@ -15,6 +15,7 @@ import java.awt.event.MouseListener;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EventObject;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -358,6 +359,21 @@ public class Tables {
 		
 		public int getUnsortedRowsCount() { return 0; }
 		
+		public void setAllDefaultRenderers(Function<Class<?>,TableCellRenderer> getRenderer) {
+			forEachColumClass(columnClass -> table.setDefaultRenderer(columnClass, getRenderer.apply(columnClass)));
+		}
+		public void setAllDefaultEditors(Function<Class<?>,TableCellEditor> getEditor) {
+			forEachColumClass(columnClass -> table.setDefaultEditor(columnClass, getEditor.apply(columnClass)));
+		}
+		
+		public void forEachColumClass(Consumer<Class<?>> action) {
+			HashSet<Class<?>> classes = new HashSet<>();
+			for (ColumnID columnID:columns)
+				classes.add(columnID.getColumnConfig().columnClass);
+			for (Class<?> classObj:classes)
+				action.accept(classObj);
+		}
+
 		public void forEachColum(BiConsumer<ColumnID,TableColumn> action) {
 			for (int i=0; i<columns.length; ++i) {
 				TableColumn column = null;
