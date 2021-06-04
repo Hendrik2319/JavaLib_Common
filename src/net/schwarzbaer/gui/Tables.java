@@ -457,6 +457,17 @@ public class Tables {
 				}
 			}
 		}
+		public static String getColumnWidthsAsString(JTable table) {
+			TableColumnModel columnModel = table.getColumnModel();
+			if (columnModel==null) return "No ColumnModel in Table";
+			int[] widths = new int[columnModel.getColumnCount()];
+			for (int i=0; i<widths.length; i++) {
+				TableColumn column = columnModel.getColumn(i);
+				if (column==null) widths[i] = -1;
+				else widths[i] = column.getWidth();
+			}
+			return Arrays.toString(widths);
+		}
 	
 		private void setColumnWidth(TableColumn column, int min, int max, int preferred, int width) {
 			if (min>=0) column.setMinWidth(min);
