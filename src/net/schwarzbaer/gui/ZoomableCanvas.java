@@ -26,6 +26,9 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	private boolean withRightAxis;
 	private boolean withBottomAxis;
 	private boolean withLeftAxis;
+
+	private boolean isEditorMode;
+	private int scrollWidth;
 	
 	protected ZoomableCanvas() {
 		setPreferredSize(20,50);
@@ -42,14 +45,46 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		withBottomAxis = false;
 		withLeftAxis = false;
 		
+		isEditorMode = false;
+		scrollWidth = 0;
+		
 		addMouseListener(this);
 		addMouseMotionListener(this);
 		addMouseWheelListener(this);
 	}
-	@Override public void mousePressed   (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) startPan  (e.getPoint()); }
-	@Override public void mouseDragged   (MouseEvent e) { proceedPan(e.getPoint());  }
-	@Override public void mouseReleased  (MouseEvent e) { if (e.getButton()==MouseEvent.BUTTON1) stopPan   (e.getPoint());  }
-	@Override public void mouseWheelMoved(MouseWheelEvent e) { zoom(e.getPoint(),e.getPreciseWheelRotation()); }
+	
+	public boolean isEditorMode() { return  isEditorMode; }
+	public boolean isViewerMode() { return !isEditorMode; }
+	
+	public void activateEditorMode(int scrollWidth) {
+		this.isEditorMode = true;
+		this.scrollWidth = scrollWidth;
+		if (this.scrollWidth<=0) throw new IllegalArgumentException();
+	}
+	
+	public void activateViewerMode() {
+		isEditorMode = true;
+	}
+	
+	@Override public void mousePressed   (MouseEvent e) { if (!isEditorMode && e.getButton()==MouseEvent.BUTTON1) {   startPan(e.getPoint()); repaint(); } }
+	@Override public void mouseDragged   (MouseEvent e) { if (!isEditorMode                                     ) { proceedPan(e.getPoint()); repaint(); }  }
+	@Override public void mouseReleased  (MouseEvent e) { if (!isEditorMode && e.getButton()==MouseEvent.BUTTON1) {    stopPan(e.getPoint()); repaint(); }  }
+	@Override public void mouseWheelMoved(MouseWheelEvent e) {
+		if (!isEditorMode)
+			zoom(e.getPoint(),e.getPreciseWheelRotation());
+		else {
+			if (e.isControlDown())
+				zoom(e.getPoint(),e.getPreciseWheelRotation());
+			else {
+				Point p0 = e.getPoint(), p1;
+				int sw = scrollWidth*e.getWheelRotation();
+				if (e.isShiftDown()) p1 = new Point(p0.x+sw,p0.y);
+				else                 p1 = new Point(p0.x,p0.y+sw);
+				startPan(p0);
+				stopPan(p1);
+			}
+		}
+	}
 	
 	@Override public void mouseEntered(MouseEvent e) {}
 	@Override public void mouseMoved  (MouseEvent e) {}
@@ -118,13 +153,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	private void startPan(Point point) {
 		panStart = point;
 		viewState.tempPanOffset = new Point();
-		repaint();
 	}
 
 	private void proceedPan(Point point) {
 		if (panStart != null)
 			viewState.tempPanOffset = sub(point,panStart);
-		repaint();
 	}
 
 	private void stopPan(Point point) {
@@ -135,7 +168,6 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		
 		panStart = null;
 		viewState.tempPanOffset = null;
-		repaint();
 	}
 
 	private void zoom(Point point, double preciseWheelRotation) {
