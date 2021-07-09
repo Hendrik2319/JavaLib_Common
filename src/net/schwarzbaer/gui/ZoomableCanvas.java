@@ -56,6 +56,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	public boolean isEditorMode() { return  isEditorMode; }
 	public boolean isViewerMode() { return !isEditorMode; }
 	
+	public void activateEditorMode() { activateEditorMode(50); }
 	public void activateEditorMode(int scrollWidth) {
 		this.isEditorMode = true;
 		this.scrollWidth = scrollWidth;
@@ -71,17 +72,18 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	@Override public void mouseReleased  (MouseEvent e) { if (!isEditorMode && e.getButton()==MouseEvent.BUTTON1) {    stopPan(e.getPoint()); repaint(); }  }
 	@Override public void mouseWheelMoved(MouseWheelEvent e) {
 		if (!isEditorMode)
-			zoom(e.getPoint(),e.getPreciseWheelRotation());
+			zoom(e.getPoint(),-e.getPreciseWheelRotation());
 		else {
 			if (e.isControlDown())
-				zoom(e.getPoint(),e.getPreciseWheelRotation());
+				zoom(e.getPoint(),-e.getPreciseWheelRotation());
 			else {
 				Point p0 = e.getPoint(), p1;
-				int sw = scrollWidth*e.getWheelRotation();
+				int sw = -scrollWidth*e.getWheelRotation();
 				if (e.isShiftDown()) p1 = new Point(p0.x+sw,p0.y);
 				else                 p1 = new Point(p0.x,p0.y+sw);
 				startPan(p0);
 				stopPan(p1);
+				repaint();
 			}
 		}
 	}
