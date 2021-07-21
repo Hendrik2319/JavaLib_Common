@@ -11,6 +11,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Rectangle2D;
 import java.util.Locale;
+import java.util.Vector;
 
 public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas implements MouseListener, MouseMotionListener, MouseWheelListener {
 	private static final long serialVersionUID = -1282219829667604150L;
@@ -33,6 +34,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	protected ZoomableCanvas() {
 		setPreferredSize(20,50);
 		
+		zoomListeners = new Vector<>();
 		viewState = createViewState();
 		panStart = null;
 		
@@ -180,9 +182,18 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		if (viewState.zoom(zoomCenter,f)) {
 			updateAxes();
 			updateMapScale();
+			for (ZoomListener zl:zoomListeners) zl.zoomChanged();
 			repaint();
 		}
 	}
+	
+	public interface ZoomListener {
+		void zoomChanged();
+	}
+	
+	private final Vector<ZoomListener> zoomListeners;
+	public void    addZoomListener(ZoomListener zl) { zoomListeners.   add(zl); }
+	public void removeZoomListener(ZoomListener zl) { zoomListeners.remove(zl); }
 
 	private void updateMapScale() {
 		if (mapScale!=null) mapScale.update();

@@ -10,10 +10,17 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import javax.swing.Icon;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 
 public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private static final long serialVersionUID = 4779060880687788367L;
@@ -22,14 +29,22 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	
 	private BufferedImage image;
 	private Color bgColor;
+	private boolean useInterpolation;
+	private boolean useBetterInterpolation;
+	private final BetterInterpolation betterInterpolation;
 	
 	public ImageView(int width, int height) { this(null, width, height); }
 	public ImageView(BufferedImage image, int width, int height) {
 		this.image = image;
 		bgColor = null;
+		useInterpolation = true;
+		useBetterInterpolation = false;
 		setPreferredSize(width, height);
 		activateMapScale(COLOR_AXIS, "px", true);
 		activateAxes(COLOR_AXIS, true,true,true,true);
+		
+		betterInterpolation = new BetterInterpolation(this::repaint);
+		addZoomListener(this::updateBetterInterpolation);
 		
 		ContextMenu contextMenu = new ContextMenu(this);
 		addMouseListener(new MouseAdapter() {
@@ -40,16 +55,87 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		});
 	}
 	
+	private void updateBetterInterpolation() {
+		if (useBetterInterpolation && this.image!=null && viewState.isOk()) {
+			int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
+			int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
+			int imageWidth  = viewState.convertPos_AngleToScreen_LongX(this.image.getWidth ()) - imageX;
+			int imageHeight = viewState.convertPos_AngleToScreen_LatY (this.image.getHeight()) - imageY;
+			if (imageWidth<this.image.getWidth() || imageHeight<this.image.getHeight())
+				betterInterpolation.recomputeImage(this.image, imageWidth, imageHeight);
+		}
+	}
+	
+	private static class BetterInterpolation {
+		
+		private final Runnable repaint;
+		private final ExecutorService scheduler;
+		private Future<BufferedImage> runningTask;
+		
+		BetterInterpolation(Runnable repaint) {
+			this.repaint = repaint;
+			if (this.repaint==null) throw new IllegalArgumentException();
+			scheduler = Executors.newSingleThreadExecutor();
+			runningTask = null;
+		}
+
+		public synchronized void recomputeImage(BufferedImage image, int imageWidth, int imageHeight) {
+			if (runningTask!=null && !runningTask.isCancelled() && runningTask.isDone()) {
+				runningTask.cancel(true);
+			}
+			runningTask = scheduler.submit(()->{
+				BufferedImage newImage = computeScaledImage(image, imageWidth, imageHeight);
+				SwingUtilities.invokeLater(repaint);
+				return newImage;
+			});
+			
+		}
+
+		public synchronized BufferedImage getResult() {
+			if (runningTask==null) return null;
+			if (runningTask.isCancelled()) return null;
+			if (!runningTask.isDone()) return null;
+			
+			try { return runningTask.get(); }
+			catch (InterruptedException e) { System.err.printf("InterruptedException: %s%n", e.getMessage()); }
+			catch (ExecutionException   e) { System.err.printf("ExecutionException: %s%n"  , e.getMessage()); }
+			return null;
+		}
+
+		private BufferedImage computeScaledImage(BufferedImage image, int imageWidth, int imageHeight) {
+			//x = 1;
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
+	}
+	
+	public boolean useInterpolation      () { return useInterpolation      ; }
+	public boolean useBetterInterpolation() { return useBetterInterpolation; }
+	
+	public void useInterpolation      (boolean useInterpolation) {
+		this.useInterpolation = useInterpolation;
+		useBetterInterpolation = useInterpolation && useBetterInterpolation;
+		repaint();
+	}
+	
+	public void useBetterInterpolation(boolean useBetterInterpolation) {
+		this.useBetterInterpolation = useInterpolation && useBetterInterpolation;
+		repaint();
+		//System.out.println("useBetterInterpolation: "+useBetterInterpolation);
+	}
+	
 	public void setImage(BufferedImage image) {
 		this.image = image;
 		reset();
+		updateBetterInterpolation();
 	}
 
 	public void setZoom(float zoom) {
 		float currentZoom = viewState.convertLength_LengthToScreenF(1f);
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
 	}
-
+	
 	public void setBgColor(Color bgColor) {
 		this.bgColor = bgColor;
 		repaint();
@@ -64,7 +150,6 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			Graphics2D g2 = (Graphics2D) g;
 			g2.setClip(x, y, width, height);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			
 			if (image!=null) {
 				int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
@@ -80,10 +165,27 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				g2.setColor(COLOR_AXIS);
 				g2.drawLine(x+imageX, y, x+imageX, y+height);
 				g2.drawLine(x, y+imageY, x+width, y+imageY);
-				g2.drawLine(x+imageX+imageWidth, y, x+imageX+imageWidth, y+height);
-				g2.drawLine(x, y+imageY+imageHeight, x+width, y+imageY+imageHeight);
+				g2.drawLine(x+imageX+imageWidth-1, y, x+imageX+imageWidth-1, y+height);
+				g2.drawLine(x, y+imageY+imageHeight-1, x+width, y+imageY+imageHeight-1);
 				
-				g2.drawImage(image, x+imageX, y+imageY, imageWidth+1, imageHeight+1, null);
+				Object interpolationValue = null;
+				if (useInterpolation && imageWidth<image.getWidth()) {
+					interpolationValue = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
+					if (useBetterInterpolation) {
+						BufferedImage scaledImage = betterInterpolation.getResult();
+						if (scaledImage != null) {
+							g2.drawImage(scaledImage, x+imageX, y+imageY, null);
+							interpolationValue = null;
+						}
+					}
+				} else {
+					interpolationValue = RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
+				}
+				
+				if (interpolationValue!=null) {
+					g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolationValue);
+					g2.drawImage(image, x+imageX, y+imageY, imageWidth, imageHeight, null);
+				}
 			}
 			
 			drawMapDecoration(g2, x, y, width, height);
@@ -114,8 +216,19 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	
 	private static class ContextMenu extends JPopupMenu{
 		private static final long serialVersionUID = 4090306246829034171L;
+		private JCheckBoxMenuItem chkbxBetterInterpolation;
+		private ImageView imageView;
 
 		public ContextMenu(ImageView imageView) {
+			this.imageView = imageView;
+			chkbxBetterInterpolation = createCheckBoxMenuItem("Better Interpolation", imageView.useBetterInterpolation(), b -> {
+				imageView.useBetterInterpolation(b);
+			});
+			JCheckBoxMenuItem chkbxInterpolation = createCheckBoxMenuItem("Interpolation", imageView.useInterpolation(), b -> {
+				imageView.useInterpolation(b);
+				chkbxBetterInterpolation.setEnabled(b);
+			});
+			
 			add(createMenuItem("10%",e->imageView.setZoom(0.10f)));
 			add(createMenuItem("25%",e->imageView.setZoom(0.25f)));
 			add(createMenuItem("50%",e->imageView.setZoom(0.50f)));
@@ -134,11 +247,28 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			add(createSetBgColorMenuItem(imageView,Color.MAGENTA, "Set Background to Magenta"));
 			add(createSetBgColorMenuItem(imageView,Color.GREEN  , "Set Background to Green"));
 			add(createSetBgColorMenuItem(imageView,null         , "Remove Background Color"));
+			addSeparator();
+			add(chkbxInterpolation);
+			add(chkbxBetterInterpolation);
+		}
+
+		@Override
+		public void show(Component invoker, int x, int y) {
+			chkbxBetterInterpolation.setSelected(imageView.useBetterInterpolation());
+			super.show(invoker, x, y);
 		}
 
 		private JMenuItem createMenuItem(String title, ActionListener al) {
 			JMenuItem comp = new JMenuItem(title);
 			if (al!=null) comp.addActionListener(al);
+			return comp;
+		}
+
+		private JCheckBoxMenuItem createCheckBoxMenuItem(String title, boolean selected, Consumer<Boolean> setValue) {
+			JCheckBoxMenuItem comp = new JCheckBoxMenuItem(title,selected);
+			if (setValue!=null) comp.addActionListener(e->{
+				setValue.accept(comp.isSelected());
+			});
 			return comp;
 		}
 
