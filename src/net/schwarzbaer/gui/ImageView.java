@@ -10,6 +10,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,22 +35,24 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private Color bgColor;
 	private boolean useInterpolation;
 	private boolean useBetterInterpolation;
-	private final BetterInterpolation betterInterpolation;
+	private final BetterScaling betterScaling;
 	
-	public ImageView(int width, int height) { this(null, width, height); }
-	public ImageView(BufferedImage image, int width, int height) {
+	public ImageView(int width, int height) { this(null, width, height, null); }
+	public ImageView(BufferedImage image, int width, int height) { this(image, width, height, null); }
+	public ImageView(int width, int height, InterpolationLevel interpolationLevel) { this(null, width, height, interpolationLevel); }
+	public ImageView(BufferedImage image, int width, int height, InterpolationLevel interpolationLevel) {
 		this.image = image;
 		bgColor = null;
-		useInterpolation = true;
-		useBetterInterpolation = false;
+		useInterpolation = interpolationLevel==null || interpolationLevel.isGreaterThan(InterpolationLevel.Level0_NearestNeighbor);
+		useBetterInterpolation = interpolationLevel==InterpolationLevel.Level2_Better;
 		setPreferredSize(width, height);
 		activateMapScale(COLOR_AXIS, "px", true);
 		activateAxes(COLOR_AXIS, true,true,true,true);
 		
-		betterInterpolation = new BetterInterpolation(this::repaint);
+		betterScaling = new BetterScaling(this::repaint);
 		addZoomListener(this::updateBetterInterpolation);
 		
-		ContextMenu contextMenu = new ContextMenu(this);
+		ContextMenu contextMenu = new ContextMenu(this,interpolationLevel!=null);
 		addMouseListener(new MouseAdapter() {
 			@Override public void mouseClicked(MouseEvent e) {
 				if (e.getButton()==MouseEvent.BUTTON3)
@@ -55,40 +61,67 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		});
 	}
 	
+	public enum InterpolationLevel {
+		Level0_NearestNeighbor, Level1_Bicubic, Level2_Better;
+
+		public boolean isGreaterThan(InterpolationLevel other) {
+			if (other==null) return true;
+			return this.ordinal()>other.ordinal();
+		}
+	}
+	
 	private void updateBetterInterpolation() {
 		if (useBetterInterpolation && this.image!=null && viewState.isOk()) {
 			int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
 			int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
 			int imageWidth  = viewState.convertPos_AngleToScreen_LongX(this.image.getWidth ()) - imageX;
 			int imageHeight = viewState.convertPos_AngleToScreen_LatY (this.image.getHeight()) - imageY;
-			if (imageWidth<this.image.getWidth() || imageHeight<this.image.getHeight())
-				betterInterpolation.recomputeImage(this.image, imageWidth, imageHeight);
-		}
+			if (imageWidth<this.image.getWidth() && imageHeight<this.image.getHeight())
+				betterScaling.scaleImage(this.image, imageWidth, imageHeight);
+			else
+				betterScaling.clearResult();
+		} else
+			betterScaling.clearResult();
 	}
 	
-	private static class BetterInterpolation {
+	private static class BetterScaling {
 		
 		private final Runnable repaint;
 		private final ExecutorService scheduler;
 		private Future<BufferedImage> runningTask;
 		
-		BetterInterpolation(Runnable repaint) {
+		BetterScaling(Runnable repaint) {
 			this.repaint = repaint;
 			if (this.repaint==null) throw new IllegalArgumentException();
 			scheduler = Executors.newSingleThreadExecutor();
 			runningTask = null;
 		}
 
-		public synchronized void recomputeImage(BufferedImage image, int imageWidth, int imageHeight) {
-			if (runningTask!=null && !runningTask.isCancelled() && runningTask.isDone()) {
+		public synchronized void scaleImage(BufferedImage image, int targetWidth, int targetHeight) {
+			if (image==null)
+				throw new IllegalArgumentException("BetterInterpolation.recomputeImage(null, ...) is not allowed.");
+			if (image.getWidth()<targetWidth || image.getHeight()<targetHeight)
+				throw new IllegalArgumentException("BetterInterpolation.recomputeImage(): Target width and height must be smaller than current image size.");
+			
+			if (runningTask!=null && !runningTask.isCancelled() && !runningTask.isDone())
 				runningTask.cancel(true);
-			}
+			
 			runningTask = scheduler.submit(()->{
-				BufferedImage newImage = computeScaledImage(image, imageWidth, imageHeight);
+				BufferedImage newImage = computeScaledImage(image, targetWidth, targetHeight);
+				//if (Thread.currentThread().isInterrupted())
+				//	System.out.println("BetterScaling.computeScaledImage -> interrupted");
+				//else
+				//	System.out.println("BetterScaling.computeScaledImage -> finished");
 				SwingUtilities.invokeLater(repaint);
 				return newImage;
 			});
 			
+		}
+
+		public synchronized void clearResult() {
+			if (runningTask!=null && !runningTask.isCancelled() && !runningTask.isDone())
+				runningTask.cancel(true);
+			runningTask = null;
 		}
 
 		public synchronized BufferedImage getResult() {
@@ -102,10 +135,123 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			return null;
 		}
 
-		private BufferedImage computeScaledImage(BufferedImage image, int imageWidth, int imageHeight) {
-			//x = 1;
-			// TODO Auto-generated method stub
-			return null;
+		private BufferedImage computeScaledImage(BufferedImage image, int targetWidth, int targetHeight) {
+			Thread currentThread = Thread.currentThread();
+			BufferedImage newImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
+			
+			PixelFract[][] pixelFractionsX = computePixelFractions(image.getWidth (), targetWidth );
+			PixelFract[][] pixelFractionsY = computePixelFractions(image.getHeight(), targetHeight);
+			//showPixelFractions(image, targetWidth, targetHeight, pixelFractionsX, pixelFractionsY);
+			if (currentThread.isInterrupted()) return null;
+			
+			WritableRaster origRaster = image.getRaster();
+			WritableRaster newRaster  = newImage.getRaster();
+			
+			int[] origColor = new int[4]; // image.getColorModel().getComponentSize();
+			double[] sum = new double[origColor.length];
+			int[] newColor = new int[4];
+			
+			for (int x=0; x<targetWidth; x++) {
+				if (currentThread.isInterrupted()) return null;
+				
+				PixelFract[] fX = pixelFractionsX[x]; 
+				for (int y=0; y<targetHeight; y++) {
+					if (currentThread.isInterrupted()) return null;
+					
+					PixelFract[] fY = pixelFractionsY[y];
+					
+					Arrays.fill(sum,0);
+					double totalWeight = 0, pixelWeight;
+					for (int iX=0; iX<fX.length; iX++) {
+						if (currentThread.isInterrupted()) return null;
+						
+						PixelFract pixelFractX = fX[iX];
+						for (int iY=0; iY<fY.length; iY++) {
+							if (currentThread.isInterrupted()) return null;
+							
+							PixelFract pixelFractY = fY[iY];
+							//try {
+								origRaster.getPixel(pixelFractX.coord, pixelFractY.coord, origColor);
+							//} catch (Exception e) {
+							//	System.err.printf("%s: origRaster.getPixel( %d, %d, int[%d]) -> %s%n", e.getClass().getName(), pixelFractX.coord, pixelFractY.coord, origColor.length, e.getMessage());
+							//	//e.printStackTrace();
+							//}
+							pixelWeight = pixelFractX.fract*pixelFractY.fract;
+							for (int i=0; i<origColor.length; i++)
+								sum[i] += origColor[i]*pixelWeight;
+							totalWeight += pixelWeight;
+						}
+					}
+					newColor[0] = (int) Math.max(0, Math.min(255, Math.round( sum[0] / totalWeight ) ) );
+					newColor[1] = (int) Math.max(0, Math.min(255, Math.round( sum[1] / totalWeight ) ) );
+					newColor[2] = (int) Math.max(0, Math.min(255, Math.round( sum[2] / totalWeight ) ) );
+					newColor[3] = 255; //(int) Math.max(0, Math.min(255, Math.round( sum[3] / totalWeight ) ) );
+					
+					//try {
+						newRaster.setPixel(x, y, newColor);
+					//} catch (Exception e) {
+					//	e.printStackTrace();
+					//}
+				}
+			}
+			
+			return newImage;
+			//return null;
+		}
+
+		@SuppressWarnings("unused")
+		private void showPixelFractions(BufferedImage image, int targetWidth, int targetHeight, PixelFract[][] pixelFractionsX, PixelFract[][] pixelFractionsY) {
+			System.out.printf("PixelFractions:  %d x %d  ->  %d x %d%n", image.getWidth(), image.getHeight(), targetWidth, targetHeight);
+			int n = Math.max(pixelFractionsX.length, pixelFractionsY.length);
+			for (int i=0; i<n; i++) {
+				PixelFract[] fX = i<pixelFractionsX.length ? pixelFractionsX[i] : null;
+				PixelFract[] fY = i<pixelFractionsY.length ? pixelFractionsY[i] : null;
+				System.out.printf("  [%d]  %20s  %20s%n", i, toString(fX), toString(fY));
+			}
+		}
+		
+		private String toString(PixelFract[] fracts) {
+			if (fracts==null) return "";
+			Iterator<String> iterator = Arrays.stream(fracts).map(pf->String.format(Locale.ENGLISH, "%03d:%1.3f", pf.coord, pf.fract)).iterator();
+			return String.join(",", (Iterable<String>)()->iterator);
+		}
+
+		private PixelFract[][] computePixelFractions(int currentWidth, int targetWidth) {
+			Thread currentThread = Thread.currentThread();
+			PixelFract[][] pixelFractions = new PixelFract[targetWidth][];
+			double pixelWidth = currentWidth / (double)targetWidth;
+			for (int i=0; i<pixelFractions.length; i++) {
+				if (currentThread.isInterrupted()) return null;
+				double c0 = pixelWidth*i;
+				double c1 = pixelWidth*(i+1);
+				if (c1>currentWidth) c1 = currentWidth; // may happen as rounding error
+				int firstIndexIn = (int) Math.floor(c0);
+				int  lastIndexEx = (int) Math.ceil (c1);
+				pixelFractions[i] = new PixelFract[lastIndexEx-firstIndexIn];
+				for (int p=0; p<pixelFractions[i].length; p++) {
+					if (currentThread.isInterrupted()) return null;
+					int coord = firstIndexIn+p;
+					double fract = 1;
+					if      (coord  ==firstIndexIn) fract = 1-(c0-firstIndexIn);
+					else if (coord+1== lastIndexEx) fract = 1-(lastIndexEx-c1);
+					pixelFractions[i][p] = new PixelFract(coord, fract);
+				}
+			}
+			return pixelFractions;
+		}
+
+		private static class PixelFract {
+			final int coord;
+			final double fract;
+			PixelFract(int coord, double fract) {
+				this.coord = coord;
+				this.fract = fract;
+			}
+			@Override
+			public String toString() {
+				return String.format(Locale.ENGLISH, "%d:%1.4f", coord, fract);
+			}
+			
 		}
 		
 	}
@@ -115,12 +261,16 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	
 	public void useInterpolation      (boolean useInterpolation) {
 		this.useInterpolation = useInterpolation;
-		useBetterInterpolation = useInterpolation && useBetterInterpolation;
+		if (!this.useInterpolation) {
+			useBetterInterpolation = false;
+			betterScaling.clearResult();
+		}
 		repaint();
 	}
 	
 	public void useBetterInterpolation(boolean useBetterInterpolation) {
 		this.useBetterInterpolation = useInterpolation && useBetterInterpolation;
+		updateBetterInterpolation();
 		repaint();
 		//System.out.println("useBetterInterpolation: "+useBetterInterpolation);
 	}
@@ -172,7 +322,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				if (useInterpolation && imageWidth<image.getWidth()) {
 					interpolationValue = RenderingHints.VALUE_INTERPOLATION_BICUBIC;
 					if (useBetterInterpolation) {
-						BufferedImage scaledImage = betterInterpolation.getResult();
+						BufferedImage scaledImage = betterScaling.getResult();
 						if (scaledImage != null) {
 							g2.drawImage(scaledImage, x+imageX, y+imageY, null);
 							interpolationValue = null;
@@ -219,15 +369,19 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		private JCheckBoxMenuItem chkbxBetterInterpolation;
 		private ImageView imageView;
 
-		public ContextMenu(ImageView imageView) {
+		public ContextMenu(ImageView imageView, boolean predefinedInterpolationLevel) {
 			this.imageView = imageView;
-			chkbxBetterInterpolation = createCheckBoxMenuItem("Better Interpolation", imageView.useBetterInterpolation(), b -> {
-				imageView.useBetterInterpolation(b);
-			});
-			JCheckBoxMenuItem chkbxInterpolation = createCheckBoxMenuItem("Interpolation", imageView.useInterpolation(), b -> {
-				imageView.useInterpolation(b);
-				chkbxBetterInterpolation.setEnabled(b);
-			});
+			JCheckBoxMenuItem chkbxInterpolation = null;
+			if (!predefinedInterpolationLevel) {
+				chkbxBetterInterpolation = createCheckBoxMenuItem("Better Interpolation", imageView.useBetterInterpolation(), b -> {
+					imageView.useBetterInterpolation(b);
+				});
+				chkbxInterpolation = createCheckBoxMenuItem("Interpolation", imageView.useInterpolation(), b -> {
+					imageView.useInterpolation(b);
+					chkbxBetterInterpolation.setEnabled(b);
+				});
+			} else
+				chkbxBetterInterpolation = null;
 			
 			add(createMenuItem("10%",e->imageView.setZoom(0.10f)));
 			add(createMenuItem("25%",e->imageView.setZoom(0.25f)));
@@ -247,14 +401,17 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			add(createSetBgColorMenuItem(imageView,Color.MAGENTA, "Set Background to Magenta"));
 			add(createSetBgColorMenuItem(imageView,Color.GREEN  , "Set Background to Green"));
 			add(createSetBgColorMenuItem(imageView,null         , "Remove Background Color"));
-			addSeparator();
-			add(chkbxInterpolation);
-			add(chkbxBetterInterpolation);
+			if (!predefinedInterpolationLevel) {
+				addSeparator();
+				add(chkbxInterpolation);
+				add(chkbxBetterInterpolation);
+			}
 		}
 
 		@Override
 		public void show(Component invoker, int x, int y) {
-			chkbxBetterInterpolation.setSelected(imageView.useBetterInterpolation());
+			if (chkbxBetterInterpolation!=null)
+				chkbxBetterInterpolation.setSelected(imageView.useBetterInterpolation());
 			super.show(invoker, x, y);
 		}
 
