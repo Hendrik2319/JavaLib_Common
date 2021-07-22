@@ -15,7 +15,7 @@ public class ImageViewDialog extends JDialog {
 		this(parent, image, title, width, height, false);
 	}
 	public ImageViewDialog(Window parent, BufferedImage image, String title, int width, int height, boolean exitOnESC) {
-		this(parent, image, title, width, height, null, false);
+		this(parent, image, title, width, height, null, exitOnESC);
 	}
 	public ImageViewDialog(Window parent, BufferedImage image, String title, int width, int height, ImageView.InterpolationLevel interpolationLevel, boolean exitOnESC) {
 		super(parent,title,ModalityType.APPLICATION_MODAL);
