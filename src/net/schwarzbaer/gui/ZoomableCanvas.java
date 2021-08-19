@@ -16,7 +16,7 @@ import java.util.Vector;
 public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas implements MouseListener, MouseMotionListener, MouseWheelListener {
 	private static final long serialVersionUID = -1282219829667604150L;
 
-	protected VS viewState;
+	protected final VS viewState;
 	private Point panStart;
 
 	private Scale mapScale;
