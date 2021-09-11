@@ -97,18 +97,29 @@ public class SteganographyContainer {
 	}
 
 	public void writeRawBytes(byte[] bytes, int bitsPerPx) {
+		writeRawBytes(bytes, bitsPerPx, false); // true: old behaviour
+	}
+	
+	public void writeRawBytes(byte[] bytes, int bitsPerPx, boolean writeZerosAtEnd) {
 		int bitmask = (1<<bitsPerPx)-1;
 		BitInputStream bitIn = new BitInputStream(bytes);
 		WritableRaster raster = image.getRaster();
 		//System.out.println("[writeBytesToImage]  imageType: "+typeToString(image.getType()));
 		int[] pixelRGBA = new int[] { 12,12,12,12 };
-		for (int y=0; y<height; y++)
-			for (int x=0; x<width; x++) {
+		boolean endOfStream = false;
+		for (int y=0; y<height && !endOfStream; y++)
+			for (int x=0; x<width && !endOfStream; x++) {
 				raster.getPixel(x,y,pixelRGBA);
 				//System.out.printf("[writeBytesToImage]  Pixel(%d,%d): %s%n",x,y,Arrays.toString(pixelRGBA));
 				for (int i=0; i<3; i++) {
 					int bits = bitIn.readBits(bitsPerPx);
-					if (bits<0) bits=0; // no more bits in stream
+					if (bits<0) { // no more bits in stream
+						if (!writeZerosAtEnd) {
+							endOfStream = true;
+							break;
+						}
+						bits=0;
+					}
 					pixelRGBA[i] = (pixelRGBA[i]&(~bitmask)) | (bits&bitmask);
 				}
 				raster.setPixel(x,y,pixelRGBA);
