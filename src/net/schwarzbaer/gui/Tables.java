@@ -57,11 +57,11 @@ public class Tables {
 	
 	public static class SimplifiedRowSorter extends RowSorter<SimplifiedTableModel<?>> {
 
+		private final Vector<RowSorterListener> listeners;
 		protected SimplifiedTableModel<?> model;
-		private LinkedList<RowSorter.SortKey> keys;
+		private final LinkedList<RowSorter.SortKey> keys;
 		private Integer[] modelRowIndexes;
 		private int[] viewRowIndexes;
-		private Vector<RowSorterListener> listeners;
 
 		public SimplifiedRowSorter(SimplifiedTableModel<?> model) {
 			this.model = model;
@@ -84,7 +84,7 @@ public class Tables {
 		
 		public void setModel(SimplifiedTableModel<?> model) {
 			this.model = model;
-			this.keys = new LinkedList<RowSorter.SortKey>();
+			this.keys.clear();
 			sort();
 		}
 
@@ -189,6 +189,12 @@ public class Tables {
 			}
 		}
 		
+		public void resetSortOrder() {
+			keys.clear();
+			log("resetSortOrder()");
+			sort();
+			notifyListeners();
+		}
 		
 		@Override
 		public void toggleSortOrder(int column) {
@@ -221,8 +227,8 @@ public class Tables {
 
 		@Override
 		public void setSortKeys(List<? extends RowSorter.SortKey> keys) {
-			if (keys==null) this.keys = new LinkedList<RowSorter.SortKey>();
-			else            this.keys = new LinkedList<RowSorter.SortKey>(keys);
+			this.keys.clear();
+			if (keys!=null) this.keys.addAll(keys);
 			log("setSortKeys( %s )",toString(this.keys));
 		}
 
