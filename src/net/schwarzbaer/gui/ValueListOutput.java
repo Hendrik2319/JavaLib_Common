@@ -59,7 +59,11 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	}
 	
 	public void generateOutput(String baseIndent, StyledDocument doc, String styleNamesPrefix) {
-		generateOutput(baseIndent, new StyledDocumentOutput(doc, styleNamesPrefix));
+		generateOutput(baseIndent, new StyledDocumentOutput(doc, styleNamesPrefix, null));
+	}
+	
+	public void generateOutput(String baseIndent, StyledDocument doc, String styleNamesPrefix, int fontSize) {
+		generateOutput(baseIndent, new StyledDocumentOutput(doc, styleNamesPrefix, fontSize));
 	}
 	
 	public void generateOutput(String baseIndent, OutputTarget out) {
@@ -122,14 +126,16 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 		private final String styleNamesPrefix;
 		private javax.swing.text.Style mainStyle;
 		private HashMap<Style,javax.swing.text.Style> subStyles;
+		private final Integer fontSize;
 
-		public StyledDocumentOutput(StyledDocument doc, String styleNamesPrefix) {
+		public StyledDocumentOutput(StyledDocument doc, String styleNamesPrefix, Integer fontSize) {
 			this.doc = doc;
 			this.styleNamesPrefix = styleNamesPrefix;
+			this.fontSize = fontSize;
 			mainStyle = null;
 			subStyles = null;
 		}
-		
+
 		@Override public void prepareOutput(Vector<Entry> entries) {
 			HashSet<Style> styles = new HashSet<>();
 			for (Entry entry : entries)
@@ -138,12 +144,15 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 			
 			mainStyle = doc.addStyle(styleNamesPrefix+".Main", null);
 			StyleConstants.setFontFamily(mainStyle, "Monospaced");
+			if (fontSize!=null) StyleConstants.setFontSize(mainStyle, fontSize);
 			subStyles = new HashMap<>();
 			
 			Vector<Style> list = new Vector<>(styles);
 			for (int i=0; i<list.size(); i++) {
 				Style style = list.get(i);
-				javax.swing.text.Style subStyle = doc.addStyle(String.format("%s.SubStyle%d", styleNamesPrefix, i), mainStyle);
+				String styleName = String.format("%s.SubStyle.%s", styleNamesPrefix, style.getID());
+				//System.out.printf("Add Style \"%s\"%n", styleName);
+				javax.swing.text.Style subStyle = doc.addStyle(styleName, mainStyle);
 				style.setValuesTo(subStyle);
 				subStyles.put(style, subStyle);
 			}
@@ -188,6 +197,10 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 			this.color = color;
 			this.isBold = isBold;
 			this.isItalic = isItalic;
+		}
+		
+		public String getID() {
+			return String.format("%s:%s:%s", color==null ? "--------" : String.format("%08X", color.getRGB()), isBold ? "B" : "-", isItalic ? "I" : "-");
 		}
 		
 		public void setValuesTo(javax.swing.text.Style subStyle) {
