@@ -485,12 +485,13 @@ public class Tables {
 			TableColumnModel columnModel = table.getColumnModel();
 			if (columnModel==null) return "No ColumnModel in Table";
 			int[] widths = new int[columnModel.getColumnCount()];
-			for (int i=0; i<widths.length; i++) {
-				TableColumn column = columnModel.getColumn(i);
-				if (column==null) widths[i] = -1;
-				else widths[i] = column.getWidth();
+			for (int colM=0; colM<widths.length; colM++) {
+				int colV = table.convertColumnIndexToView(colM);
+				TableColumn column = columnModel.getColumn(colV);
+				if (column==null) widths[colM] = -1;
+				else widths[colM] = column.getWidth();
 			}
-			return Arrays.toString(widths);
+			return Arrays.toString(widths)+" in ModelOrder";
 		}
 	
 		private void setColumnWidth(TableColumn column, int min, int max, int preferred, int width) {
