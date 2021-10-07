@@ -134,14 +134,15 @@ public class Tables {
 					if (sortOrder==SortOrder.UNSORTED) continue;
 					int column = key.getColumn();
 					
-					if      (model.hasSpecialSorting(column)              ) comparator = addComparator(comparator,sortOrder,model.getSpecialSorting(column,sortOrder));
-					else if (isNewClass(model.getColumnClass(column))     ) comparator = addComparatorForNewClass(comparator,sortOrder,column);
-					else if (model.getColumnClass(column) == Boolean.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Boolean)model.getValueAt(row,column));
-					else if (model.getColumnClass(column) == String .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(String )model.getValueAt(row,column));
-					else if (model.getColumnClass(column) == Long   .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Long   )model.getValueAt(row,column));
-					else if (model.getColumnClass(column) == Integer.class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Integer)model.getValueAt(row,column));
-					else if (model.getColumnClass(column) == Double .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Double )model.getValueAt(row,column));
-					else if (model.getColumnClass(column) == Float  .class) comparator = addComparator(comparator,sortOrder,(Integer row)->(Float  )model.getValueAt(row,column));
+					Class<?> columnClass = model.getColumnClass(column);
+					if      (model.hasSpecialSorting(column)) comparator = addComparator(comparator, sortOrder, model.getSpecialSorting(column,sortOrder));
+					else if (isNewClass(columnClass)        ) comparator = addComparatorForNewClass(comparator, sortOrder, column);
+					else if (columnClass == Boolean.class   ) comparator = addComparator(comparator, sortOrder, row -> (Boolean)model.getValueAt(row,column));
+					else if (columnClass == String .class   ) comparator = addComparator(comparator, sortOrder, row -> (String )model.getValueAt(row,column));
+					else if (columnClass == Long   .class   ) comparator = addComparator(comparator, sortOrder, row -> (Long   )model.getValueAt(row,column));
+					else if (columnClass == Integer.class   ) comparator = addComparator(comparator, sortOrder, row -> (Integer)model.getValueAt(row,column));
+					else if (columnClass == Double .class   ) comparator = addComparator(comparator, sortOrder, row -> (Double )model.getValueAt(row,column));
+					else if (columnClass == Float  .class   ) comparator = addComparator(comparator, sortOrder, row -> (Float  )model.getValueAt(row,column));
 					else comparator = addComparator(comparator,sortOrder,
 								(Integer row)->{
 									Object object = model.getValueAt(row,column);
@@ -162,8 +163,25 @@ public class Tables {
 			fireSortOrderChanged();
 		}
 		
-		protected boolean isNewClass(Class<?> columnClass) { return false; }
-		protected Comparator<Integer> addComparatorForNewClass(Comparator<Integer> comparator, SortOrder sortOrder, int column) { return comparator; }
+		protected boolean isNewClass(Class<?> columnClass) {
+			//return
+			//		(columnClass == Boolean.class) ||
+			//		(columnClass == String .class) ||
+			//		(columnClass == Long   .class) ||
+			//		(columnClass == Integer.class);
+			return false;
+		}
+		
+		protected Comparator<Integer> addComparatorForNewClass(Comparator<Integer> comparator, SortOrder sortOrder, int column) {
+			return addComparatorForNewClass(comparator, sortOrder, model.getColumnClass(column), row->model.getValueAt(row,column));
+		}
+		protected Comparator<Integer> addComparatorForNewClass(Comparator<Integer> comparator, SortOrder sortOrder, Class<?> columnClass, Function<Integer,Object> getValueAtRow) {
+			//if      (columnClass == Boolean.class) comparator = addComparator(comparator, sortOrder, row->(Boolean)getValueAtRow.apply(row));
+			//else if (columnClass == String .class) comparator = addComparator(comparator, sortOrder, row->(String )getValueAtRow.apply(row));
+			//else if (columnClass == Long   .class) comparator = addComparator(comparator, sortOrder, row->(Long   )getValueAtRow.apply(row));
+			//else if (columnClass == Integer.class) comparator = addComparator(comparator, sortOrder, row->(Integer)getValueAtRow.apply(row));
+			return comparator;
+		}
 
 		protected Comparator<Integer> addComparator(Comparator<Integer> comp, SortOrder sortOrder, Comparator<Integer> specialSorting) {
 			if (sortOrder==SortOrder.DESCENDING) {
