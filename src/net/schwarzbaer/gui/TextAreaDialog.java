@@ -17,9 +17,11 @@ public class TextAreaDialog extends StandardDialog {
 	private static final long serialVersionUID = 1135036865387978283L;
 	
 	private final JTextArea textArea;
+	private boolean wasCanceled;
 
-	private TextAreaDialog(Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject, int width, int height, boolean textEditable, boolean textAreaLineWrap) {
+	private TextAreaDialog(Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject, int width, int height, boolean textEditable, boolean asEditor, boolean textAreaLineWrap) {
 		super(parent, title, modality, repeatedUseOfDialogObject);
+		wasCanceled = true;
 		
 		JPopupMenu textViewContextMenu = new JPopupMenu();
 		textArea = new JTextArea();
@@ -41,20 +43,32 @@ public class TextAreaDialog extends StandardDialog {
 		JScrollPane textAreaScrollPane = new JScrollPane(textArea);
 		textAreaScrollPane.setPreferredSize(new Dimension(width,height));
 		
-		createGUI(textAreaScrollPane, createButton("Close",e->closeDialog()));
+		if (asEditor)
+			createGUI(textAreaScrollPane, createButton("Ok",e->{ wasCanceled = false; closeDialog(); }), createButton("Cancel",e->closeDialog()));
+		else
+			createGUI(textAreaScrollPane, createButton("Close",e->closeDialog()));
 	}
 	
 	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text) {
-		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, false, textAreaLineWrap);
+		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, false, false, textAreaLineWrap);
 		dlg.setText(text);
 		dlg.showDialog();
 	}
+	
+	public static String editText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text) {
+		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, true, true, textAreaLineWrap);
+		dlg.setText(text);
+		dlg.wasCanceled = true;
+		dlg.showDialog();
+		if (dlg.wasCanceled) return null;
+		return dlg.getText();
+	}
 
-	public void setText(String text) {
+	private void setText(String text) {
 		textArea.setText(text);
 	}
 
-	public String getText() {
+	private String getText() {
 		return textArea.getText();
 	}
 
