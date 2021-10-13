@@ -12,40 +12,53 @@ import javax.swing.text.StyledDocument;
 
 public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	private static final long serialVersionUID = -5898390765518030500L;
+	
+	private Style nextEntryLabelStyle = null;
+	private Style nextEntryValueStyle = null;
+	private Style labelStyle = null;
+	private Style valueStyle = null;
 
-	public void add(int indentLevel, String label, int     value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, long    value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, float   value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, double  value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, boolean value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Integer value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Long    value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Float   value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Double  value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Boolean value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, String  value) { add(indentLevel, label, (Style)null, value); }
-	public void add(int indentLevel, String label, Style style, int     value) { add(indentLevel, label, style, "%d", value); }
-	public void add(int indentLevel, String label, Style style, long    value) { add(indentLevel, label, style, "%d", value); }
-	public void add(int indentLevel, String label, Style style, float   value) { add(indentLevel, label, style, "%f", value); }
-	public void add(int indentLevel, String label, Style style, double  value) { add(indentLevel, label, style, "%f", value); }
-	public void add(int indentLevel, String label, Style style, boolean value) { add(indentLevel, label, style, "%s", value); }
-	public void add(int indentLevel, String label, Style style, Integer value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "Integer"); else add(indentLevel, label, style, "%d", value); }
-	public void add(int indentLevel, String label, Style style, Long    value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "Long"   ); else add(indentLevel, label, style, "%d", value); }
-	public void add(int indentLevel, String label, Style style, Float   value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "Float"  ); else add(indentLevel, label, style, "%f", value); }
-	public void add(int indentLevel, String label, Style style, Double  value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "Double" ); else add(indentLevel, label, style, "%f", value); }
-	public void add(int indentLevel, String label, Style style, Boolean value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "Boolean"); else add(indentLevel, label, style, "%s", value); }
-	public void add(int indentLevel, String label, Style style, String  value) { if (value==null) add(indentLevel, label, style, "<null> (%s)", "String" ); else add(indentLevel, label, style, "\"%s\"", value); }
+	public void add(int indentLevel, String label, int     value) { add(indentLevel, label, "%d", value); }
+	public void add(int indentLevel, String label, long    value) { add(indentLevel, label, "%d", value); }
+	public void add(int indentLevel, String label, float   value) { add(indentLevel, label, "%f", value); }
+	public void add(int indentLevel, String label, double  value) { add(indentLevel, label, "%f", value); }
+	public void add(int indentLevel, String label, boolean value) { add(indentLevel, label, "%s", value); }
+	public void add(int indentLevel, String label, Integer value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Integer"); else add(indentLevel, label, "%d", value); }
+	public void add(int indentLevel, String label, Long    value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Long"   ); else add(indentLevel, label, "%d", value); }
+	public void add(int indentLevel, String label, Float   value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Float"  ); else add(indentLevel, label, "%f", value); }
+	public void add(int indentLevel, String label, Double  value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Double" ); else add(indentLevel, label, "%f", value); }
+	public void add(int indentLevel, String label, Boolean value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Boolean"); else add(indentLevel, label, "%s", value); }
+	public void add(int indentLevel, String label, String  value) { if (value==null) add(indentLevel, label, "<null> (%s)", "String" ); else add(indentLevel, label, "\"%s\"", value); }
+	
+	enum StyleTarget { Label, Value, CompleteLine }
+	public void setStyle(Style style, StyleTarget target, boolean forNextEntryOnly) {
+		if (target==StyleTarget.CompleteLine || target==StyleTarget.Label) {
+			if (forNextEntryOnly)
+				nextEntryLabelStyle = style;
+			else
+				labelStyle = style;
+		}
+		if (target==StyleTarget.CompleteLine || target==StyleTarget.Value) {
+			if (forNextEntryOnly)
+				nextEntryValueStyle = style;
+			else
+				valueStyle = style;
+		}
+	}
 	
 	public void addEmptyLine() { add(null); }
 	
-	public void add(int indentLevel, String label, Style style, String format, Object... args) {
-		add(new Entry(indentLevel, label, style, format, args));
-	}
 	public void add(int indentLevel, String label, String format, Object... args) {
-		add(new Entry(indentLevel, label, null, format, args));
+		Style labelStyle, valueStyle;
+		if (nextEntryLabelStyle==null) labelStyle = this.labelStyle; else { labelStyle = nextEntryLabelStyle; nextEntryLabelStyle = null; }
+		if (nextEntryValueStyle==null) valueStyle = this.valueStyle; else { valueStyle = nextEntryValueStyle; nextEntryValueStyle = null; }
+		add(new Entry(indentLevel, labelStyle, label, valueStyle, format, args));
 	}
 	public void add(int indentLevel, String label) {
-		add(new Entry(indentLevel, label));
+		Style labelStyle;
+		if (nextEntryLabelStyle==null) labelStyle = this.labelStyle; else { labelStyle = nextEntryLabelStyle; nextEntryLabelStyle = null; }
+		nextEntryValueStyle = null;
+		add(new Entry(indentLevel, labelStyle, label));
 	}
 
 	public String generateOutput() {
@@ -92,7 +105,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 				String indent = indents.get(entry.indentLevel);
 				int labelLength = labelLengths.get(entry.indentLevel);
 				String labelFormat = labelLength==0 ? "%s" : "%-"+labelLength+"s";
-				out.appendLine(String.format("%s%s"+labelFormat+"%s", baseIndent, indent, entry.label, spacer), entry.style, entry.valueStr);
+				out.appendLine(entry.labelStyle, String.format("%s%s"+labelFormat+"%s", baseIndent, indent, entry.label, spacer), entry.valueStyle, entry.valueStr);
 			}
 		
 	}
@@ -100,7 +113,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	interface OutputTarget {
 		void appendEmptyLine();
 		void prepareOutput(Vector<Entry> entries);
-		void appendLine(String prefix, Style style, String valueStr);
+		void appendLine(Style prefixStyle, String prefix, Style valueStyle, String valueStr);
 	}
 	
 	static class StringBuilderOutput implements OutputTarget {
@@ -112,7 +125,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 		@Override public void appendEmptyLine() {
 			sb.append(String.format("%n"));
 		}
-		@Override public void appendLine(String prefix, Style style, String valueStr) {
+		@Override public void appendLine(Style prefixStyle, String prefix, Style valueStyle, String valueStr) {
 			sb.append(String.format("%s%s%n", prefix, valueStr));
 		}
 		@Override public String toString() {
@@ -138,9 +151,10 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 
 		@Override public void prepareOutput(Vector<Entry> entries) {
 			HashSet<Style> styles = new HashSet<>();
-			for (Entry entry : entries)
-				if (entry.style!=null)
-					styles.add(entry.style);
+			for (Entry entry : entries) {
+				if (entry.labelStyle!=null) styles.add(entry.labelStyle);
+				if (entry.valueStyle!=null) styles.add(entry.valueStyle);
+			}
 			
 			mainStyle = doc.addStyle(styleNamesPrefix+".Main", null);
 			StyleConstants.setFontFamily(mainStyle, "Monospaced");
@@ -162,12 +176,17 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 			append(String.format("%n"), mainStyle);
 		}
 
-		@Override public void appendLine(String prefix, Style style, String valueStr) {
-			append(prefix, mainStyle);
-			javax.swing.text.Style subStyle = subStyles.get(style);
-			append(String.format("%s%n", valueStr), subStyle==null ? mainStyle : subStyle);
+		@Override public void appendLine(Style prefixStyle, String prefix, Style valueStyle, String valueStr) {
+			valueStr = String.format("%s%n", valueStr);
+			append(  prefix, prefixStyle);
+			append(valueStr,  valueStyle);
 		}
 
+		private void append(String text, Style style) {
+			javax.swing.text.Style subStyle = subStyles.get(style);
+			append(text,  subStyle==null ? mainStyle :  subStyle);
+		}
+		
 		private void append(String text, javax.swing.text.Style style) {
 			try {
 				doc.insertString(doc.getLength(), text, style); }
@@ -235,16 +254,18 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 		final int indentLevel;
 		final String label;
 		final String valueStr;
-		final Style style;
+		final Style valueStyle;
+		final Style labelStyle;
 		
-		Entry(int indentLevel, String label, Style style, String format, Object[] args) {
+		Entry(int indentLevel, Style labelStyle, String label, Style valueStyle, String format, Object[] args) {
 			this.indentLevel = indentLevel;
-			this.style = style;
+			this.labelStyle = labelStyle;
 			this.label = label==null ? "" : label.trim();
+			this.valueStyle = valueStyle;
 			this.valueStr = String.format(Locale.ENGLISH, format, args);
 		}
-		Entry(int indentLevel, String label) {
-			this(indentLevel, label, null, "", new Object[0]);
+		Entry(int indentLevel, Style labelStyle, String label) {
+			this(indentLevel, labelStyle, label, null, "", new Object[0]);
 		}
 	}
 	
