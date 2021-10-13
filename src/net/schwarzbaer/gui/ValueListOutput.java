@@ -30,7 +30,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	public void add(int indentLevel, String label, Boolean value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Boolean"); else add(indentLevel, label, "%s", value); }
 	public void add(int indentLevel, String label, String  value) { if (value==null) add(indentLevel, label, "<null> (%s)", "String" ); else add(indentLevel, label, "\"%s\"", value); }
 	
-	enum StyleTarget { Label, Value, CompleteLine }
+	public enum StyleTarget { Label, Value, CompleteLine }
 	public void setStyle(Style style, StyleTarget target, boolean forNextEntryOnly) {
 		if (target==StyleTarget.CompleteLine || target==StyleTarget.Label) {
 			if (forNextEntryOnly)
