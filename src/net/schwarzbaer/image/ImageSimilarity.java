@@ -77,17 +77,17 @@ public class ImageSimilarity<ImageID> {
 		WritableRaster createRaster(ImageID image, int backgroundColor, int width, int height);
 	}
 
-	public static class ComparableImage {
+	private static class ComparableImage {
 		
-		public final byte[] hash;
-		public final int index;
-		public double similarity;
+		final byte[] hash;
+		final int index;
+		double similarity;
 
-		public <ImageID> ComparableImage(int index, ImageID imageID, RasterSource<ImageID> rasterSource) {
+		<ImageID> ComparableImage(int index, ImageID imageID, RasterSource<ImageID> rasterSource) {
 			this(index,rasterSource.createRaster(imageID,0xFFFFFF,256,256));
 		}
 
-		public ComparableImage(int index, WritableRaster raster) {
+		ComparableImage(int index, WritableRaster raster) {
 			//this.raster = raster;
 			this.index = index;
 			this.similarity = Double.NaN;
