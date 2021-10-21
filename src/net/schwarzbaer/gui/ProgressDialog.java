@@ -19,6 +19,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
 
 public class ProgressDialog extends StandardDialog {
 	private static final long serialVersionUID = 1401683964054921965L;
@@ -48,7 +49,7 @@ public class ProgressDialog extends StandardDialog {
 			Thread thread = new Thread(()->{
 				pd.waitUntilDialogIsVisible();
 				result = useProgressDialog.apply(pd);
-				pd.closeDialog();
+				SwingUtilities.invokeLater(pd::closeDialog);
 			});
 			pd.addCancelListener(thread::interrupt);
 			thread.start();
