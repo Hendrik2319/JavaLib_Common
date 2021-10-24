@@ -12,8 +12,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
 
-import javax.activation.DataHandler;
-
 public class ClipboardTools {
 
 	public static boolean copyToClipBoard(BufferedImage image) {
@@ -22,8 +20,9 @@ public class ClipboardTools {
 	}
 
 	public static boolean copyToClipBoard(String str) {
-		if (str==null) return false;
-		return copyToClipBoard(new DataHandler(str,"text/plain"), null);
+		return copyStringSelectionToClipBoard(str);
+//		if (str==null) return false;
+//		return copyToClipBoard(new DataHandler(str,"text/plain"), null);
 	}
 
 	public static boolean copyStringSelectionToClipBoard(String str) {
