@@ -256,13 +256,12 @@ public class XMLTreeView extends JTree implements TreeSelectionListener {
 		@Override public String toString() { return toSimpleLabel()+(value==null?"":": \""+value+"\""); }
 		@Override public TreeNode    getParent() { return parent; }
 		
-		@Override public TreeNode    getChildAt(int childIndex)   { createChildList(); return children.get(childIndex); }
-		@Override public int         getChildCount()              { createChildList(); return children.size(); }
-		@Override public int         getIndex(TreeNode childNode) { createChildList(); return children.indexOf(childNode); }
-		@Override public boolean     isLeaf()                     { createChildList(); return children.isEmpty(); }
-		@SuppressWarnings("rawtypes")
-		@Override public Enumeration children()                   { createChildList(); return children.elements(); }
-		@Override public boolean     getAllowsChildren()          { return !isLeaf(); }
+		@Override public TreeNode                 getChildAt(int childIndex)   { createChildList(); return children.get(childIndex); }
+		@Override public int                      getChildCount()              { createChildList(); return children.size(); }
+		@Override public int                      getIndex(TreeNode childNode) { createChildList(); return children.indexOf(childNode); }
+		@Override public boolean                  isLeaf()                     { createChildList(); return children.isEmpty(); }
+		@Override public Enumeration<XMLTreeNode> children()                   { createChildList(); return children.elements(); }
+		@Override public boolean                  getAllowsChildren()          { return !isLeaf(); }
 	}
 	
 	public class NodeContextMenu implements ActionListener {
