@@ -313,6 +313,9 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
 	}
 	
+	public void setBgColor(Color bgColor) {
+		setBackground(bgColor, null);	
+	}
 	public void setBackground(Color bgColor, BGPattern bgPattern) {
 		this.bgColor = bgColor;
 		this.bgPattern = bgPattern;
