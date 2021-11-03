@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -31,8 +32,33 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private static final Color COLOR_AXIS = new Color(0x70000000,true);
 	//private static final Color COLOR_BACKGROUND = Color.WHITE;
 	
+	enum BGPattern {
+		WhiteChecker("White Checker", createCheckerPattern(10, 6,4, new Color(0xFFFFFF), new Color(0xEFEFEF))),
+		GrayChecker ( "Gray Checker", createCheckerPattern(10, 6,4, new Color(0x7F7F7F), new Color(0x6F6F6F))),
+		BlackChecker("Black Checker", createCheckerPattern(10, 6,4, new Color(0x000000), new Color(0x202020))),
+		;
+		private final String label;
+		private final BufferedImage patternImage;
+		private BGPattern(String label, BufferedImage patternImage) {
+			this.label = label;
+			this.patternImage = patternImage;
+		}
+		private static BufferedImage createCheckerPattern(int cellWidth, int repeatsX, int repeatsY, Color c1, Color c2) {
+			BufferedImage pattern = new BufferedImage(cellWidth*2*repeatsX, cellWidth*2*repeatsY, BufferedImage.TYPE_INT_ARGB);
+			Graphics g = pattern.getGraphics();
+			for (int x=0; x<2*repeatsX; x++) {
+				for (int y=0; y<2*repeatsY; y++) {
+					g.setColor( ((x+y)&1)==0 ? c1 : c2 );
+					g.fillRect(x*cellWidth, y*cellWidth, cellWidth, cellWidth);
+				}
+			}
+			return pattern;
+		}
+	}
+	
 	private BufferedImage image;
 	private Color bgColor;
+	private BGPattern bgPattern;
 	private boolean useInterpolation;
 	private boolean useBetterInterpolation;
 	private final BetterScaling betterScaling;
@@ -43,6 +69,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	public ImageView(BufferedImage image, int width, int height, InterpolationLevel interpolationLevel) {
 		this.image = image;
 		bgColor = null;
+		bgPattern = null;
 		useInterpolation = interpolationLevel==null || interpolationLevel.isGreaterThan(InterpolationLevel.Level0_NearestNeighbor);
 		useBetterInterpolation = interpolationLevel==InterpolationLevel.Level2_Better;
 		setPreferredSize(width, height);
@@ -286,8 +313,9 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
 	}
 	
-	public void setBgColor(Color bgColor) {
+	public void setBackground(Color bgColor, BGPattern bgPattern) {
 		this.bgColor = bgColor;
+		this.bgPattern = bgPattern;
 		repaint();
 	}
 	
@@ -310,6 +338,33 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				if (bgColor!=null) {
 					g2.setColor(bgColor);
 					g2.fillRect(x+imageX, y+imageY, imageWidth, imageHeight);
+				}
+				if (bgPattern!=null) {
+					Shape clip = g2.getClip();
+					g2.setClip(imageX, imageY, imageWidth, imageHeight);
+					
+					BufferedImage pattImg = bgPattern.patternImage;
+					int pattWidth  = pattImg.getWidth();
+					int pattHeight = pattImg.getHeight();
+					int nX = width /pattWidth;
+					int nY = height/pattHeight;
+					
+					for (int iX=0; iX<=nX; iX++) {
+						
+						int pattX = iX*pattWidth;
+						if (pattX >= x+imageX+imageWidth) break;
+						if (pattX+pattWidth <= x+imageX) continue;
+						
+						for (int iY=0; iY<=nY; iY++) {
+							
+							int pattY = iY*pattHeight;
+							if (pattY >= y+imageY+imageHeight) break;
+							if (pattY+pattHeight <= y+imageY) continue;
+							
+							g2.drawImage(pattImg, pattX, pattY, null);
+						}
+					}
+					g2.setClip(clip);
 				}
 				
 				g2.setColor(COLOR_AXIS);
@@ -396,11 +451,14 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			add(createMenuItem("400%",e->imageView.setZoom(4.0f)));
 			add(createMenuItem("600%",e->imageView.setZoom(6.0f)));
 			addSeparator();
-			add(createSetBgColorMenuItem(imageView,Color.BLACK  , "Set Background to Black"));
-			add(createSetBgColorMenuItem(imageView,Color.WHITE  , "Set Background to White"));
-			add(createSetBgColorMenuItem(imageView,Color.MAGENTA, "Set Background to Magenta"));
-			add(createSetBgColorMenuItem(imageView,Color.GREEN  , "Set Background to Green"));
-			add(createSetBgColorMenuItem(imageView,null         , "Remove Background Color"));
+			add(createSetBgPatternMenuItem(imageView, BGPattern.WhiteChecker));
+			add(createSetBgPatternMenuItem(imageView, BGPattern.GrayChecker ));
+			add(createSetBgPatternMenuItem(imageView, BGPattern.BlackChecker));
+			add(createSetBgColorMenuItem(imageView, Color.BLACK  , "Set Background to Black"));
+			add(createSetBgColorMenuItem(imageView, Color.WHITE  , "Set Background to White"));
+			add(createSetBgColorMenuItem(imageView, Color.MAGENTA, "Set Background to Magenta"));
+			add(createSetBgColorMenuItem(imageView, Color.GREEN  , "Set Background to Green"));
+			add(createSetBgColorMenuItem(imageView, null         , "Remove Background"));
 			if (!predefinedInterpolationLevel) {
 				addSeparator();
 				add(chkbxInterpolation);
@@ -429,8 +487,14 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			return comp;
 		}
 
+		private JMenuItem createSetBgPatternMenuItem(ImageView imageView, BGPattern pattern) {
+			JMenuItem comp = createMenuItem(String.format("Set Background to %s", pattern.label), e->imageView.setBackground(null, pattern));
+			comp.setIcon(new ColorIcon(pattern,32,16));
+			return comp;
+		}
+
 		private JMenuItem createSetBgColorMenuItem(ImageView imageView, Color color, String title) {
-			JMenuItem comp = createMenuItem(title, e->imageView.setBgColor(color));
+			JMenuItem comp = createMenuItem(title, e->imageView.setBackground(color, null));
 			comp.setIcon(new ColorIcon(color,32,16,3));
 			return comp;
 		}
@@ -438,12 +502,20 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		private static class ColorIcon implements Icon {
 		
 			private final Color color;
+			private final BGPattern pattern;
 			private final int width;
 			private final int height;
 			private final int cornerRadius;
 		
-			public ColorIcon(Color color, int width, int height, int cornerRadius) {
+			ColorIcon(BGPattern pattern, int width, int height) {
+				this(null, pattern, width, height, 0);
+			}
+			ColorIcon(Color color, int width, int height, int cornerRadius) {
+				this(color, null, width, height, cornerRadius);
+			}
+			private ColorIcon(Color color, BGPattern pattern, int width, int height, int cornerRadius) {
 				this.color = color;
+				this.pattern = pattern;
 				this.width = width;
 				this.height = height;
 				this.cornerRadius = cornerRadius;
@@ -456,20 +528,35 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				if (g instanceof Graphics2D) {
 					Graphics2D g2 = (Graphics2D) g;
 					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-					if (color==null) {
-						g2.setColor(Color.BLACK);
-						g2.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
-					} else {
+					
+					if (color != null) {
 						g2.setColor(color);
 						g2.fillRoundRect(x, y, width, height, cornerRadius*2, cornerRadius*2);
+						
+					} else if (pattern != null) {
+						Shape clip = g2.getClip();
+						g2.setClip(x, y, width, height);
+						g2.drawImage(pattern.patternImage, x, y, null);
+						g2.setClip(clip);
+						
+					} else {
+						g2.setColor(Color.BLACK);
+						g2.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
 					}
 				} else {
-					if (color==null) {
-						g.setColor(Color.BLACK);
-						g.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
-					} else {
+					if (color != null) {
 						g.setColor(color);
 						g.fillRoundRect(x, y, width, height, cornerRadius*2, cornerRadius*2);
+						
+					} else if (pattern != null) {
+						Shape clip = g.getClip();
+						g.setClip(x, y, width, height);
+						g.drawImage(pattern.patternImage, x, y, null);
+						g.setClip(clip);
+						
+					} else {
+						g.setColor(Color.BLACK);
+						g.drawRoundRect(x, y, width-1, height-1, cornerRadius*2, cornerRadius*2);
 					}
 				}
 			}
