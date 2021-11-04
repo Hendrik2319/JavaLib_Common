@@ -303,8 +303,12 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	}
 	
 	public void setImage(BufferedImage image) {
+		setImage(image, true);
+	}
+	
+	public void setImage(BufferedImage image, boolean resetView) {
 		this.image = image;
-		reset();
+		if (resetView) reset();
 		updateBetterInterpolation();
 	}
 
