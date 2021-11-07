@@ -17,6 +17,7 @@ public abstract class Shading {
 		this(shading.sun);
 	}
 
+	public Normal getSun() { return sun; }
 	public void setSun(double x, double y, double z) {
 		sun = new Normal(x,y,z).normalize();
 	}
