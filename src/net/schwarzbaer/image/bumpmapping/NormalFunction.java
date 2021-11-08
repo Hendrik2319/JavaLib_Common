@@ -76,6 +76,10 @@ public interface NormalFunction extends NormalFunctionBase {
 			return this;
 		}
 
+		public Normal getNormal(int x, int y) {
+			return normalMap.get(x, y);
+		}
+		
 		@Override
 		public Normal getNormal(double x, double y, double width, double height) {
 			int xi = (int) Math.round(x + (centered ? (normalMap.width -width )/2 : 0));
