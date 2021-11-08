@@ -8,13 +8,12 @@ import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +23,6 @@ import java.util.function.Consumer;
 import javax.swing.Icon;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
 public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
@@ -62,6 +60,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private boolean useInterpolation;
 	private boolean useBetterInterpolation;
 	private final BetterScaling betterScaling;
+	private final ImageViewContextMenu contextMenu;
+	private final Vector<DrawExtension> drawExtensions;
 	
 	public ImageView(int width, int height) { this(null, width, height, null); }
 	public ImageView(BufferedImage image, int width, int height) { this(image, width, height, null); }
@@ -79,15 +79,16 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		betterScaling = new BetterScaling(this::repaint);
 		addZoomListener(this::updateBetterInterpolation);
 		
-		ContextMenu contextMenu = new ContextMenu(this,interpolationLevel!=null);
-		addMouseListener(new MouseAdapter() {
-			@Override public void mouseClicked(MouseEvent e) {
-				if (e.getButton()==MouseEvent.BUTTON3)
-					contextMenu.show(ImageView.this, e.getX(), e.getY());
-			}
-		});
+		contextMenu = new ImageViewContextMenu(this,interpolationLevel!=null);
+		contextMenu.addTo(this);
+		
+		drawExtensions = new Vector<DrawExtension>();
 	}
 	
+	public ContextMenu getContextMenu() {
+		return contextMenu;
+	}
+
 	public enum InterpolationLevel {
 		Level0_NearestNeighbor, Level1_Bicubic, Level2_Better;
 
@@ -402,14 +403,27 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			}
 			
 			drawMapDecoration(g2, x, y, width, height);
+			
+			for (DrawExtension de : drawExtensions)
+				de.draw(g2, x, y, width, height, viewState);
 		}
 	}
+	
+	public interface DrawExtension {
+		void draw(Graphics2D g2, int x, int y, int width, int height, ViewState viewState);
+	}
+	
+	public void    addDrawExtensions(DrawExtension de) { drawExtensions.   add(de); }
+	public void removeDrawExtensions(DrawExtension de) { drawExtensions.remove(de); }
 	
 	@Override
 	protected ViewState createViewState() {
 		return new ViewState(this);
 	}
-	class ViewState extends ZoomableCanvas.ViewState {
+	
+	public ViewState getViewState() { return viewState; }
+
+	public class ViewState extends ZoomableCanvas.ViewState {
 		
 		ViewState(ZoomableCanvas<?> canvas) {
 			super(canvas,0.1f);
@@ -427,12 +441,12 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		}
 	}
 	
-	private static class ContextMenu extends JPopupMenu{
+	private static class ImageViewContextMenu extends ContextMenu{
 		private static final long serialVersionUID = 4090306246829034171L;
 		private JCheckBoxMenuItem chkbxBetterInterpolation;
 		private ImageView imageView;
 
-		public ContextMenu(ImageView imageView, boolean predefinedInterpolationLevel) {
+		public ImageViewContextMenu(ImageView imageView, boolean predefinedInterpolationLevel) {
 			this.imageView = imageView;
 			JCheckBoxMenuItem chkbxInterpolation = null;
 			if (!predefinedInterpolationLevel) {
