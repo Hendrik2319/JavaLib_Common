@@ -94,17 +94,18 @@ public interface NormalFunction extends NormalFunctionBase {
 		}
 		
 		public static NormalMap createFromHeightMap(float[][] heightMap, double cornerScale) {
-			return createFromHeightMap(heightMap,null,cornerScale, NormalMap::new, false);
+			return createFromHeightMap(heightMap,(ColorSource)null,cornerScale, NormalMap::new, false);
 		}
 		public static NormalMap createFromHeightMap(float[][] heightMap, double cornerScale, boolean centered) {
-			return createFromHeightMap(heightMap,null,cornerScale, NormalMap::new, centered);
+			return createFromHeightMap(heightMap,(ColorSource)null,cornerScale, NormalMap::new, centered);
 		}
 		public static NormalMap createFromHeightMap(float[][] heightMap, double cornerScale, Constructor constructor) {
-			return createFromHeightMap(heightMap,null,cornerScale, constructor, false);
+			return createFromHeightMap(heightMap,(ColorSource)null,cornerScale, constructor, false);
 		}
 		public static NormalMap createFromHeightMap(float[][] heightMap, double cornerScale, Constructor constructor, boolean centered) {
-			return createFromHeightMap(heightMap,null,cornerScale, constructor, centered);
+			return createFromHeightMap(heightMap,(ColorSource)null,cornerScale, constructor, centered);
 		}
+		
 		public static NormalMap createFromHeightMap(float[][] heightMap, Color[][] colorMap, double cornerScale) {
 			return createFromHeightMap(heightMap, colorMap, cornerScale, NormalMap::new, false);
 		}
@@ -115,12 +116,22 @@ public interface NormalFunction extends NormalFunctionBase {
 			return createFromHeightMap(heightMap, colorMap, cornerScale, constructor, false);
 		}
 		public static NormalMap createFromHeightMap(float[][] heightMap, Color[][] colorMap, double cornerScale, Constructor constructor, boolean centered) {
+			return createFromHeightMap(heightMap, (hv,x,y)->colorMap[x][y], cornerScale, constructor, centered);
+		}
+		
+		public interface ColorSource {
+			Color getColor(float heightValue, int x, int y);
+		}
+		public static NormalMap createFromHeightMap(float[][] heightMap, ColorSource colorSource, double cornerScale) {
+			return createFromHeightMap(heightMap,colorSource,cornerScale, NormalMap::new, false);
+		}
+		public static NormalMap createFromHeightMap(float[][] heightMap, ColorSource colorSource, double cornerScale, Constructor constructor, boolean centered) {
 			int width = heightMap.length;
 			int height = heightMap[0].length;
 			NormalMapData normalMap = new NormalMapData(width,height);
 			for (int x1=0; x1<width; ++x1)
 				for (int y1=0; y1<height; ++y1) {
-					MutableNormal base = new MutableNormal(0,0,0,colorMap==null?null:colorMap[x1][y1]);
+					MutableNormal base = new MutableNormal(0,0,0, colorSource==null ? null : colorSource.getColor(heightMap[x1][y1],x1,y1));
 					addNormal(base,computeNormal(heightMap,x1,y1,+1, 0),1); 
 					addNormal(base,computeNormal(heightMap,x1,y1, 0,+1),1); 
 					addNormal(base,computeNormal(heightMap,x1,y1,-1, 0),1); 
