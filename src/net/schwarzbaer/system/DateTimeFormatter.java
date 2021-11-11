@@ -56,18 +56,23 @@ public class DateTimeFormatter {
 		return format;
 	}
 	
-	public static String getDurationStr(long duration_sec) {
+	public  static String getDurationStr_ms(long duration_ms) { return getDurationStr(duration_ms/1000, duration_ms % 1000); }
+	public  static String getDurationStr(long duration_sec) { return getDurationStr(duration_sec, null); }
+	private static String getDurationStr(long duration_sec, Long duration_ms) {
 		long s =  duration_sec      %60;
 		long m = (duration_sec/60  )%60;
 		long h =  duration_sec/3600;
+
+		String msStr = duration_ms==null ? "" : String.format(".%03d", duration_ms);
 		
-		if (duration_sec < 60)
-			return String.format("%d s", s);
+		if (duration_sec < 60) {
+			return String.format("%d%s s", s, msStr);
+		}
 		
 		if (duration_sec < 3600)
-			return String.format("%d:%02d min", m, s);
+			return String.format("%d:%02d%s min", m, s, msStr);
 		
-		return String.format("%d:%02d:%02d h", h, m, s);
+		return String.format("%d:%02d:%02d%s h", h, m, s, msStr);
 	}
 
 	public long getTimeInMillis(int year, int month, int date, int hourOfDay, int minute, int second) {
