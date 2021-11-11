@@ -76,7 +76,7 @@ public class BumpMapping {
 	public BufferedImage renderImage_uncached(int width, int height) { return renderImage_uncached(width, height, null); }
 	public BufferedImage renderImage_uncached(int width, int height, RenderProgressListener listener) {
 		
-		if (normalCache==null || (cacheNormals && !normalCache.hasSize(width, height))) {
+		if (normalCache==null || !cacheNormals || (cacheNormals && !normalCache.hasSize(width, height))) {
 			if (cacheNormals) normalCache = new NormalCache(width, height, overSampling, (x,y)->normalFunction.getNormal(x,y,width,height));
 			else              normalCache = new NormalCache.Dummy(                       (x,y)->normalFunction.getNormal(x,y,width,height));
 		}
@@ -188,8 +188,10 @@ public class BumpMapping {
 	
 		public int[] computeColor(int pixX, int pixY, double x, double y) {
 			
-			if (overSampling==null || overSampling==OverSampling.None || overSampling.samplingPoints.length==0)
-				return colorSource.getColor(x,y,normalSource.getNormal(pixX, pixY, 0, x,y));
+			if (overSampling==null || overSampling==OverSampling.None || overSampling.samplingPoints.length==0) {
+				Normal normal = normalSource.getNormal(pixX, pixY, 0, x,y);
+				return colorSource.getColor(x,y,normal);
+			}
 			
 			boolean miss = false;
 			boolean hit  = false;

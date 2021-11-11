@@ -142,6 +142,8 @@ public abstract class Shading {
 		@Override
 		public int[] getColor(double x, double y, double width, double height, Normal normal) {
 			
+			if (normal==null) return null;
+			
 			Color c = normal.color==null?materialColor:normal.color;
 			double diffuseIntensity = getF(sun,normal);
 			double intensity = mul_inverse(ambientIntensity, diffuseIntensity);
