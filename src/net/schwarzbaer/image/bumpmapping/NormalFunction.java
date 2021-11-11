@@ -61,6 +61,9 @@ public interface NormalFunction extends NormalFunctionBase {
 			}
 		}
 		
+		public NormalMap(NormalMapData normalMap, boolean centered) {
+			this(normalMap, centered, true);
+		}
 		public NormalMap(NormalMapData normalMap, boolean centered, boolean forceNormalCreation) {
 			this.normalMap = normalMap;
 			this.centered = centered;
@@ -203,7 +206,10 @@ public interface NormalFunction extends NormalFunctionBase {
 	public static class InterpolatingNormalMap extends NormalMap {
 		
 		public InterpolatingNormalMap(NormalMapData normalMap, boolean centered) {
-			super(normalMap,centered,true);
+			this(normalMap,centered,true);
+		}
+		public InterpolatingNormalMap(NormalMapData normalMap, boolean centered, boolean forceNormalCreation) {
+			super(normalMap,centered,forceNormalCreation);
 		}
 		
 		@Override
