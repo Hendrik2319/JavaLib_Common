@@ -112,6 +112,10 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			betterScaling.clearResult();
 	}
 	
+	public static BufferedImage computeScaledImageByBetterScaling(BufferedImage image, int targetWidth, int targetHeight, boolean ignoreAlpha) {
+		return BetterScaling.computeScaledImage(image, targetWidth, targetHeight, ignoreAlpha);
+	}
+	
 	private static class BetterScaling {
 		
 		private final Runnable repaint;
@@ -163,7 +167,10 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			return null;
 		}
 
-		private BufferedImage computeScaledImage(BufferedImage image, int targetWidth, int targetHeight) {
+		private static BufferedImage computeScaledImage(BufferedImage image, int targetWidth, int targetHeight) {
+			return computeScaledImage(image, targetWidth, targetHeight, true);
+		}
+		private static BufferedImage computeScaledImage(BufferedImage image, int targetWidth, int targetHeight, boolean ignoreAlpha) {
 			Thread currentThread = Thread.currentThread();
 			BufferedImage newImage = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_ARGB);
 			
@@ -175,8 +182,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			WritableRaster origRaster = image.getRaster();
 			WritableRaster newRaster  = newImage.getRaster();
 			
-			int[] origColor = new int[4]; // image.getColorModel().getComponentSize();
-			double[] sum = new double[origColor.length];
+			int[] origColor = new int[4];
+			double[] sum = new double[4];
 			int[] newColor = new int[4];
 			
 			for (int x=0; x<targetWidth; x++) {
@@ -189,7 +196,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 					PixelFract[] fY = pixelFractionsY[y];
 					
 					Arrays.fill(sum,0);
-					double totalWeight = 0, pixelWeight;
+					double totalWeight = 0, totalAlphaWeight = 0, fractWeight, alphaWeight;
 					for (int iX=0; iX<fX.length; iX++) {
 						if (currentThread.isInterrupted()) return null;
 						
@@ -204,16 +211,19 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 							//	System.err.printf("%s: origRaster.getPixel( %d, %d, int[%d]) -> %s%n", e.getClass().getName(), pixelFractX.coord, pixelFractY.coord, origColor.length, e.getMessage());
 							//	//e.printStackTrace();
 							//}
-							pixelWeight = pixelFractX.fract*pixelFractY.fract;
-							for (int i=0; i<origColor.length; i++)
-								sum[i] += origColor[i]*pixelWeight;
-							totalWeight += pixelWeight;
+							fractWeight = pixelFractX.fract*pixelFractY.fract;
+							alphaWeight = ignoreAlpha ? 1 : origColor[3]/255.0;
+							for (int i=0; i<3; i++)
+								sum[i] += origColor[i]*fractWeight*alphaWeight;
+							sum[3] += origColor[3]*fractWeight;
+							totalWeight += fractWeight*alphaWeight;
+							totalAlphaWeight += fractWeight;
 						}
 					}
 					newColor[0] = (int) Math.max(0, Math.min(255, Math.round( sum[0] / totalWeight ) ) );
 					newColor[1] = (int) Math.max(0, Math.min(255, Math.round( sum[1] / totalWeight ) ) );
 					newColor[2] = (int) Math.max(0, Math.min(255, Math.round( sum[2] / totalWeight ) ) );
-					newColor[3] = 255; //(int) Math.max(0, Math.min(255, Math.round( sum[3] / totalWeight ) ) );
+					newColor[3] = ignoreAlpha ? 255 : (int) Math.max(0, Math.min(255, Math.round( sum[3] / totalAlphaWeight ) ) );
 					
 					//try {
 						newRaster.setPixel(x, y, newColor);
@@ -227,24 +237,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			//return null;
 		}
 
-		@SuppressWarnings("unused")
-		private void showPixelFractions(BufferedImage image, int targetWidth, int targetHeight, PixelFract[][] pixelFractionsX, PixelFract[][] pixelFractionsY) {
-			System.out.printf("PixelFractions:  %d x %d  ->  %d x %d%n", image.getWidth(), image.getHeight(), targetWidth, targetHeight);
-			int n = Math.max(pixelFractionsX.length, pixelFractionsY.length);
-			for (int i=0; i<n; i++) {
-				PixelFract[] fX = i<pixelFractionsX.length ? pixelFractionsX[i] : null;
-				PixelFract[] fY = i<pixelFractionsY.length ? pixelFractionsY[i] : null;
-				System.out.printf("  [%d]  %20s  %20s%n", i, toString(fX), toString(fY));
-			}
-		}
-		
-		private String toString(PixelFract[] fracts) {
-			if (fracts==null) return "";
-			Iterator<String> iterator = Arrays.stream(fracts).map(pf->String.format(Locale.ENGLISH, "%03d:%1.3f", pf.coord, pf.fract)).iterator();
-			return String.join(",", (Iterable<String>)()->iterator);
-		}
-
-		private PixelFract[][] computePixelFractions(int currentWidth, int targetWidth) {
+		private static PixelFract[][] computePixelFractions(int currentWidth, int targetWidth) {
 			Thread currentThread = Thread.currentThread();
 			PixelFract[][] pixelFractions = new PixelFract[targetWidth][];
 			double pixelWidth = currentWidth / (double)targetWidth;
@@ -266,6 +259,23 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				}
 			}
 			return pixelFractions;
+		}
+
+		@SuppressWarnings("unused")
+		private void showPixelFractions(BufferedImage image, int targetWidth, int targetHeight, PixelFract[][] pixelFractionsX, PixelFract[][] pixelFractionsY) {
+			System.out.printf("PixelFractions:  %d x %d  ->  %d x %d%n", image.getWidth(), image.getHeight(), targetWidth, targetHeight);
+			int n = Math.max(pixelFractionsX.length, pixelFractionsY.length);
+			for (int i=0; i<n; i++) {
+				PixelFract[] fX = i<pixelFractionsX.length ? pixelFractionsX[i] : null;
+				PixelFract[] fY = i<pixelFractionsY.length ? pixelFractionsY[i] : null;
+				System.out.printf("  [%d]  %20s  %20s%n", i, toString(fX), toString(fY));
+			}
+		}
+		
+		private String toString(PixelFract[] fracts) {
+			if (fracts==null) return "";
+			Iterator<String> iterator = Arrays.stream(fracts).map(pf->String.format(Locale.ENGLISH, "%03d:%1.3f", pf.coord, pf.fract)).iterator();
+			return String.join(",", (Iterable<String>)()->iterator);
 		}
 
 		private static class PixelFract {
