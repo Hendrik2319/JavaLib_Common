@@ -23,4 +23,8 @@ public class ConstPoint2D {
 		double l2 = Math.sqrt(dx2*dx2+dy2*dy2);
 		return (dx1*dy2 - dy1*dx2) / l1 / l2;
 	}
+
+	public ConstPoint2D getMid(ConstPoint2D p) {
+		return new ConstPoint2D( (x+p.x)/2, (y+p.y)/2 );
+	}
 }
