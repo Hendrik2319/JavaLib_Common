@@ -1,4 +1,4 @@
-package net.schwarzbaer.geometry;
+package net.schwarzbaer.geometry.plain;
 
 public class ConstPoint2D {
 	public final double x,y;

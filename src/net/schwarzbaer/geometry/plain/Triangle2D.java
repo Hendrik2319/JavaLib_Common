@@ -1,22 +1,22 @@
-package net.schwarzbaer.geometry;
+package net.schwarzbaer.geometry.plain;
 
-public class Triangle {
+public class Triangle2D {
 	
 	public final ConstPoint2D p1;
 	public final ConstPoint2D p2;
 	public final ConstPoint2D p3;
 
-	public Triangle(ConstPoint2D p1, ConstPoint2D p2, ConstPoint2D p3) {
+	public Triangle2D(ConstPoint2D p1, ConstPoint2D p2, ConstPoint2D p3) {
 		this.p1 = p1;
 		this.p2 = p2;
 		this.p3 = p3;
 	}
 
-	public Triangle(Triangle triangle) {
+	public Triangle2D(Triangle2D triangle) {
 		this(triangle.p1, triangle.p2, triangle.p3);
 	}
 
-	public Triangle getOutlineTriangle(double outOffset12, double outOffset23, double outOffset13) {
+	public Triangle2D getOutlineTriangle(double outOffset12, double outOffset23, double outOffset13) {
 		
 		double sin_a1 = Math.abs( ConstPoint2D.getSinOfAngle(p1, p2, p3) );
 		double sin_a2 = Math.abs( ConstPoint2D.getSinOfAngle(p2, p1, p3) );
@@ -36,7 +36,7 @@ public class Triangle {
 		ConstPoint2D out2 = computeInnerPoint(f1, null, f3);
 		ConstPoint2D out1 = computeInnerPoint(null, f2, f3);
 		
-		return new Triangle(out1, out2, out3);
+		return new Triangle2D(out1, out2, out3);
 	}
 
 	public ConstPoint2D computeInnerPoint(Double f1, Double f2, Double f3) {
