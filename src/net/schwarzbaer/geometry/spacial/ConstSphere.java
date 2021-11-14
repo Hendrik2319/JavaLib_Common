@@ -1,8 +1,8 @@
 package net.schwarzbaer.geometry.spacial;
 
 public class ConstSphere {
-	protected final ConstPoint3d center;
-	protected final double radius;
+	public final ConstPoint3d center;
+	public final double radius;
 	
 	public ConstSphere(ConstPoint3d center, double radius) {
 		this.center = center;

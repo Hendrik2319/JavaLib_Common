@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Vector;
 
+import net.schwarzbaer.geometry.spacial.ConstPoint3d;
+
 public class IndexedLineSet {
 	
 	private final HashSet<String> pointSet;
@@ -20,6 +22,9 @@ public class IndexedLineSet {
 		pointSet = !optimizePointSet ? null : new HashSet<>();
 	}
 	
+	public int addPoint(ConstPoint3d p) {
+		return addPoint(p.x, p.y, p.z);
+	}
 	public int addPoint(double x, double y, double z) {
 		String str = String.format(Locale.ENGLISH, pointCoordFormat+" "+pointCoordFormat+" "+pointCoordFormat, x,y,z);
 		int index;
@@ -31,6 +36,18 @@ public class IndexedLineSet {
 			if (pointSet!=null) pointSet.add(str);
 		}
 		return index;
+	}
+	
+	public void addAxesCross(ConstPoint3d p, double d) {
+		int p11 = addPoint(p.add( d,0,0));
+		int p12 = addPoint(p.add(-d,0,0));
+		int p21 = addPoint(p.add(0, d,0));
+		int p22 = addPoint(p.add(0,-d,0));
+		int p31 = addPoint(p.add(0,0, d));
+		int p32 = addPoint(p.add(0,0,-d));
+		addLine(p11,p12);
+		addLine(p21,p22);
+		addLine(p31,p32);
 	}
 	
 	public void addLine(int pointIndex1, int pointIndex2) {

@@ -4,7 +4,7 @@ import java.util.Vector;
 
 public class PointSphere<Point extends ConstPoint3d> extends ConstSphere {
 	
-	private final Vector<Point> points;
+	public final Vector<Point> points;
 	private final CreatePoint<Point> createPoint;
 
 	public PointSphere(ConstPoint3d center, double radius, CreatePoint<Point> createPoint) {
@@ -36,9 +36,9 @@ public class PointSphere<Point extends ConstPoint3d> extends ConstSphere {
 			double height = (Math.random()*2-1)*this.radius;
 			double rh = Math.sqrt(this.radius*this.radius-height*height);
 			
-			double x = Math.cos(angle)*rh;
-			double y = Math.sin(angle)*rh;
-			double z = height;
+			double x = center.x + Math.cos(angle)*rh;
+			double y = center.y + Math.sin(angle)*rh;
+			double z = center.z + height;
 			
 			points.add(createPoint.create(center, x, y, z));
 		}
