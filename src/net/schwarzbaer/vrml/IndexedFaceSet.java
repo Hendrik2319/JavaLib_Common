@@ -44,12 +44,60 @@ public class IndexedFaceSet extends PointBasedSet {
 		faces.add(-1);
 		if (colorPerFace) colors.add(faceColor);
 	}
+
+	public void addPointFace(ConstPoint3d p, ConstPoint3d normal, double size) {
+		if (colorPerFace) throw new UnsupportedOperationException();
+		addPointFace(null, p, normal, size);
+	}
 	
-	public void writeToVRML(PrintWriter out, Color diffuseColor, boolean isSolid) {
+	public void addPointFace(Color color, ConstPoint3d p, ConstPoint3d normal, double size) {
+		if (colorPerFace && color==null) throw new IllegalArgumentException();
+		
+		normal = normal.normalize();
+		ConstPoint3d axis1 = ConstPoint3d.computeCrossProdAB(normal, new ConstPoint3d(0,0,1));
+		if (axis1.isOrigin())
+			axis1 = ConstPoint3d.computeCrossProdAB(normal, new ConstPoint3d(0,1,0));
+		axis1 = axis1.normalize();
+		ConstPoint3d axis2 = ConstPoint3d.computeCrossProdAB(normal, axis1);
+		
+		axis1 = axis1.mul(size/2);
+		axis2 = axis2.mul(size/2);
+		
+		ConstPoint3d p11 = new ConstPoint3d(
+			p.x+axis1.x+axis2.x,
+			p.y+axis1.y+axis2.y,
+			p.z+axis1.z+axis2.z
+		);
+		ConstPoint3d p10 = new ConstPoint3d(
+			p.x+axis1.x-axis2.x,
+			p.y+axis1.y-axis2.y,
+			p.z+axis1.z-axis2.z
+		);
+		ConstPoint3d p01 = new ConstPoint3d(
+			p.x-axis1.x+axis2.x,
+			p.y-axis1.y+axis2.y,
+			p.z-axis1.z+axis2.z
+		);
+		ConstPoint3d p00 = new ConstPoint3d(
+			p.x-axis1.x-axis2.x,
+			p.y-axis1.y-axis2.y,
+			p.z-axis1.z-axis2.z
+		);
+		
+		addFace(color,p00,p10,p11,p01);
+	}
+	
+	public void writeToVRML(PrintWriter out, boolean isSolid, Color diffuseColor, Color specularColor, Color emissiveColor) {
 		Iterable<String> coordIndexesIterable = ()->faces.stream().map(i->i.toString()).iterator();
 		out.println("Shape {");
-		out.printf ("	appearance Appearance { material Material { diffuseColor %s } }%n", VrmlTools.toString(diffuseColor));
-		out.println("	geometry IndexedFaceSet {");
+		out.printf ("	appearance Appearance {%n");
+		out.printf ("		material Material {%n");
+		if (diffuseColor !=null) out.printf ("			diffuseColor %s%n", VrmlTools.toString(diffuseColor));
+		if (specularColor!=null) out.printf ("			specularColor %s%n", VrmlTools.toString(specularColor));
+		if (emissiveColor!=null) out.printf ("			emissiveColor %s%n", VrmlTools.toString(emissiveColor));
+		out.printf ("		}%n");
+		out.printf ("	}%n");
+		out.printf ("	geometry IndexedFaceSet {%n");
 		out.printf ("		colorPerVertex FALSE%n");
 		out.printf ("		solid %s%n", isSolid ? "TRUE" : "FALSE");
 		out.printf ("		coord Coordinate { point [ %s ] }%n", String.join(", ", points));

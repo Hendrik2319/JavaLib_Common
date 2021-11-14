@@ -28,4 +28,18 @@ public class ConstPoint3d {
 	public boolean isOrigin() {
 		return x==0 && y==0 && z==0;
 	}
+	
+	public static ConstPoint3d computeCrossProd3P(ConstPoint3d center, ConstPoint3d p1, ConstPoint3d p2) {
+		ConstPoint3d a = p1.sub(center);
+		ConstPoint3d b = p2.sub(center);
+		return computeCrossProdAB(a, b);
+	}
+
+	public static ConstPoint3d computeCrossProdAB(ConstPoint3d a, ConstPoint3d b) {
+		return new ConstPoint3d(
+			a.y*b.z - a.z*b.y,
+			a.z*b.x - a.x*b.z,
+			a.x*b.y - a.y*b.x
+		);
+	}
 }
