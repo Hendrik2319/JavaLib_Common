@@ -1,18 +1,22 @@
 package net.schwarzbaer.geometry.plain;
 
-public class ConstPoint2D {
+public class ConstPoint2d {
 	public final double x,y;
 
-	public ConstPoint2D(double x, double y) {
+	public ConstPoint2d(double x, double y) {
 		this.x = x;
 		this.y = y;
 	}
 	
-	public double getDistance(ConstPoint2D p) {
-		return Math.sqrt( (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y) );
+	public double getDistance(ConstPoint2d p) {
+		return Math.sqrt( getSquaredDistance(p) );
+	}
+
+	public double getSquaredDistance(ConstPoint2d p) {
+		return (x-p.x)*(x-p.x) + (y-p.y)*(y-p.y);
 	}
 	
-	public static double getSinOfAngle(ConstPoint2D center, ConstPoint2D p1, ConstPoint2D p2) {
+	public static double getSinOfAngle(ConstPoint2d center, ConstPoint2d p1, ConstPoint2d p2) {
 		// |aXb| = |a| * |b| * sin(angle(a,b))
 		// (z of |aXb|) = ax*by - ay*bx
 		double dx1 = p1.x-center.x; // a = p1-center
@@ -24,7 +28,7 @@ public class ConstPoint2D {
 		return (dx1*dy2 - dy1*dx2) / l1 / l2;
 	}
 
-	public ConstPoint2D getMid(ConstPoint2D p) {
-		return new ConstPoint2D( (x+p.x)/2, (y+p.y)/2 );
+	public ConstPoint2d getMid(ConstPoint2d p) {
+		return new ConstPoint2d( (x+p.x)/2, (y+p.y)/2 );
 	}
 }
