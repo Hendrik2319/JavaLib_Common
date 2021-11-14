@@ -31,5 +31,8 @@ public class VrmlTools {
 		out.printf (Locale.ENGLISH, "Background { skyColor %1.3f %1.3f %1.3f }%n", skyR, skyG, skyB);
 		out.println();
 	}
-	
+
+	public static String toString(Color c) {
+		return String.format(Locale.ENGLISH, "%1.3f %1.3f %1.3f", c.getRed()/255f, c.getGreen()/255f, c.getBlue()/255f);
+	}
 }
