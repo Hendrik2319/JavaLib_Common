@@ -55,6 +55,21 @@ public class IndexedLineSet extends PointBasedSet {
 		lines.add(-1);
 	}
 
+
+	public void addFullCircleTo(int n, double radius, ConstPoint3d center, ConstPoint3d axis1, ConstPoint3d axis2) {
+		int first = -1;
+		for (int i=0; i<n; i++) {
+			double angle = i*2*Math.PI/n;
+			ConstPoint3d p = center
+					.add(axis1.mul(radius*Math.cos(angle)))
+					.add(axis2.mul(radius*Math.sin(angle)));
+				
+			int index = addLinePoint(p);
+			if (i==0) first = index;
+		}
+		closeLine(first);
+	}
+	
 	public void writeToVRML(PrintWriter out, Color lineColor) { writeToVRML(out, lineColor, 0); }
 	public void writeToVRML(PrintWriter out, Color lineColor, double transparency) {
 		Iterable<String> it = ()->lines.stream().map(i->i.toString()).iterator();
