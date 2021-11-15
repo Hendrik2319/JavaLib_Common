@@ -23,19 +23,38 @@ public class IndexedLineSet extends PointBasedSet {
 	}
 	
 	public void addLine(ConstPoint3d... points) {
-		for (ConstPoint3d p : points) {
-			int pIndex = addPoint(p);
-			lines.add(pIndex);
-		}
-		lines.add(-1);
+		for (ConstPoint3d p : points) addLinePoint(p);
+		closeLine();
 	}
-	
+
 	public void addLine(int... indexes) {
-		for (int i : indexes)
-			lines.add(i);
-		lines.add(-1);
+		for (int i : indexes) addLinePoint(i);
+		closeLine();
 	}
 	
+	public int addLinePoint(ConstPoint3d p) {
+		int pIndex = addPoint(p);
+		addLinePoint(pIndex);
+		return pIndex;
+	}
+
+	public void addLinePoint(int pIndex) {
+		lines.add(pIndex);
+	}
+
+	public void closeLine(ConstPoint3d p) {
+		addLinePoint(p);
+		closeLine();
+	}
+	public void closeLine(int pIndex) {
+		addLinePoint(pIndex);
+		if (pIndex>-1)
+			closeLine();
+	}
+	public void closeLine() {
+		lines.add(-1);
+	}
+
 	public void writeToVRML(PrintWriter out, Color lineColor) { writeToVRML(out, lineColor, 0); }
 	public void writeToVRML(PrintWriter out, Color lineColor, double transparency) {
 		Iterable<String> it = ()->lines.stream().map(i->i.toString()).iterator();

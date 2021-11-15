@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.PrintWriter;
 import java.util.Vector;
 
+import net.schwarzbaer.geometry.spacial.AxesCross;
 import net.schwarzbaer.geometry.spacial.ConstPoint3d;
 
 public class IndexedFaceSet extends PointBasedSet {
@@ -53,15 +54,9 @@ public class IndexedFaceSet extends PointBasedSet {
 	public void addPointFace(Color color, ConstPoint3d p, ConstPoint3d normal, double size) {
 		if (colorPerFace && color==null) throw new IllegalArgumentException();
 		
-		normal = normal.normalize();
-		ConstPoint3d axis1 = ConstPoint3d.computeCrossProdAB(normal, new ConstPoint3d(0,0,1));
-		if (axis1.isOrigin())
-			axis1 = ConstPoint3d.computeCrossProdAB(normal, new ConstPoint3d(0,1,0));
-		axis1 = axis1.normalize();
-		ConstPoint3d axis2 = ConstPoint3d.computeCrossProdAB(normal, axis1);
-		
-		axis1 = axis1.mul(size/2);
-		axis2 = axis2.mul(size/2);
+		AxesCross axes = AxesCross.compute(normal);
+		ConstPoint3d axis1 = axes.yAxis.mul(size/2);
+		ConstPoint3d axis2 = axes.zAxis.mul(size/2);
 		
 		ConstPoint3d p11 = new ConstPoint3d(
 			p.x+axis1.x+axis2.x,
