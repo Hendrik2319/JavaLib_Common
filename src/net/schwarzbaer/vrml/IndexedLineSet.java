@@ -57,6 +57,9 @@ public class IndexedLineSet extends PointBasedSet {
 
 
 	public void addFullCircleTo(int n, double radius, ConstPoint3d center, ConstPoint3d axis1, ConstPoint3d axis2) {
+		if (center==null || axis1==null || axis2==null) throw new IllegalArgumentException();
+		if (n<=0) throw new IllegalArgumentException();
+		
 		int first = -1;
 		for (int i=0; i<n; i++) {
 			double angle = i*2*Math.PI/n;
@@ -70,6 +73,25 @@ public class IndexedLineSet extends PointBasedSet {
 		closeLine(first);
 	}
 	
+	public void addArcTo(int n, double radius, double minAngle, double maxAngle, ConstPoint3d center, ConstPoint3d axis1, ConstPoint3d axis2) {
+		if (center==null || axis1==null || axis2==null) throw new IllegalArgumentException();
+		if (n<=0) throw new IllegalArgumentException();
+		if (maxAngle <= minAngle) throw new IllegalArgumentException();
+		
+		int segs = (int) Math.ceil( (maxAngle-minAngle) / (2*Math.PI/n) );
+		double segAngle = (maxAngle-minAngle) / segs;
+		
+		for (int i=0; i<=segs; i++) {
+			double angle = minAngle + i*segAngle;
+			ConstPoint3d p = center
+					.add(axis1.mul(radius*Math.cos(angle)))
+					.add(axis2.mul(radius*Math.sin(angle)));
+				
+			addLinePoint(p);
+		}
+		closeLine();
+	}
+
 	public void writeToVRML(PrintWriter out, Color lineColor) { writeToVRML(out, lineColor, 0); }
 	public void writeToVRML(PrintWriter out, Color lineColor, double transparency) {
 		Iterable<String> it = ()->lines.stream().map(i->i.toString()).iterator();

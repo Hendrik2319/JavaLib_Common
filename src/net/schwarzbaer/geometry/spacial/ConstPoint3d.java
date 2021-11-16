@@ -42,4 +42,8 @@ public class ConstPoint3d {
 			a.x*b.y - a.y*b.x
 		);
 	}
+
+	public static double computeDotProd(ConstPoint3d p1, ConstPoint3d p2) {
+		return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
+	}
 }
