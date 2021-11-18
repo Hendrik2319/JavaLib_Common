@@ -9,6 +9,11 @@ public class ConstPoint3d {
 		this.z = z;
 	}
 	
+	@Override
+	public String toString() {
+		return String.format("ConstPoint3d [x=%s, y=%s, z=%s]", x, y, z);
+	}
+
 	public double getDistance       (ConstPoint3d p) { return getDistance       (p.x, p.y, p.z); }
 	public double getSquaredDistance(ConstPoint3d p) { return getSquaredDistance(p.x, p.y, p.z); }
 	public double getDistance       (double x, double y, double z) { return Math.sqrt( getSquaredDistance(x,y,z) ); }
@@ -45,5 +50,12 @@ public class ConstPoint3d {
 
 	public static double computeDotProd(ConstPoint3d p1, ConstPoint3d p2) {
 		return p1.x*p2.x + p1.y*p2.y + p1.z*p2.z;
+	}
+
+	public static ConstPoint3d computePointOnCircle(double angle, double radius, ConstPoint3d center, ConstPoint3d axis1, ConstPoint3d axis2) {
+		ConstPoint3d p = center
+				.add(axis1.mul(radius*Math.cos(angle)))
+				.add(axis2.mul(radius*Math.sin(angle)));
+		return p;
 	}
 }

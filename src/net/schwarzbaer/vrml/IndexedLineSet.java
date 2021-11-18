@@ -16,6 +16,10 @@ public class IndexedLineSet extends PointBasedSet {
 		lines = new Vector<>();
 	}
 	
+	public boolean isEmpty() {
+		return lines.isEmpty();
+	}
+
 	public void addAxesCross(ConstPoint3d p, double d) {
 		addLine(p.add( d,0,0),p.add(-d,0,0));
 		addLine(p.add(0, d,0),p.add(0,-d,0));
@@ -83,10 +87,7 @@ public class IndexedLineSet extends PointBasedSet {
 		
 		for (int i=0; i<=segs; i++) {
 			double angle = minAngle + i*segAngle;
-			ConstPoint3d p = center
-					.add(axis1.mul(radius*Math.cos(angle)))
-					.add(axis2.mul(radius*Math.sin(angle)));
-				
+			ConstPoint3d p = ConstPoint3d.computePointOnCircle(angle, radius, center, axis1, axis2);
 			addLinePoint(p);
 		}
 		closeLine();
