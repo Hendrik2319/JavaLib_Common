@@ -46,40 +46,22 @@ public class IndexedFaceSet extends PointBasedSet {
 		if (colorPerFace) colors.add(faceColor);
 	}
 
-	public void addPointFace(ConstPoint3d p, ConstPoint3d normal, double size) {
+	public void addPointFace(ConstPoint3d p, ConstPoint3d normal, double diameter, int nPoints) {
 		if (colorPerFace) throw new UnsupportedOperationException();
-		addPointFace(null, p, normal, size);
+		addPointFace(null, p, normal, diameter, nPoints);
 	}
 	
-	public void addPointFace(Color color, ConstPoint3d p, ConstPoint3d normal, double size) {
+	public void addPointFace(Color color, ConstPoint3d p, ConstPoint3d normal, double diameter, int nPoints) {
 		if (colorPerFace && color==null) throw new IllegalArgumentException();
 		
 		AxesCross axes = AxesCross.compute(normal);
-		ConstPoint3d axis1 = axes.yAxis.mul(size/2);
-		ConstPoint3d axis2 = axes.zAxis.mul(size/2);
+		ConstPoint3d[] facePoints = new ConstPoint3d[nPoints];
+		for (int i=0; i<nPoints; i++) {
+			double angle = 2*Math.PI/nPoints * i;
+			facePoints[i] = ConstPoint3d.computePointOnCircle(angle, diameter/2, p, axes.yAxis, axes.zAxis);
+		}
 		
-		ConstPoint3d p11 = new ConstPoint3d(
-			p.x+axis1.x+axis2.x,
-			p.y+axis1.y+axis2.y,
-			p.z+axis1.z+axis2.z
-		);
-		ConstPoint3d p10 = new ConstPoint3d(
-			p.x+axis1.x-axis2.x,
-			p.y+axis1.y-axis2.y,
-			p.z+axis1.z-axis2.z
-		);
-		ConstPoint3d p01 = new ConstPoint3d(
-			p.x-axis1.x+axis2.x,
-			p.y-axis1.y+axis2.y,
-			p.z-axis1.z+axis2.z
-		);
-		ConstPoint3d p00 = new ConstPoint3d(
-			p.x-axis1.x-axis2.x,
-			p.y-axis1.y-axis2.y,
-			p.z-axis1.z-axis2.z
-		);
-		
-		addFace(color,p00,p10,p11,p01);
+		addFace(color,facePoints);
 	}
 	
 	public void writeToVRML(PrintWriter out, boolean isSolid, Color diffuseColor, Color specularColor, Color emissiveColor) {
