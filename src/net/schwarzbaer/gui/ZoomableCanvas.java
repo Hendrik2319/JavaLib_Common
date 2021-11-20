@@ -35,6 +35,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		setPreferredSize(20,50);
 		
 		zoomListeners = new Vector<>();
+		panListeners = new Vector<>();
 		viewState = createViewState();
 		panStart = null;
 		
@@ -66,7 +67,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	}
 	
 	public void activateViewerMode() {
-		isEditorMode = true;
+		isEditorMode = false;
 	}
 	
 	@Override public void mousePressed   (MouseEvent e) { if (!isEditorMode && e.getButton()==MouseEvent.BUTTON1) {   startPan(e.getPoint()); repaint(); } }
@@ -157,6 +158,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	private void startPan(Point point) {
 		panStart = point;
 		viewState.tempPanOffset = new Point();
+		for (PanListener pl : panListeners) pl.panStarted();
 	}
 
 	private void proceedPan(Point point) {
@@ -172,6 +174,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		
 		panStart = null;
 		viewState.tempPanOffset = null;
+		for (PanListener pl : panListeners) pl.panStopped();
 	}
 
 	private void zoom(Point point, double preciseWheelRotation) {
@@ -186,6 +189,15 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			repaint();
 		}
 	}
+	
+	public interface PanListener {
+		void panStarted();
+		void panStopped();
+	}
+	
+	private final Vector<PanListener> panListeners;
+	public void    addPanListener(PanListener zl) { panListeners.   add(zl); }
+	public void removePanListener(PanListener zl) { panListeners.remove(zl); }
 	
 	public interface ZoomListener {
 		void zoomChanged();
