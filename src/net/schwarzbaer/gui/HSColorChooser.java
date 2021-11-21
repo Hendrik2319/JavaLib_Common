@@ -21,6 +21,7 @@ import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingConstants;
@@ -174,10 +175,10 @@ public final class HSColorChooser {
 			
 			JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
 			if (dialog!=null) {
-				buttonPanel.add(GUI.createButton("OK", ActionCommands.Ok, disabler, this));
-				buttonPanel.add(GUI.createButton("Cancel", ActionCommands.Cancel, disabler, this));
+				buttonPanel.add(createButton("OK", ActionCommands.Ok, disabler, this));
+				buttonPanel.add(createButton("Cancel", ActionCommands.Cancel, disabler, this));
 			}
-			buttonPanel.add(GUI.createButton("Reset", ActionCommands.ResetColor, disabler, this));
+			buttonPanel.add(createButton("Reset", ActionCommands.ResetColor, disabler, this));
 			
 			JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
 			rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
@@ -197,12 +198,12 @@ public final class HSColorChooser {
 			
 			ButtonGroup buttonGroup_panelType = new ButtonGroup();
 			JPanel dualTypePanel = new JPanel(new GridLayout(1,0,3,3));
-			dualTypePanel.add(GUI.createRadioButton("RG", ActionCommands.SetDual2RG, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(GUI.createRadioButton("GB", ActionCommands.SetDual2GB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(GUI.createRadioButton("RB", ActionCommands.SetDual2RB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(GUI.createRadioButton("HS", ActionCommands.SetDual2HS, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(GUI.createRadioButton("SB", ActionCommands.SetDual2SB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(GUI.createRadioButton("HB", ActionCommands.SetDual2HB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("RG", ActionCommands.SetDual2RG, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("GB", ActionCommands.SetDual2GB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("RB", ActionCommands.SetDual2RB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("HS", ActionCommands.SetDual2HS, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("SB", ActionCommands.SetDual2SB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("HB", ActionCommands.SetDual2HB, disabler, this, buttonGroup_panelType, true, true));
 			
 			JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
 			dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
@@ -217,14 +218,16 @@ public final class HSColorChooser {
 			//userColorListPanel.setBorder(BorderFactory.createLoweredBevelBorder());
 			Dimension prefSize = new Dimension(20,20);
 			for (int i=0; i<userdefinedColors.length; i++) {
-				userColorListPanel.add( userColorButtons[i] = createColorButton(userdefinedColors[i], buttonGroup_colorList, prefSize) );
+				userColorListPanel.add( userColorButtons[i] = createColorToggleButton(userdefinedColors[i], buttonGroup_colorList, prefSize) );
 			}
 			
 			JPanel userColorSetButtonPanel = new JPanel(new GridLayout(1,0,3,3));
-			userColorSetButtonPanel.add(GUI.createButton("set" , ActionCommands.SetUserColor , disabler, this));
-			userColorSetButtonPanel.add(GUI.createButton("read", ActionCommands.ReadUserColor, disabler, this));
+			userColorSetButtonPanel.add(createButton("set" , ActionCommands.SetUserColor , disabler, this));
+			userColorSetButtonPanel.add(createButton("read", ActionCommands.ReadUserColor, disabler, this));
 			
-			JPanel userColorPanel = GUI.createLeftAlignedPanel(userColorSetButtonPanel,userColorListPanel,3);
+			JPanel userColorPanel = new JPanel( new BorderLayout(3,3) );
+			userColorPanel.add(userColorListPanel, BorderLayout.CENTER);
+			userColorPanel.add(userColorSetButtonPanel, BorderLayout.WEST);
 			userColorPanel.setBorder(BorderFactory.createTitledBorder(""));
 			
 			oldColorField = new JLabel("   ");
@@ -258,8 +261,26 @@ public final class HSColorChooser {
 			add(singleSliderPanel,BorderLayout.EAST);
 			add(lowerPanel,BorderLayout.SOUTH);
 		}
+		
+	    private static <AC> JButton createButton( String title, AC ac, Disabler<AC> disabler, ActionListener al ) {
+	    	JButton comp = new JButton(title);
+	    	if (disabler!=null && ac!=null) disabler.add(ac, comp);
+	    	if (ac!=null) comp.setActionCommand( ac.toString() );
+			if (al!=null) comp.addActionListener(al);
+			return comp;
+	    }
+	    
+	    private static <AC> JRadioButton createRadioButton( String title, AC ac, Disabler<AC> disabler, ActionListener al, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+			JRadioButton comp = new JRadioButton( title, isSelected );
+	    	if (disabler!=null && ac!=null) disabler.add(ac, comp);
+	    	if (ac!=null) comp.setActionCommand( ac.toString() );
+			if (al!=null) comp.addActionListener(al);
+			comp.setEnabled(isEnabled);
+			if (buttonGroup!=null) buttonGroup.add(comp);
+			return comp;
+		}
 
-		private ColorToggleButton createColorButton(Color color, ButtonGroup buttonGroup, Dimension prefSize) {
+		private ColorToggleButton createColorToggleButton(Color color, ButtonGroup buttonGroup, Dimension prefSize) {
 			ColorToggleButton colorButton = new ColorToggleButton(color);
 			colorButton.setPreferredSize(prefSize);
 			buttonGroup.add(colorButton);
