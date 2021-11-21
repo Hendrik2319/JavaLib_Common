@@ -175,10 +175,10 @@ public final class HSColorChooser {
 			
 			JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
 			if (dialog!=null) {
-				buttonPanel.add(createButton("OK", ActionCommands.Ok, disabler, this));
-				buttonPanel.add(createButton("Cancel", ActionCommands.Cancel, disabler, this));
+				buttonPanel.add(createButton("OK", ActionCommands.Ok));
+				buttonPanel.add(createButton("Cancel", ActionCommands.Cancel));
 			}
-			buttonPanel.add(createButton("Reset", ActionCommands.ResetColor, disabler, this));
+			buttonPanel.add(createButton("Reset", ActionCommands.ResetColor));
 			
 			JPanel rgbPanel = new JPanel(new GridLayout(1,0,3,3));
 			rgbPanel.setBorder(BorderFactory.createTitledBorder(""));
@@ -198,12 +198,12 @@ public final class HSColorChooser {
 			
 			ButtonGroup buttonGroup_panelType = new ButtonGroup();
 			JPanel dualTypePanel = new JPanel(new GridLayout(1,0,3,3));
-			dualTypePanel.add(createRadioButton("RG", ActionCommands.SetDual2RG, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(createRadioButton("GB", ActionCommands.SetDual2GB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(createRadioButton("RB", ActionCommands.SetDual2RB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(createRadioButton("HS", ActionCommands.SetDual2HS, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(createRadioButton("SB", ActionCommands.SetDual2SB, disabler, this, buttonGroup_panelType, true, true));
-			dualTypePanel.add(createRadioButton("HB", ActionCommands.SetDual2HB, disabler, this, buttonGroup_panelType, true, true));
+			dualTypePanel.add(createRadioButton("RG", ActionCommands.SetDual2RG, buttonGroup_panelType, true ));
+			dualTypePanel.add(createRadioButton("GB", ActionCommands.SetDual2GB, buttonGroup_panelType, false));
+			dualTypePanel.add(createRadioButton("RB", ActionCommands.SetDual2RB, buttonGroup_panelType, false));
+			dualTypePanel.add(createRadioButton("HS", ActionCommands.SetDual2HS, buttonGroup_panelType, false));
+			dualTypePanel.add(createRadioButton("SB", ActionCommands.SetDual2SB, buttonGroup_panelType, false));
+			dualTypePanel.add(createRadioButton("HB", ActionCommands.SetDual2HB, buttonGroup_panelType, false));
 			
 			JPanel dualSliderPanel = new JPanel(new BorderLayout(3,3));
 			dualSliderPanel.setBorder(BorderFactory.createTitledBorder(""));
@@ -222,8 +222,8 @@ public final class HSColorChooser {
 			}
 			
 			JPanel userColorSetButtonPanel = new JPanel(new GridLayout(1,0,3,3));
-			userColorSetButtonPanel.add(createButton("set" , ActionCommands.SetUserColor , disabler, this));
-			userColorSetButtonPanel.add(createButton("read", ActionCommands.ReadUserColor, disabler, this));
+			userColorSetButtonPanel.add(createButton("set" , ActionCommands.SetUserColor ));
+			userColorSetButtonPanel.add(createButton("read", ActionCommands.ReadUserColor));
 			
 			JPanel userColorPanel = new JPanel( new BorderLayout(3,3) );
 			userColorPanel.add(userColorListPanel, BorderLayout.CENTER);
@@ -262,20 +262,19 @@ public final class HSColorChooser {
 			add(lowerPanel,BorderLayout.SOUTH);
 		}
 		
-	    private static <AC> JButton createButton( String title, AC ac, Disabler<AC> disabler, ActionListener al ) {
+	    private JButton createButton( String title, ActionCommands ac) {
 	    	JButton comp = new JButton(title);
-	    	if (disabler!=null && ac!=null) disabler.add(ac, comp);
-	    	if (ac!=null) comp.setActionCommand( ac.toString() );
-			if (al!=null) comp.addActionListener(al);
+	    	disabler.add(ac, comp);
+	    	comp.setActionCommand( ac.toString() );
+			comp.addActionListener(this);
 			return comp;
 	    }
 	    
-	    private static <AC> JRadioButton createRadioButton( String title, AC ac, Disabler<AC> disabler, ActionListener al, ButtonGroup buttonGroup, boolean isSelected, boolean isEnabled ) {
+	    private JRadioButton createRadioButton( String title, ActionCommands ac, ButtonGroup buttonGroup, boolean isSelected ) {
 			JRadioButton comp = new JRadioButton( title, isSelected );
-	    	if (disabler!=null && ac!=null) disabler.add(ac, comp);
-	    	if (ac!=null) comp.setActionCommand( ac.toString() );
-			if (al!=null) comp.addActionListener(al);
-			comp.setEnabled(isEnabled);
+	    	disabler.add(ac, comp);
+	    	comp.setActionCommand( ac.toString() );
+			comp.addActionListener(this);
 			if (buttonGroup!=null) buttonGroup.add(comp);
 			return comp;
 		}
