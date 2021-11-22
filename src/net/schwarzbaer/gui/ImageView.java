@@ -324,8 +324,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		updateBetterInterpolation();
 	}
 
-	public void setZoom(float zoom) {
-		float currentZoom = viewState.convertLength_LengthToScreenF(1f);
+	public void setZoom(double zoom) {
+		double currentZoom = viewState.convertLength_LengthToScreenF(1.0);
 		addZoom(new Point(width/2,height/2), zoom/currentZoom);
 	}
 	
@@ -444,10 +444,10 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 
 		@Override
 		protected void determineMinMax(MapLatLong min, MapLatLong max) {
-			min.longitude_x = (float) 0;
-			min.latitude_y  = (float) 0;
-			max.longitude_x = (float) (image==null ? 100 : image.getWidth ());
-			max.latitude_y  = (float) (image==null ? 100 : image.getHeight());
+			min.longitude_x = 0.0;
+			min.latitude_y  = 0.0;
+			max.longitude_x = image==null ? 100.0 : image.getWidth ();
+			max.latitude_y  = image==null ? 100.0 : image.getHeight();
 		}
 	}
 	
