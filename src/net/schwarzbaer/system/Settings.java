@@ -184,6 +184,9 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		}
 		
 		public void registerAppWindow(Window appWindow) {
+			registerAppWindow(appWindow, -1, -1);
+		}
+		public void registerAppWindow(Window appWindow, int defaultWindowWidth, int defaultWindowHeight) {
 			String[] prefkeys;
 			try {
 				prefkeys = super.preferences.keys();
@@ -194,6 +197,11 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			
 			if (prefkeys!=null && isIn(prefkeys,"WindowX","WindowY"         )) appWindow.setLocation(getWindowPos ());
 			if (prefkeys!=null && isIn(prefkeys,"WindowWidth","WindowHeight")) appWindow.setSize    (getWindowSize());
+			else if (defaultWindowWidth>0 && defaultWindowHeight>0) {
+				Dimension size = new Dimension(defaultWindowWidth, defaultWindowHeight);
+				appWindow.setSize( size );
+				setWindowSize( size );
+			}
 			
 			appWindow.addComponentListener(new ComponentListener() {
 				@Override public void componentShown  (ComponentEvent e) {}
