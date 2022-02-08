@@ -3,6 +3,9 @@ package net.schwarzbaer.system;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.awt.Window;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.io.File;
 import java.util.Collection;
 import java.util.prefs.BackingStoreException;
@@ -26,21 +29,23 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	
 	public void    remove   (ValueKey key               ) {        preferences.remove    (key.name()       ); }
 	
-	public boolean getBool  (ValueKey key               ) { return preferences.getBoolean(key.name(), true ); }
-	public boolean getBool  (ValueKey key, boolean def  ) { return preferences.getBoolean(key.name(), def  ); }
-	public void    putBool  (ValueKey key, boolean value) {        preferences.putBoolean(key.name(), value); }
-	public float   getFloat (ValueKey key               ) { return preferences.getFloat  (key.name(), 0    ); }
-	public float   getFloat (ValueKey key, float def    ) { return preferences.getFloat  (key.name(), def  ); }
-	public void    putFloat (ValueKey key, float value  ) {        preferences.putFloat  (key.name(), value); }
-	public double  getDouble(ValueKey key               ) { return preferences.getDouble (key.name(), 0    ); }
-	public double  getDouble(ValueKey key, double def   ) { return preferences.getDouble (key.name(), def  ); }
-	public void    putDouble(ValueKey key, double value ) {        preferences.putDouble (key.name(), value); }
-	public int     getInt   (ValueKey key               ) { return preferences.getInt    (key.name(), 0    ); }
-	public int     getInt   (ValueKey key, int def      ) { return preferences.getInt    (key.name(), def  ); }
-	public void    putInt   (ValueKey key, int value    ) {        preferences.putInt    (key.name(), value); }
-	public String  getString(ValueKey key               ) { return preferences.get       (key.name(), null ); }
-	public String  getString(ValueKey key, String def   ) { return preferences.get       (key.name(), def  ); }
-	public void    putString(ValueKey key, String value ) { if (value==null) remove(key); else preferences.put(key.name(), value); }
+	public  boolean getBool  (ValueKey key               ) { return preferences.getBoolean(key.name(), true ); }
+	public  boolean getBool  (ValueKey key, boolean def  ) { return preferences.getBoolean(key.name(), def  ); }
+	public  void    putBool  (ValueKey key, boolean value) {        preferences.putBoolean(key.name(), value); }
+	public  float   getFloat (ValueKey key               ) { return preferences.getFloat  (key.name(), 0    ); }
+	public  float   getFloat (ValueKey key, float def    ) { return preferences.getFloat  (key.name(), def  ); }
+	public  void    putFloat (ValueKey key, float value  ) {        preferences.putFloat  (key.name(), value); }
+	public  double  getDouble(ValueKey key               ) { return preferences.getDouble (key.name(), 0    ); }
+	public  double  getDouble(ValueKey key, double def   ) { return preferences.getDouble (key.name(), def  ); }
+	public  void    putDouble(ValueKey key, double value ) {        preferences.putDouble (key.name(), value); }
+	public  int     getInt   (ValueKey key               ) { return preferences.getInt    (key.name(), 0    ); }
+	private int     getInt   (String   key, int def      ) { return preferences.getInt    (key       , def  ); }
+	public  int     getInt   (ValueKey key, int def      ) { return preferences.getInt    (key.name(), def  ); }
+	public  void    putInt   (ValueKey key, int value    ) {        preferences.putInt    (key.name(), value); }
+	private void    putInt   (String   key, int value    ) {        preferences.putInt    (key       , value); }
+	public  String  getString(ValueKey key               ) { return preferences.get       (key.name(), null ); }
+	public  String  getString(ValueKey key, String def   ) { return preferences.get       (key.name(), def  ); }
+	public  void    putString(ValueKey key, String value ) { if (value==null) remove(key); else preferences.put(key.name(), value); }
 
 	public Color   getColor (ValueKey key              ) { return new Color(getInt(key, Color.BLACK.getRGB()), true); }
 	public Color   getColor (ValueKey key, Color def   ) { return new Color(getInt(key,         def.getRGB()), true); }
@@ -107,8 +112,14 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 	public Dimension getDimension(ValueKey keyW, ValueKey keyH                    ) { int w=getInt(keyW     ); int h=getInt(keyH     ); return new Dimension(w,h); }
 	public void      putDimension(ValueKey keyW, ValueKey keyH, Dimension size    ) { putInt(keyW, size.width ); putInt(keyH, size.height); }
 	
+	private Dimension getDimension(String keyW, String keyH                    ) { int w=getInt(keyW,0); int h=getInt(keyH,0); return new Dimension(w,h); }
+	private void      putDimension(String keyW, String keyH, Dimension size    ) { putInt(keyW, size.width ); putInt(keyH, size.height); }
+	
 	public Point getPoint(ValueKey keyX, ValueKey keyY                ) { int x=getInt(keyX); int y=getInt(keyY); return new Point(x,y); }
 	public void  putPoint(ValueKey keyX, ValueKey keyY, Point location) { putInt(keyX, location.x); putInt(keyY, location.y); }
+	
+	private Point getPoint(String keyX, String keyY                ) { int x=getInt(keyX,0); int y=getInt(keyY,0); return new Point(x,y); }
+	private void  putPoint(String keyX, String keyY, Point location) { putInt(keyX, location.x); putInt(keyY, location.y); }
 
 	public <E extends Enum<E>> E    getEnum(ValueKey key       , Class<E> enumClass ) { return convert(getString(key,null),null, enumClass); }
 	public <E extends Enum<E>> E    getEnum(ValueKey key, E def, Class<E> enumClass ) { return convert(getString(key,null),def , enumClass); }
@@ -153,6 +164,63 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			if (!contains(prefkeys, key))
 				return false;
 		return true;
+	}
+	
+	public static class DefaultAppSettings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<ValueKey>, ValueKey extends Enum<ValueKey>> extends Settings<ValueGroup,ValueKey> {
+
+		public DefaultAppSettings(Class<?> classObj, ValueKey[] allValueKeys) {
+			super(classObj);
+			for (ValueKey key : allValueKeys) {
+				checkKeyName(key, "WindowX");
+				checkKeyName(key, "WindowY");
+				checkKeyName(key, "WindowWidth");
+				checkKeyName(key, "WindowHeight");
+			}
+		}
+
+		private void checkKeyName(ValueKey key, String keyName) {
+			if (key!=null &&  keyName.equals(key.name()))
+				throw new IllegalStateException("In DefaultAppSettings is no ValueKey."+keyName+" allowed. The field \""+keyName+"\" will be used internally.");
+		}
+		
+		public void registerAppWindow(Window appWindow) {
+			String[] prefkeys;
+			try {
+				prefkeys = super.preferences.keys();
+			} catch (BackingStoreException ex) {
+				ex.printStackTrace();
+				prefkeys = null;
+			}
+			
+			if (prefkeys!=null && isIn(prefkeys,"WindowX","WindowY"         )) appWindow.setLocation(getWindowPos ());
+			if (prefkeys!=null && isIn(prefkeys,"WindowWidth","WindowHeight")) appWindow.setSize    (getWindowSize());
+			
+			appWindow.addComponentListener(new ComponentListener() {
+				@Override public void componentShown  (ComponentEvent e) {}
+				@Override public void componentHidden (ComponentEvent e) {}
+				@Override public void componentResized(ComponentEvent e) { setWindowSize( appWindow.getSize() ); }
+				@Override public void componentMoved  (ComponentEvent e) { setWindowPos ( appWindow.getLocation() ); }
+			});
+		}
+		
+		private boolean isIn(String[] data, String... strings) {
+			for (String str : strings) {
+				boolean found = false;
+				for (String dataStr : data)
+					if ( (str==null && dataStr==null) || (str!=null && str.equals(dataStr)) ) {
+						found = true;
+						break;
+					}
+				if (!found)
+					return false;
+			}
+			return true;
+		}
+
+		public Point     getWindowPos (              ) { return super.getPoint("WindowX","WindowY"); }
+		public void      setWindowPos (Point location) {        super.putPoint("WindowX","WindowY",location); }
+		public Dimension getWindowSize(              ) { return super.getDimension("WindowWidth","WindowHeight"); }
+		public void      setWindowSize(Dimension size) {        super.putDimension("WindowWidth","WindowHeight",size); }
 	}
 	
 	public static class Global extends Settings<Global.ValueGroup,Global.ValueKey> {
