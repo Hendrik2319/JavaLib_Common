@@ -59,9 +59,9 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		return strings2file(getStrings(key, System.getProperty("path.separator")));
 	}
 
-	public void putFiles(ValueKey appSettingsKey, Collection<File> files) {
+	public void putFiles(ValueKey key, Collection<File> files) {
 		if (files==null) return;
-		putFiles(appSettingsKey, files.toArray(new File[files.size()]));
+		putFiles(key, files.toArray(new File[files.size()]));
 	}
 	public void putFiles(ValueKey key, File... files) {
 		if (files==null) return;
