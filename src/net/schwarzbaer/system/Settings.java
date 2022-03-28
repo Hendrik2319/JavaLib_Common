@@ -166,7 +166,16 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		return true;
 	}
 	
-	public static class DefaultAppSettings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<ValueKey>, ValueKey extends Enum<ValueKey>> extends Settings<ValueGroup,ValueKey> {
+	private interface WindowSizePosStorage {
+		Point     getWindowPos (              );
+		void      setWindowPos (Point location);
+		Dimension getWindowSize(              );
+		void      setWindowSize(Dimension size);
+		boolean isPosSet (String[] prefkeys);
+		boolean isSizeSet(String[] prefkeys);
+	}
+	
+	public static class DefaultAppSettings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<ValueKey>, ValueKey extends Enum<ValueKey>> extends Settings<ValueGroup,ValueKey> implements WindowSizePosStorage {
 
 		public DefaultAppSettings(Class<?> classObj, ValueKey[] allValueKeys) {
 			super(classObj);
@@ -190,6 +199,27 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			registerAppWindow(appWindow, defaultWindowWidth, defaultWindowHeight, false);
 		}
 		public void registerAppWindow(Window appWindow, int defaultWindowWidth, int defaultWindowHeight, boolean forceSize) {
+			registerWindow(appWindow, defaultWindowWidth, defaultWindowHeight, forceSize, this);
+		}
+		
+		public void registerExtraWindow(Window window, ValueKey windowX, ValueKey windowY, ValueKey windowWidth, ValueKey windowHeight) {
+			registerExtraWindow(window, windowX, windowY, windowWidth, windowHeight, -1, -1);
+		}
+		public void registerExtraWindow(Window window, ValueKey windowX, ValueKey windowY, ValueKey windowWidth, ValueKey windowHeight, int defaultWindowWidth, int defaultWindowHeight) {
+			registerExtraWindow(window, windowX, windowY, windowWidth, windowHeight, defaultWindowWidth, defaultWindowHeight, false);
+		}
+		public void registerExtraWindow(Window window, ValueKey windowX, ValueKey windowY, ValueKey windowWidth, ValueKey windowHeight, int defaultWindowWidth, int defaultWindowHeight, boolean forceSize) {
+			registerWindow(window, defaultWindowWidth, defaultWindowHeight, forceSize, new WindowSizePosStorage() {
+				@Override public boolean isPosSet (String[] prefkeys) { return contains(windowX, windowY); }
+				@Override public boolean isSizeSet(String[] prefkeys) { return contains(windowWidth, windowHeight); }
+				@Override public Point     getWindowPos (              ) { return getPoint(windowX, windowY); }
+				@Override public void      setWindowPos (Point location) {        putPoint(windowX, windowY,location); }
+				@Override public Dimension getWindowSize(              ) { return getDimension(windowWidth, windowHeight); }
+				@Override public void      setWindowSize(Dimension size) {        putDimension(windowWidth, windowHeight,size); }
+			});
+		}
+		
+		private void registerWindow(Window window, int defaultWindowWidth, int defaultWindowHeight, boolean forceSize, WindowSizePosStorage storage) {
 			String[] prefkeys;
 			try {
 				prefkeys = super.preferences.keys();
@@ -198,26 +228,29 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 				prefkeys = null;
 			}
 			
-			if (prefkeys!=null && isIn(prefkeys,"WindowX","WindowY"         )) appWindow.setLocation(getWindowPos ());
-			if (prefkeys!=null && isIn(prefkeys,"WindowWidth","WindowHeight") && !forceSize) appWindow.setSize    (getWindowSize());
+			if (prefkeys!=null && storage.isPosSet (prefkeys)              ) window.setLocation(storage.getWindowPos ());
+			if (prefkeys!=null && storage.isSizeSet(prefkeys) && !forceSize) window.setSize    (storage.getWindowSize());
 			else if (defaultWindowWidth>0 && defaultWindowHeight>0) {
 				Dimension size = new Dimension(defaultWindowWidth, defaultWindowHeight);
-				appWindow.setSize( size );
-				setWindowSize( size );
+				window.setSize( size );
+				storage.setWindowSize( size );
 			}
 			
-			appWindow.addComponentListener(new ComponentListener() {
+			window.addComponentListener(new ComponentListener() {
 				@Override public void componentShown  (ComponentEvent e) {}
 				@Override public void componentHidden (ComponentEvent e) {}
-				@Override public void componentResized(ComponentEvent e) { setWindowSize( appWindow.getSize() ); }
-				@Override public void componentMoved  (ComponentEvent e) { setWindowPos ( appWindow.getLocation() ); }
+				@Override public void componentResized(ComponentEvent e) { storage.setWindowSize( window.getSize() ); }
+				@Override public void componentMoved  (ComponentEvent e) { storage.setWindowPos ( window.getLocation() ); }
 			});
 		}
+
+		@Override public boolean isPosSet (String[] prefkeys) { return isIn(prefkeys,"WindowX","WindowY"); }
+		@Override public boolean isSizeSet(String[] prefkeys) { return isIn(prefkeys,"WindowWidth","WindowHeight"); }
 		
-		private boolean isIn(String[] data, String... strings) {
-			for (String str : strings) {
+		private boolean isIn(String[] prefkeys, String... keys) {
+			for (String str : keys) {
 				boolean found = false;
-				for (String dataStr : data)
+				for (String dataStr : prefkeys)
 					if ( (str==null && dataStr==null) || (str!=null && str.equals(dataStr)) ) {
 						found = true;
 						break;
@@ -228,10 +261,10 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			return true;
 		}
 
-		public Point     getWindowPos (              ) { return super.getPoint("WindowX","WindowY"); }
-		public void      setWindowPos (Point location) {        super.putPoint("WindowX","WindowY",location); }
-		public Dimension getWindowSize(              ) { return super.getDimension("WindowWidth","WindowHeight"); }
-		public void      setWindowSize(Dimension size) {        super.putDimension("WindowWidth","WindowHeight",size); }
+		@Override public Point     getWindowPos (              ) { return super.getPoint("WindowX","WindowY"); }
+		@Override public void      setWindowPos (Point location) {        super.putPoint("WindowX","WindowY",location); }
+		@Override public Dimension getWindowSize(              ) { return super.getDimension("WindowWidth","WindowHeight"); }
+		@Override public void      setWindowSize(Dimension size) {        super.putDimension("WindowWidth","WindowHeight",size); }
 	}
 	
 	public static class Global extends Settings<Global.ValueGroup,Global.ValueKey> {
