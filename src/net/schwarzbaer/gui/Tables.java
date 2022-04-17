@@ -373,7 +373,11 @@ public class Tables {
 			fireTableModelEvent(new TableModelEvent(this,TableModelEvent.HEADER_ROW));
 		}
 		
-		public void initiateColumnUpdate(ColumnID columnID) {
+		public void initiateColumnUpdate(ColumnID columnID) { // replace where used
+			fireTableColumnUpdate(columnID);
+		}
+
+		protected void fireTableColumnUpdate(ColumnID columnID) {
 			int columnIndex = getColumn( columnID );
 			if (columnIndex>=0) fireTableColumnUpdate(columnIndex);
 		}
