@@ -62,11 +62,11 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 	private boolean canceled;
 	private boolean wasOpened;
 	private final String monitorObj;
-	private ProgressPanel progressbarPane;
+	private ProgressPanel progressPanel;
 	
 	public ProgressDialog(Window parent, String title, int minWidth, ModalityType modality, boolean allowSwitchToBackground) {
 		super(parent, title, modality);
-		this.cancelListeners = new Vector<CancelListener>();
+		this.cancelListeners = new Vector<>();
 		this.canceled = false;
 		this.wasOpened = false;
 		this.monitorObj = "";
@@ -82,7 +82,7 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 			@Override public void windowClosing(WindowEvent e) { cancel(); }
 		});
 		
-		progressbarPane = new ProgressPanel();
+		progressPanel = new ProgressPanel();
 		
 		JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,5,5));
 		if (allowSwitchToBackground)
@@ -91,12 +91,11 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 		
 		JPanel contentPane = new JPanel(new BorderLayout(3,3));
 		contentPane.setBorder(BorderFactory.createEmptyBorder(3,3,3,3));
-		contentPane.add(progressbarPane);
+		contentPane.add(progressPanel);
 		contentPane.add(southPanel,BorderLayout.SOUTH);
 		
-		progressbarPane.progressbar.setIndeterminate(true);
-		if (minWidth>0)
-			progressbarPane.progressbar.setPreferredSize(new Dimension(minWidth,14));
+		progressPanel.progressbar.setIndeterminate(true);
+		if (minWidth>0) progressPanel.setProgressBarMinWidth(minWidth);
 		
 		super.createGUI( contentPane );
 		super.setSizeAsMinSize();
@@ -121,19 +120,19 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 	}
 	
 	@Override public void displayProgressString(ProgressDisplay progressDisplay) {
-		progressbarPane.displayProgressString(progressDisplay);
+		progressPanel.displayProgressString(progressDisplay);
 	}
 	@Override public void setTaskTitle(String str) {
-		progressbarPane.setTaskTitle(str);
+		progressPanel.setTaskTitle(str);
 	}
 	@Override public void setIndeterminate(boolean isIndeterminate) {
-		progressbarPane.setIndeterminate(isIndeterminate);
+		progressPanel.setIndeterminate(isIndeterminate);
 	}
 	@Override public void setValue(int min, int value, int max) {
-		progressbarPane.setValue(min, value, max);
+		progressPanel.setValue(min, value, max);
 	}
 	@Override public void setValue(int value) {
-		progressbarPane.setValue(value);
+		progressPanel.setValue(value);
 	}
 	
 	private static JButton createButton(String title, ActionListener al) {
@@ -202,15 +201,23 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 		private final JProgressBar progressbar;
 		private ProgressDisplay progressDisplay;
 		
-		ProgressPanel() {
+		public ProgressPanel() {
+			this(ProgressDisplay.None, true, false);
+		}
+		public ProgressPanel(ProgressDisplay progressDisplay, boolean withEmptyBorder, boolean titleBelowProgressBar) {
 			super(new BorderLayout(3,3));
-			this.progressDisplay = ProgressDisplay.None;
 			
-			setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-			add(taskTitle = new JLabel("  "), BorderLayout.NORTH);
+			if (withEmptyBorder) setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+			add(taskTitle = new JLabel("  "), titleBelowProgressBar ? BorderLayout.SOUTH : BorderLayout.NORTH);
 			add(progressbar = new JProgressBar(JProgressBar.HORIZONTAL), BorderLayout.CENTER);
+			
+			displayProgressString(progressDisplay);
 		}
 		
+		public void setProgressBarMinWidth(int minWidth) {
+			progressbar.setPreferredSize(new Dimension(minWidth,14));
+		}
+
 		@Override
 		public void displayProgressString(ProgressDisplay progressDisplay) {
 			this.progressDisplay = progressDisplay;
