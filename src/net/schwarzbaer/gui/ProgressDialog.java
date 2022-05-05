@@ -200,12 +200,14 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 		private final JLabel taskTitle;
 		private final JProgressBar progressbar;
 		private ProgressDisplay progressDisplay;
+		private String debugID;
 		
 		public ProgressPanel() {
 			this(ProgressDisplay.None, true, false);
 		}
 		public ProgressPanel(ProgressDisplay progressDisplay, boolean withEmptyBorder, boolean titleBelowProgressBar) {
 			super(new BorderLayout(3,3));
+			debugID = null;
 			
 			if (withEmptyBorder) setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 			add(taskTitle = new JLabel("  "), titleBelowProgressBar ? BorderLayout.SOUTH : BorderLayout.NORTH);
@@ -224,15 +226,21 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 			progressbar.setStringPainted(this.progressDisplay!=ProgressDisplay.None);
 			progressbar.setString(this.progressDisplay==ProgressDisplay.None?null:"");
 		}
+		
+		public void setDebugID(String debugID) {
+			this.debugID = debugID;
+		}
 	
 		@Override
 		public void setTaskTitle(String str) {
 			taskTitle.setText(str);
+			if (debugID!=null) System.out.printf("ProgressPanel[%s].setTaskTitle( \"%s\" )%n", debugID, str);
 		}
 	
 		@Override
 		public void setIndeterminate(boolean isIndeterminate) {
 			progressbar.setIndeterminate(isIndeterminate);
+			if (debugID!=null) System.out.printf("ProgressPanel[%s].setIndeterminate( %s )%n", debugID, isIndeterminate);
 		}
 	
 		@Override
@@ -243,6 +251,7 @@ public class ProgressDialog extends StandardDialog implements ProgressView {
 			if (progressbar.isIndeterminate())
 				progressbar.setIndeterminate(false);
 			displayProgressString();
+			if (debugID!=null) System.out.printf("ProgressPanel[%s].setValue( %d, %d, %d )%n", debugID, min, value, max);
 		}
 		
 		@Override
