@@ -39,14 +39,14 @@ public class DateTimeFormatter {
 
 	public static String getFormatStr(boolean withTextDay, boolean withDate, boolean dateIsLong, boolean withTime, boolean withTimeZone) {
 		Vector<String> formatParts = new Vector<>(10);
-		if (withTextDay) formatParts.add("%1$tA,");
+		if (withTextDay) formatParts.add("%1$tA"+getColon(withDate || withTime || withTimeZone));
 		if (withDate) {
 			if (dateIsLong) {
 				formatParts.add("%1$te.");
 				formatParts.add("%1$tb" );
-				formatParts.add("%1$tY,");
+				formatParts.add("%1$tY"+getColon(withTime || withTimeZone));
 			} else{
-				formatParts.add("%1$td.%1$tm.%1$ty,");
+				formatParts.add("%1$td.%1$tm.%1$ty"+getColon(withTime || withTimeZone));
 			}
 		}
 		if (withTime) formatParts.add("%1$tT");
@@ -54,6 +54,10 @@ public class DateTimeFormatter {
 		
 		String format = String.join(" ", formatParts);
 		return format;
+	}
+
+	private static String getColon(boolean b) {
+		return b ? "," : "";
 	}
 	
 	public  static String getDurationStr_ms(long duration_ms) { return getDurationStr(duration_ms/1000, duration_ms % 1000); }
