@@ -50,7 +50,12 @@ public class TextAreaDialog extends StandardDialog {
 	}
 	
 	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text) {
-		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, false, false, textAreaLineWrap);
+		showText(parent, title, width, height, textAreaLineWrap, false, text);
+	}
+	
+	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, boolean nonBlocking, String text) {
+		ModalityType modalityType = nonBlocking ? ModalityType.MODELESS : ModalityType.APPLICATION_MODAL;
+		TextAreaDialog dlg = new TextAreaDialog(parent, title, modalityType, false, width, height, false, false, textAreaLineWrap);
 		dlg.setText(text);
 		dlg.showDialog();
 	}
