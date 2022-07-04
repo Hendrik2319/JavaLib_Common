@@ -289,6 +289,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private double fixedMapScalingX;
 		private double fixedMapScalingY;
 		private double vAxisSign;
+		private double hAxisSign;
 
 		protected boolean debug_showChanges_scalePixelPerLength;
 
@@ -304,6 +305,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			fixedMapScalingX = 1;
 			fixedMapScalingY = 1;
 			vAxisSign = -1;
+			hAxisSign =  1;
 			
 			debug_showChanges_scalePixelPerLength = false;
 		}
@@ -325,6 +327,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		
 		public void setVertAxisDownPositive(boolean vertAxisIsDownPositive) {
 			vAxisSign = !mapIsSpherical && vertAxisIsDownPositive ? 1 : -1;
+		}
+		
+		public void setHorizAxisRightPositive(boolean horizAxisIsRightPositive) {
+			hAxisSign = !mapIsSpherical && horizAxisIsRightPositive ? 1 : -1;
 		}
 		
 		protected void clearValues() {
@@ -406,7 +412,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			if (!isOk()) return false;
 			
 			center.latitude_y  -= convertLength_ScreenToAngle_LatY (vAxisSign*offsetOnScreen.y);
-			center.longitude_x -= convertLength_ScreenToAngle_LongX(          offsetOnScreen.x);
+			center.longitude_x -= convertLength_ScreenToAngle_LongX(hAxisSign*offsetOnScreen.x);
 			updateScaleLengthPerAngle();
 			
 			return true;
@@ -448,7 +454,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 		
 		public double convertPos_AngleToScreen_LongXf(double longitude_x) {
-			double x = canvas.width /2f +             convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
+			double x = canvas.width /2f + hAxisSign * convertLength_AngleToScreen_LongX(longitude_x - center.longitude_x);
 			if (tempPanOffset!=null) x += tempPanOffset.x;
 			return x;
 		}
@@ -473,7 +479,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		}
 		public double convertPos_ScreenToAngle_LongX(int x) {
 			if (tempPanOffset!=null) x -= tempPanOffset.x;
-			return center.longitude_x +             convertLength_ScreenToAngle_LongX(x - canvas.width /2f);
+			return center.longitude_x + hAxisSign * convertLength_ScreenToAngle_LongX(x - canvas.width /2f);
 		}
 		public double convertPos_ScreenToAngle_LatY(int y) {
 			if (tempPanOffset!=null) y -= tempPanOffset.y;
