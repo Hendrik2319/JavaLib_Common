@@ -82,7 +82,7 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	public void generateOutput(String baseIndent, OutputTarget out) {
 		HashMap<Integer,Integer> labelLengths = new HashMap<>();
 		for (Entry entry:this)
-			if (entry!=null){
+			if (entry!=null && !entry.valueStr.isEmpty()){
 				Integer maxLength = labelLengths.get(entry.indentLevel);
 				if (maxLength==null) maxLength=0;
 				maxLength = Math.max(entry.label.length(), maxLength);
