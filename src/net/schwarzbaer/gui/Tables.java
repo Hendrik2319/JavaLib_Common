@@ -3,6 +3,7 @@ package net.schwarzbaer.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -942,6 +943,7 @@ public class Tables {
 			configureAsTableCRC(table, isSelected, hasFocus, null, null);
 		}
 		default void configureAsTableCRC(JTable table, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			setFont(table.getFont());
 			setBorder(hasFocus ? DASHED_BORDER : EMPTY_BORDER);
 			setOpaque(true);
 			if (isSelected) {
@@ -958,6 +960,7 @@ public class Tables {
 			configureAsListCRC(list, index, isSelected, hasFocus, null, null);
 		}
 		default void configureAsListCRC(JList<?> list, int index, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomForeground, Supplier<Color> getCustomBackground) {
+			setFont(list.getFont());
 			if (index<0) {
 				setOpaque(false);
 				setForeground(list.getForeground());
@@ -977,6 +980,7 @@ public class Tables {
 			}
 		}
 	
+		void setFont(Font font);
 		void setBorder(Border border);
 		void setOpaque(boolean isOpaque);
 		void setForeground(Color color);
@@ -984,14 +988,16 @@ public class Tables {
 		
 		static RendererConfigurator create(JComponent rendererComp) {
 			return new RendererConfigurator() {
+				@Override public void setFont      (Font    font    ) { rendererComp.setFont      (font    ); }
 				@Override public void setBorder    (Border  border  ) { rendererComp.setBorder    (border  ); }
 				@Override public void setOpaque    (boolean isOpaque) { rendererComp.setOpaque    (isOpaque); }
 				@Override public void setForeground(Color   color   ) { rendererComp.setForeground(color   ); }
 				@Override public void setBackground(Color   color   ) { rendererComp.setBackground(color   ); }
 			};
 		}
-		static RendererConfigurator create(Consumer<Border> setBorder, Consumer<Boolean> setOpaque, Consumer<Color> setForeground, Consumer<Color> setBackground) {
+		static RendererConfigurator create(Consumer<Font> setFont, Consumer<Border> setBorder, Consumer<Boolean> setOpaque, Consumer<Color> setForeground, Consumer<Color> setBackground) {
 			return new RendererConfigurator() {
+				@Override public void setFont      (Font    font    ) { setFont      .accept(font    ); }
 				@Override public void setBorder    (Border  border  ) { setBorder    .accept(border  ); }
 				@Override public void setOpaque    (boolean isOpaque) { setOpaque    .accept(isOpaque); }
 				@Override public void setForeground(Color   color   ) { setForeground.accept(color   ); }
@@ -1071,6 +1077,127 @@ public class Tables {
 			setIcon(icon);
 			setText(valueStr);
 		}
+
+		@Override public void revalidate() {}
+		@Override public void invalidate() {}
+		@Override public void validate() {}
+		@Override public void repaint(long tm, int x, int y, int width, int height) {}
+		@Override public void repaint(Rectangle r) {}
+		@Override public void repaint() {}
+		@Override public void repaint(long tm) {}
+		@Override public void repaint(int x, int y, int width, int height) {}
+
+		@Override public void firePropertyChange(String propertyName, boolean oldValue, boolean newValue) {}
+		@Override public void firePropertyChange(String propertyName, int oldValue, int newValue) {}
+		@Override public void firePropertyChange(String propertyName, char oldValue, char newValue) {}
+		@Override protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {}
+		@Override public void firePropertyChange(String propertyName, byte oldValue, byte newValue) {}
+		@Override public void firePropertyChange(String propertyName, short oldValue, short newValue) {}
+		@Override public void firePropertyChange(String propertyName, long oldValue, long newValue) {}
+		@Override public void firePropertyChange(String propertyName, float oldValue, float newValue) {}
+		@Override public void firePropertyChange(String propertyName, double oldValue, double newValue) {}
+	}
+	
+	public static class ColorRendererComponent extends JLabel {
+		private static final long serialVersionUID = 2251987143991276551L;
+		private final RendererConfigurator rendConf;
+		
+		private Color color;
+		
+		public ColorRendererComponent() {
+			rendConf = RendererConfigurator.create(this);
+		}
+		
+		public void configureAsTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, Supplier<String> getSurrogateText) {
+			configureAsTableCellRendererComponent(table, value, isSelected, hasFocus, getSurrogateText, null, null);
+		}
+		public void configureAsTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, Supplier<String> getSurrogateText, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsTableCRC(table, isSelected, hasFocus, getCustomForeground, getCustomBackground);
+			setValue(value, getSurrogateText);
+		}
+		
+		public void configureAsListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus, Supplier<String> getSurrogateText) {
+			configureAsListCellRendererComponent(list, value, index, isSelected, hasFocus, getSurrogateText, null, null);
+		}
+		public void configureAsListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus, Supplier<String> getSurrogateText, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsListCRC(list, index, isSelected, hasFocus, getCustomForeground, getCustomBackground);
+			setValue(value, getSurrogateText);
+		}
+		
+		private void setValue(Object value, Supplier<String> getSurrogateText) {
+			setText(null);
+			
+			if (value instanceof Color) {
+				this.color = (Color) value;
+				
+			} else {
+				this.color = null;
+				if (getSurrogateText!=null)
+					setText(getSurrogateText.get());
+			}
+		}
+		
+		@Override
+		protected void paintComponent(Graphics g) {
+			if (color == null)
+				super.paintComponent(g);
+			else {
+				int width = getWidth();
+				int height = getHeight();
+				
+				g.setColor(Color.GRAY);
+				g.drawRect(2, 2, width-5, height-5);
+				g.setColor(color);
+				g.fillRect(3, 3, width-6, height-6);
+			}
+		}
+
+		@Override public void revalidate() {}
+		@Override public void invalidate() {}
+		@Override public void validate() {}
+		@Override public void repaint(long tm, int x, int y, int width, int height) {}
+		@Override public void repaint(Rectangle r) {}
+		@Override public void repaint() {}
+		@Override public void repaint(long tm) {}
+		@Override public void repaint(int x, int y, int width, int height) {}
+
+		@Override public void firePropertyChange(String propertyName, boolean oldValue, boolean newValue) {}
+		@Override public void firePropertyChange(String propertyName, int oldValue, int newValue) {}
+		@Override public void firePropertyChange(String propertyName, char oldValue, char newValue) {}
+		@Override protected void firePropertyChange(String propertyName, Object oldValue, Object newValue) {}
+		@Override public void firePropertyChange(String propertyName, byte oldValue, byte newValue) {}
+		@Override public void firePropertyChange(String propertyName, short oldValue, short newValue) {}
+		@Override public void firePropertyChange(String propertyName, long oldValue, long newValue) {}
+		@Override public void firePropertyChange(String propertyName, float oldValue, float newValue) {}
+		@Override public void firePropertyChange(String propertyName, double oldValue, double newValue) {}
+		
+	}
+
+	public static abstract class CustomRendererComponent extends JComponent {
+		private static final long serialVersionUID = 5260432058949480247L;
+		
+		private final RendererConfigurator rendConf;
+		
+		public CustomRendererComponent() {
+			rendConf = RendererConfigurator.create(this);
+		}
+		
+		public void configureAsTableCellRendererComponent(JTable table, boolean isSelected, boolean hasFocus) {
+			configureAsTableCellRendererComponent(table, isSelected, hasFocus, null, null);
+		}
+		public void configureAsTableCellRendererComponent(JTable table, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsTableCRC(table, isSelected, hasFocus, getCustomForeground, getCustomBackground);
+		}
+		
+		public void configureAsListCellRendererComponent(JList<?> list, int index, boolean isSelected, boolean hasFocus) {
+			configureAsListCellRendererComponent(list, index, isSelected, hasFocus, null, null);
+		}
+		public void configureAsListCellRendererComponent(JList<?> list, int index, boolean isSelected, boolean hasFocus, Supplier<Color> getCustomBackground, Supplier<Color> getCustomForeground) {
+			rendConf.configureAsListCRC(list, index, isSelected, hasFocus, getCustomForeground, getCustomBackground);
+		}
+
+		@Override
+		protected abstract void paintComponent(Graphics g);
 
 		@Override public void revalidate() {}
 		@Override public void invalidate() {}
