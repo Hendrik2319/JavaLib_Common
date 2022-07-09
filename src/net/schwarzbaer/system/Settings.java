@@ -265,6 +265,26 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		@Override public void      setWindowPos (Point location) {        super.putPoint("WindowX","WindowY",location); }
 		@Override public Dimension getWindowSize(              ) { return super.getDimension("WindowWidth","WindowHeight"); }
 		@Override public void      setWindowSize(Dimension size) {        super.putDimension("WindowWidth","WindowHeight",size); }
+		
+		public void registerWindowSizeListener(Window window, ValueKey windowWidth, ValueKey windowHeight, int defaultWindowWidth, int defaultWindowHeight) {
+			
+			Dimension size = null;
+			if (contains(windowWidth, windowHeight))
+				size = getDimension(windowWidth, windowHeight);
+			
+			else if (defaultWindowWidth>0 && defaultWindowHeight>0)
+				size = new Dimension(defaultWindowWidth, defaultWindowHeight);
+			
+			if (size!=null)
+				window.setSize(size);
+			
+			window.addComponentListener(new ComponentListener() {
+				@Override public void componentShown  (ComponentEvent e) {}
+				@Override public void componentHidden (ComponentEvent e) {}
+				@Override public void componentResized(ComponentEvent e) { putDimension(windowWidth, windowHeight, window.getSize() ); }
+				@Override public void componentMoved  (ComponentEvent e) {}
+			});
+		}
 	}
 	
 	public static class Global extends Settings<Global.ValueGroup,Global.ValueKey> {
