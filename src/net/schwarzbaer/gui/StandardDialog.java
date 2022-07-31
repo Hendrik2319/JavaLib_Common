@@ -96,7 +96,9 @@ public class StandardDialog extends JDialog implements WindowListener {
 	}
 
 	private void setPosition(Position position) {
-		Rectangle p = parent.getBounds();
+		Rectangle p;
+		if (parent != null) p = parent.getBounds();
+		else                p = getGraphicsConfiguration().getBounds();
         Dimension d = getSize();
         int dist = 3;
         switch (position) {
