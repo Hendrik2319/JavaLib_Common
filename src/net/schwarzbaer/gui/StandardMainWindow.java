@@ -132,6 +132,13 @@ public class StandardMainWindow extends JFrame implements WindowListener {
 	    public void windowClosing(WindowEvent e);
 	}
 
+	public void setIconImagesFromResource(String pathFormat, int... sizes) {
+		String[] imageFileNames = new String[sizes.length];
+		for (int i=0; i<imageFileNames.length; i++)
+			imageFileNames[i] = String.format(pathFormat, sizes[i]);
+		setIconImagesFromResource(null, imageFileNames);
+	}
+
 	public void setIconImagesFromResource(String basePath, String... imageFileNames) {
 		if (basePath==null) basePath="";
 		if (imageFileNames.length==0) return;
