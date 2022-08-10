@@ -381,6 +381,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			double scalePixelPerLengthLongY = (canvas.width -30) / neededWidth;
 			scalePixelPerLength = Math.min(scalePixelPerLengthLatY, scalePixelPerLengthLongY);
 			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset -> scalePixelPerLength: %f %n", scalePixelPerLength);
+			if (scalePixelPerLength<lowerZoomLimit) {
+				scalePixelPerLength = lowerZoomLimit;
+				if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "reset[Limit] -> scalePixelPerLength: %f %n", scalePixelPerLength);
+			}
 			
 			return true;
 		}
@@ -391,7 +395,10 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			MapLatLong centerOld = new MapLatLong(center);
 			MapLatLong location = convertScreenToAngle(point);
 			
-			if (scalePixelPerLength*f < lowerZoomLimit) return false;
+			if (scalePixelPerLength*f < lowerZoomLimit) {
+				if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "zoom[Limit] -> scalePixelPerLength: %f %n", scalePixelPerLength);
+				return false;
+			}
 			
 			scalePixelPerLength *= f;
 			if (debug_showChanges_scalePixelPerLength) System.out.printf(Locale.ENGLISH, "zoom -> scalePixelPerLength: %f %n", scalePixelPerLength);
@@ -525,7 +532,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_LongX(minMinorTickUnitLength_px) * unitScaling;
 			
 			//System.out.printf("updateTicks(%s): minMinorTickUnitLength_a = %s%n", isVertical ? "Vertical" : "Horizontal", minMinorTickUnitLength_a);
-			majorTickUnit_a = 100.0;
+			majorTickUnit_a = 1d;
 			minorTickCount = 5; // minorTickUnit_a = 0.2
 			precision = 0;
 			while (0 < minMinorTickUnitLength_a && majorTickUnit_a/10 > minMinorTickUnitLength_a) {
@@ -564,6 +571,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 				}
 			};
 			minorTickUnit_a = majorTickUnit_a/minorTickCount;
+			//System.out.printf("updateTicks(): majorTickUnit_a = %s, minorTickCount = %s, precision = %s%n", majorTickUnit_a, minorTickCount, precision);
 		}
 
 		void drawAxis(Graphics2D g2, int c0, int c1, int width1, boolean labelsRightBottom) {
