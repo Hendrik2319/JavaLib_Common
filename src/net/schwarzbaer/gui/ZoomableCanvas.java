@@ -524,10 +524,11 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			if (isVertical) minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_LatY (minMinorTickUnitLength_px) * unitScaling;
 			else            minMinorTickUnitLength_a = viewState.convertLength_ScreenToAngle_LongX(minMinorTickUnitLength_px) * unitScaling;
 			
-			majorTickUnit_a = 1d;
+			//System.out.printf("updateTicks(%s): minMinorTickUnitLength_a = %s%n", isVertical ? "Vertical" : "Horizontal", minMinorTickUnitLength_a);
+			majorTickUnit_a = 100.0;
 			minorTickCount = 5; // minorTickUnit_a = 0.2
 			precision = 0;
-			while (majorTickUnit_a/10 > minMinorTickUnitLength_a) {
+			while (0 < minMinorTickUnitLength_a && majorTickUnit_a/10 > minMinorTickUnitLength_a) {
 				
 				if (majorTickUnit_a/10 > minMinorTickUnitLength_a) {
 					majorTickUnit_a /= 2; // majorTickUnit_a = 0.5
