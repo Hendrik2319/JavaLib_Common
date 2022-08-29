@@ -81,20 +81,28 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	
 	public void generateOutput(String baseIndent, OutputTarget out) {
 		HashMap<Integer,Integer> labelLengths = new HashMap<>();
-		for (Entry entry:this)
-			if (entry!=null && !entry.valueStr.isEmpty()){
-				Integer maxLength = labelLengths.get(entry.indentLevel);
-				if (maxLength==null) maxLength=0;
-				maxLength = Math.max(entry.label.length(), maxLength);
-				labelLengths.put(entry.indentLevel,maxLength);
-			}
-		
 		HashMap<Integer,String> indents = new HashMap<>();
-		for (Integer indentLevel:labelLengths.keySet()) {
-			String str = ""; int i=0;
-			while (i<indentLevel) { str += "    "; i++; }
-			indents.put(indentLevel, str);
-		}
+		
+		for (Entry entry:this)
+			if (entry!=null)
+			{
+				String indent = indents.get(entry.indentLevel);
+				if (indent==null) // first entry at this indentLevel
+				{
+					String str = "";
+					for (int i=0; i<entry.indentLevel; i++)
+						str += "    ";
+					indents.put(entry.indentLevel, str);
+				}
+				
+				if (!entry.valueStr.isEmpty())
+				{
+					Integer maxLength = labelLengths.get(entry.indentLevel);
+					if (maxLength==null) maxLength=0;
+					maxLength = Math.max(entry.label.length(), maxLength);
+					labelLengths.put(entry.indentLevel,maxLength);
+				}
+			}
 		
 		out.prepareOutput(this);
 		for (Entry entry:this)
@@ -103,7 +111,8 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 			else {
 				String spacer = entry.valueStr.isEmpty() ? "" : entry.label.isEmpty() ? "  " : ": ";
 				String indent = indents.get(entry.indentLevel);
-				int labelLength = labelLengths.get(entry.indentLevel);
+				Integer labelLength_ = labelLengths.get(entry.indentLevel);
+				int labelLength = labelLength_==null ? 0 : labelLength_.intValue();
 				String labelFormat = labelLength==0 ? "%s" : "%-"+labelLength+"s";
 				out.appendLine(entry.labelStyle, String.format("%s%s"+labelFormat+"%s", baseIndent, indent, entry.label, spacer), entry.valueStyle, entry.valueStr);
 			}
