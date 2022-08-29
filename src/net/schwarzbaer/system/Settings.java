@@ -353,7 +353,7 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 				private void saveDividerLocations(String label) {
 					def.splitPanes.forEach((key,pane)->{
 						int currentValue = pane.getDividerLocation();
-						if (showDividerLoc) System.out.printf("save DividerLocation[%s,\"%s\"]  %d%n", label, currentValue);
+						if (showDividerLoc) System.out.printf("save DividerLocation[%s,\"%s\"]  %d%n", key, label, currentValue);
 						putInt(key, currentValue);
 					});
 				}
