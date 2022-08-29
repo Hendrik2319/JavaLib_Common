@@ -6,10 +6,16 @@ import java.awt.Point;
 import java.awt.Window;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+
+import javax.swing.JSplitPane;
+import javax.swing.SwingUtilities;
 
 public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<ValueKey>, ValueKey extends Enum<ValueKey>> {
 
@@ -283,6 +289,74 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 				@Override public void componentHidden (ComponentEvent e) {}
 				@Override public void componentResized(ComponentEvent e) { putDimension(windowWidth, windowHeight, window.getSize() ); }
 				@Override public void componentMoved  (ComponentEvent e) {}
+			});
+		}
+		
+		public final static class SplitPaneDividersDefinition<ValueKey extends Enum<ValueKey>>
+		{
+			private final Window window;
+			private final EnumMap<ValueKey, JSplitPane> splitPanes;
+
+			public SplitPaneDividersDefinition(Window window, Class<ValueKey> enumClass)
+			{
+				this.window = window;
+				splitPanes = new EnumMap<>(enumClass);
+			}
+
+			public SplitPaneDividersDefinition<ValueKey> add(JSplitPane splitPane, ValueKey valueKey)
+			{
+				splitPanes.put(valueKey, splitPane);
+				return this;
+			}
+		}
+		
+		public void registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def)
+		{
+			registerSplitPaneDividers(def, false);
+		}
+		
+		public void registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def, boolean showDividerLoc)
+		{
+			SwingUtilities.invokeLater(()->{
+				def.splitPanes.forEach((key,pane)->{
+					int storedValue = getInt(key, -1);
+					if (storedValue < 0) return;
+					
+					pane.setDividerLocation(storedValue);
+					if (showDividerLoc) {
+						System.out.printf("init  DividerLocation[%s] <- %d%n", key, storedValue);
+						System.out.printf("check DividerLocation[%s] -> %d%n", key, pane.getDividerLocation());
+					}
+				});
+				
+				SwingUtilities.invokeLater(()->{
+					def.splitPanes.forEach((key,pane)->{
+						int storedValue = getInt(key, -1);
+						if (storedValue < 0) return;
+						
+						if (showDividerLoc) System.out.printf("check DividerLocation[%s] 1a -> %d%n", key, pane.getDividerLocation());
+						if (storedValue!=pane.getDividerLocation()) pane.setDividerLocation(storedValue);
+						if (showDividerLoc) System.out.printf("check DividerLocation[%s] 1b -> %d%n", key, pane.getDividerLocation());
+						
+						if (showDividerLoc) 
+							SwingUtilities.invokeLater(()->{
+								System.out.printf("check DividerLocation[%s] 2  -> %d%n", key, pane.getDividerLocation());
+							});
+					});
+				});
+			});
+			
+			def.window.addWindowListener(new WindowAdapter() {
+				@Override public void windowClosing(WindowEvent e) { saveDividerLocations("Closing"); }
+				@Override public void windowClosed (WindowEvent e) { saveDividerLocations("Closed" ); }
+
+				private void saveDividerLocations(String label) {
+					def.splitPanes.forEach((key,pane)->{
+						int currentValue = pane.getDividerLocation();
+						if (showDividerLoc) System.out.printf("save DividerLocation[%s,\"%s\"]  %d%n", label, currentValue);
+						putInt(key, currentValue);
+					});
+				}
 			});
 		}
 	}
