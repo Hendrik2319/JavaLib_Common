@@ -394,6 +394,18 @@ public class Tables {
 		public void setAllDefaultEditors(Function<Class<?>,TableCellEditor> getEditor) {
 			forEachColumClass(columnClass -> table.setDefaultEditor(columnClass, getEditor.apply(columnClass)));
 		}
+		public void setDefaultRenderers(Function<Class<?>,TableCellRenderer> getRenderer) {
+			forEachColumClass(columnClass -> {
+				TableCellRenderer renderer = getRenderer.apply(columnClass);
+				if (renderer!=null) table.setDefaultRenderer(columnClass, renderer);
+			});
+		}
+		public void setDefaultEditors(Function<Class<?>,TableCellEditor> getEditor) {
+			forEachColumClass(columnClass -> {
+				TableCellEditor editor = getEditor.apply(columnClass);
+				if (editor!=null) table.setDefaultEditor(columnClass, editor);
+			});
+		}
 		
 		public void forEachColumClass(Consumer<Class<?>> action) {
 			HashSet<Class<?>> classes = new HashSet<>();
