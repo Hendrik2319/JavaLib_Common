@@ -353,7 +353,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			Shape prevClip = g2.getClip();
 			Rectangle viewClip = new Rectangle(x, y, width, height);
 			g2.setClip(viewClip);
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			setRenderingHints(g2);
 			
 			if (image!=null) {
 				int imageX      = viewState.convertPos_AngleToScreen_LongX(0);
@@ -431,6 +431,11 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			
 			g2.setClip(prevClip);
 		}
+	}
+	
+	protected void setRenderingHints(Graphics2D g2)
+	{
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 	}
 	
 	protected void drawBeforeMapDecoration(Graphics2D g2, int x, int y, int width, int height)
