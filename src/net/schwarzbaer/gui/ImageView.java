@@ -31,7 +31,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private static final Color COLOR_AXIS = new Color(0x70000000,true);
 	//private static final Color COLOR_BACKGROUND = Color.WHITE;
 	
-	enum BGPattern {
+	public enum BGPattern {
 		WhiteChecker("White Checker", createCheckerPattern(10, 6,4, new Color(0xFFFFFF), new Color(0xEFEFEF))),
 		GrayChecker ( "Gray Checker", createCheckerPattern(10, 6,4, new Color(0x7F7F7F), new Color(0x6F6F6F))),
 		BlackChecker("Black Checker", createCheckerPattern(10, 6,4, new Color(0x000000), new Color(0x202020))),
@@ -332,6 +332,9 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	
 	public void setBgColor(Color bgColor) {
 		setBackground(bgColor, null);	
+	}
+	public void setBgPattern(BGPattern bgPattern) {
+		setBackground(null, bgPattern);	
 	}
 	public void setBackground(Color bgColor, BGPattern bgPattern) {
 		this.bgColor = bgColor;
