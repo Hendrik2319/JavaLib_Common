@@ -23,7 +23,9 @@ import java.util.function.Consumer;
 
 import javax.swing.Icon;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 
 public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
@@ -64,10 +66,12 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	private final ImageViewContextMenu contextMenu;
 	private final Vector<DrawExtension> drawExtensions;
 	
-	public ImageView(int width, int height) { this(null, width, height, null); }
-	public ImageView(BufferedImage image, int width, int height) { this(image, width, height, null); }
-	public ImageView(int width, int height, InterpolationLevel interpolationLevel) { this(null, width, height, interpolationLevel); }
-	public ImageView(BufferedImage image, int width, int height, InterpolationLevel interpolationLevel) {
+	public ImageView(                     int width, int height                                                                      ) { this(null , width, height, null              , false); }
+	public ImageView(BufferedImage image, int width, int height                                                                      ) { this(image, width, height, null              , false); }
+	public ImageView(                     int width, int height, InterpolationLevel interpolationLevel                               ) { this(null , width, height, interpolationLevel, false); }
+	public ImageView(                     int width, int height, InterpolationLevel interpolationLevel, boolean withGroupedContexMenu) { this(null , width, height, interpolationLevel, withGroupedContexMenu); }
+	public ImageView(BufferedImage image, int width, int height, InterpolationLevel interpolationLevel                               ) { this(image, width, height, interpolationLevel, false); }
+	public ImageView(BufferedImage image, int width, int height, InterpolationLevel interpolationLevel, boolean withGroupedContexMenu) {
 		this.image = image;
 		bgColor = null;
 		bgPattern = null;
@@ -80,7 +84,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		betterScaling = new BetterScaling(this::repaint);
 		addZoomListener(this::updateBetterInterpolation);
 		
-		contextMenu = new ImageViewContextMenu(this,interpolationLevel!=null);
+		contextMenu = new ImageViewContextMenu(this,interpolationLevel!=null, withGroupedContexMenu);
 		contextMenu.addTo(this);
 		
 		drawExtensions = new Vector<DrawExtension>();
@@ -487,7 +491,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		private JCheckBoxMenuItem chkbxBetterInterpolation;
 		private ImageView imageView;
 
-		public ImageViewContextMenu(ImageView imageView, boolean predefinedInterpolationLevel) {
+		public ImageViewContextMenu(ImageView imageView, boolean predefinedInterpolationLevel, boolean grouped) {
 			this.imageView = imageView;
 			JCheckBoxMenuItem chkbxInterpolation = null;
 			if (!predefinedInterpolationLevel) {
@@ -501,31 +505,74 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			} else
 				chkbxBetterInterpolation = null;
 			
-			add(createMenuItem("10%",e->imageView.setZoom(0.10f)));
-			add(createMenuItem("25%",e->imageView.setZoom(0.25f)));
-			add(createMenuItem("50%",e->imageView.setZoom(0.50f)));
-			add(createMenuItem("75%",e->imageView.setZoom(0.75f)));
-			addSeparator();
-			add(createMenuItem("100%",e->imageView.setZoom(1)));
-			addSeparator();
-			add(createMenuItem("150%",e->imageView.setZoom(1.5f)));
-			add(createMenuItem("200%",e->imageView.setZoom(2.0f)));
-			add(createMenuItem("300%",e->imageView.setZoom(3.0f)));
-			add(createMenuItem("400%",e->imageView.setZoom(4.0f)));
-			add(createMenuItem("600%",e->imageView.setZoom(6.0f)));
-			addSeparator();
-			add(createSetBgPatternMenuItem(imageView, BGPattern.WhiteChecker));
-			add(createSetBgPatternMenuItem(imageView, BGPattern.GrayChecker ));
-			add(createSetBgPatternMenuItem(imageView, BGPattern.BlackChecker));
-			add(createSetBgColorMenuItem(imageView, Color.BLACK  , "Set Background to Black"));
-			add(createSetBgColorMenuItem(imageView, Color.WHITE  , "Set Background to White"));
-			add(createSetBgColorMenuItem(imageView, Color.MAGENTA, "Set Background to Magenta"));
-			add(createSetBgColorMenuItem(imageView, Color.GREEN  , "Set Background to Green"));
-			add(createSetBgColorMenuItem(imageView, null         , "Remove Background"));
+			MenuWrapper zoomMenu;
+			if (grouped) {
+				JMenu menu = new JMenu("Zoom");
+				add(menu);
+				zoomMenu = MenuWrapper.createFor(menu);
+			} else {
+				zoomMenu = MenuWrapper.createFor(this);
+			}
+			zoomMenu.add(createMenuItem("10%",e->imageView.setZoom(0.10f)));
+			zoomMenu.add(createMenuItem("25%",e->imageView.setZoom(0.25f)));
+			zoomMenu.add(createMenuItem("50%",e->imageView.setZoom(0.50f)));
+			zoomMenu.add(createMenuItem("75%",e->imageView.setZoom(0.75f)));
+			zoomMenu.addSeparator();
+			zoomMenu.add(createMenuItem("100%",e->imageView.setZoom(1)));
+			zoomMenu.addSeparator();
+			zoomMenu.add(createMenuItem("150%",e->imageView.setZoom(1.5f)));
+			zoomMenu.add(createMenuItem("200%",e->imageView.setZoom(2.0f)));
+			zoomMenu.add(createMenuItem("300%",e->imageView.setZoom(3.0f)));
+			zoomMenu.add(createMenuItem("400%",e->imageView.setZoom(4.0f)));
+			zoomMenu.add(createMenuItem("600%",e->imageView.setZoom(6.0f)));
+			
+			if (!grouped) addSeparator();
+			
+			MenuWrapper bgMenu;
+			if (grouped) {
+				JMenu menu = new JMenu("Background");
+				add(menu);
+				bgMenu = MenuWrapper.createFor(menu);
+			} else {
+				bgMenu = MenuWrapper.createFor(this);
+			}
+			bgMenu.add(createSetBgPatternMenuItem(imageView, BGPattern.WhiteChecker));
+			bgMenu.add(createSetBgPatternMenuItem(imageView, BGPattern.GrayChecker ));
+			bgMenu.add(createSetBgPatternMenuItem(imageView, BGPattern.BlackChecker));
+			bgMenu.add(createSetBgColorMenuItem(imageView, Color.BLACK  , "Set Background to Black"));
+			bgMenu.add(createSetBgColorMenuItem(imageView, Color.WHITE  , "Set Background to White"));
+			bgMenu.add(createSetBgColorMenuItem(imageView, Color.MAGENTA, "Set Background to Magenta"));
+			bgMenu.add(createSetBgColorMenuItem(imageView, Color.GREEN  , "Set Background to Green"));
+			bgMenu.add(createSetBgColorMenuItem(imageView, null         , "Remove Background"));
+			
 			if (!predefinedInterpolationLevel) {
-				addSeparator();
-				add(chkbxInterpolation);
-				add(chkbxBetterInterpolation);
+				if (grouped) {
+					JMenu menu = new JMenu("Interpolation");
+					menu.add(chkbxInterpolation);
+					menu.add(chkbxBetterInterpolation);
+					add(menu);
+				} else {
+					addSeparator();
+					add(chkbxInterpolation);
+					add(chkbxBetterInterpolation);
+				}
+			}
+		}
+		
+		interface MenuWrapper {
+			JMenuItem add(JMenuItem mi);
+			void addSeparator();
+			static MenuWrapper createFor(JPopupMenu menu) {
+				return new MenuWrapper() {
+					@Override public JMenuItem add(JMenuItem mi) { return menu.add(mi); }
+					@Override public void addSeparator() { menu.addSeparator(); }
+				};
+			}
+			static MenuWrapper createFor(JMenu menu) {
+				return new MenuWrapper() {
+					@Override public JMenuItem add(JMenuItem mi) { return menu.add(mi); }
+					@Override public void addSeparator() { menu.addSeparator(); }
+				};
 			}
 		}
 

@@ -9,15 +9,22 @@ import java.awt.event.ComponentListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.Objects;
+import java.util.Vector;
+import java.util.function.Supplier;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import java.util.stream.Stream;
 
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 
 public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<ValueKey>, ValueKey extends Enum<ValueKey>> {
+
+	private static final String INTEGER_SEPARATOR = ",";
 
 	public interface GroupKeys<V> {
 		V[] getKeys();
@@ -136,6 +143,47 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 		try { return Enum.valueOf(enumClass, string); }
 		catch (Exception e) { return def; }
 	}
+	
+	public void putIntArray(ValueKey key, Stream<Integer>     values) { putString(key, toString(Objects.requireNonNull(values))); }
+	public void putIntArray(ValueKey key, Collection<Integer> values) { putString(key, toString(Objects.requireNonNull(values))); }
+	public void putIntArray(ValueKey key, Integer[]           values) { putString(key, toString(Objects.requireNonNull(values))); }
+	public void putIntArray(ValueKey key, int[]               values) { putString(key, toString(Objects.requireNonNull(values))); }
+	public int[]           getIntArray     (ValueKey key) { return getIntegerStream(key).mapToInt(Integer::intValue).toArray(); }
+	public Integer[]       getIntegerArray (ValueKey key) { return getIntegerStream(key).toArray(Integer[]::new); }
+	public Vector<Integer> getIntegerVector(ValueKey key) { return getIntegerCollection(key, Vector<Integer>::new); }
+	
+	public <CollectionType extends Collection<Integer>> CollectionType getIntegerCollection(ValueKey key, Supplier<CollectionType> constructor) {
+		CollectionType collection = constructor.get();
+		collection.clear();
+		collection.addAll(getIntegerStream(key).toList());
+		return collection;
+	}
+	
+	public Stream<Integer> getIntegerStream(ValueKey key) {
+		String value = getString(key, null);
+		
+		if (value==null)
+			return Stream.empty();
+		
+		String[] parts = value.split(INTEGER_SEPARATOR,-1);
+		
+		return Arrays
+				.stream(parts)
+				.map(str -> {
+					try { return Integer.parseInt(str); }
+					catch (NumberFormatException e) { return null; }
+				})
+				.filter(i -> (i != null));
+	}
+
+	private String toString(Stream<Integer> values)
+	{
+		Iterable<String>  it = ()->values.map(i->i.toString()).iterator();
+		return String.join(INTEGER_SEPARATOR, it);
+	}
+	private String toString(Collection<Integer> values) { return toString(values.stream()); }
+	private String toString(Integer[]           values) { return toString(Arrays.stream(values)); }
+	private String toString(int[]               values) { return toString(Arrays.stream(values).mapToObj(Integer::valueOf)); }
 
 	private boolean contains(String[] prefkeys, ValueKey key) {
 		if (key==null) return true;
