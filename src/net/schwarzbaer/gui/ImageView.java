@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.event.ActionListener;
@@ -345,7 +346,10 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 		
 		if (g instanceof Graphics2D && viewState.isOk()) {
 			Graphics2D g2 = (Graphics2D) g;
-			g2.setClip(x, y, width, height);
+			
+			Shape prevClip = g2.getClip();
+			Rectangle viewClip = new Rectangle(x, y, width, height);
+			g2.setClip(viewClip);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			
 			if (image!=null) {
@@ -353,14 +357,15 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
 				int imageWidth  = viewState.convertPos_AngleToScreen_LongX(image.getWidth ()) - imageX;
 				int imageHeight = viewState.convertPos_AngleToScreen_LatY (image.getHeight()) - imageY;
+				Rectangle imageClip = new Rectangle(imageX, imageY, imageWidth, imageHeight);
+				Rectangle viewableImageClip = viewClip.intersection(imageClip);
 				
 				if (bgColor!=null) {
 					g2.setColor(bgColor);
-					g2.fillRect(x+imageX, y+imageY, imageWidth, imageHeight);
+					g2.fillRect(imageX, imageY, imageWidth, imageHeight);
 				}
-				if (bgPattern!=null) {
-					Shape clip = g2.getClip();
-					g2.setClip(imageX, imageY, imageWidth, imageHeight);
+				if (bgPattern!=null && !viewableImageClip.isEmpty()) {
+					g2.setClip(viewableImageClip);
 					
 					BufferedImage pattImg = bgPattern.patternImage;
 					int pattWidth  = pattImg.getWidth();
@@ -371,26 +376,26 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 					for (int iX=0; iX<=nX; iX++) {
 						
 						int pattX = iX*pattWidth;
-						if (pattX >= x+imageX+imageWidth) break;
-						if (pattX+pattWidth <= x+imageX) continue;
+						if (pattX >= imageX+imageWidth) break;
+						if (pattX+pattWidth <= imageX) continue;
 						
 						for (int iY=0; iY<=nY; iY++) {
 							
 							int pattY = iY*pattHeight;
-							if (pattY >= y+imageY+imageHeight) break;
-							if (pattY+pattHeight <= y+imageY) continue;
+							if (pattY >= imageY+imageHeight) break;
+							if (pattY+pattHeight <= imageY) continue;
 							
 							g2.drawImage(pattImg, pattX, pattY, null);
 						}
 					}
-					g2.setClip(clip);
+					g2.setClip(viewClip);
 				}
 				
 				g2.setColor(COLOR_AXIS);
-				g2.drawLine(x+imageX, y, x+imageX, y+height);
-				g2.drawLine(x, y+imageY, x+width, y+imageY);
-				g2.drawLine(x+imageX+imageWidth-1, y, x+imageX+imageWidth-1, y+height);
-				g2.drawLine(x, y+imageY+imageHeight-1, x+width, y+imageY+imageHeight-1);
+				g2.drawLine(imageX, 0, imageX, height);
+				g2.drawLine(0, imageY, width, imageY);
+				g2.drawLine(imageX+imageWidth-1, 0, imageX+imageWidth-1, height);
+				g2.drawLine(0, imageY+imageHeight-1, width, imageY+imageHeight-1);
 				
 				Object interpolationValue = null;
 				if (useInterpolation && imageWidth<image.getWidth()) {
@@ -398,7 +403,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 					if (useBetterInterpolation) {
 						BufferedImage scaledImage = betterScaling.getResult();
 						if (scaledImage != null) {
-							g2.drawImage(scaledImage, x+imageX, y+imageY, null);
+							drawImage(g2, scaledImage, true, imageX, imageY, imageWidth, imageHeight);
+							//g2.drawImage(scaledImage, imageX, imageY, null);
 							interpolationValue = null;
 						}
 					}
@@ -408,7 +414,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				
 				if (interpolationValue!=null) {
 					g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolationValue);
-					g2.drawImage(image, x+imageX, y+imageY, imageWidth, imageHeight, null);
+					drawImage(g2, image, false, imageX, imageY, imageWidth, imageHeight);
+					//g2.drawImage(image, imageX, imageY, imageWidth, imageHeight, null);
 				}
 			}
 			
@@ -416,9 +423,19 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			
 			for (DrawExtension de : drawExtensions)
 				de.draw(g2, x, y, width, height, viewState);
+			
+			g2.setClip(prevClip);
 		}
 	}
 	
+	protected void drawImage(Graphics2D g2, BufferedImage image, boolean imageWasScaled, int imageX, int imageY, int imageWidth, int imageHeight)
+	{
+		if (imageWasScaled)
+			g2.drawImage(image, imageX, imageY, null);
+		else
+			g2.drawImage(image, imageX, imageY, imageWidth, imageHeight, null);
+	}
+
 	public interface DrawExtension {
 		void draw(Graphics2D g2, int x, int y, int width, int height, ViewState viewState);
 	}
