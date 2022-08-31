@@ -422,6 +422,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				}
 			}
 			
+			drawBeforeMapDecoration(g2, x, y, width, height);
+			
 			drawMapDecoration(g2, x, y, width, height);
 			
 			for (DrawExtension de : drawExtensions)
@@ -429,6 +431,10 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			
 			g2.setClip(prevClip);
 		}
+	}
+	
+	protected void drawBeforeMapDecoration(Graphics2D g2, int x, int y, int width, int height)
+	{
 	}
 	
 	protected void drawImage(Graphics2D g2, BufferedImage image, boolean imageWasScaled, int imageX, int imageY, int imageWidth, int imageHeight)
