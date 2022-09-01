@@ -355,8 +355,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 			Graphics2D g2 = (Graphics2D) g;
 			
 			Shape prevClip = g2.getClip();
-			Rectangle viewClip = new Rectangle(x, y, width, height);
-			g2.setClip(viewClip);
+			Rectangle viewRect = new Rectangle(x, y, width, height);
+			g2.setClip(viewRect);
 			setRenderingHints(g2);
 			
 			if (image!=null) {
@@ -364,8 +364,8 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				int imageY      = viewState.convertPos_AngleToScreen_LatY (0);
 				int imageWidth  = viewState.convertPos_AngleToScreen_LongX(image.getWidth ()) - imageX;
 				int imageHeight = viewState.convertPos_AngleToScreen_LatY (image.getHeight()) - imageY;
-				Rectangle imageClip = new Rectangle(imageX, imageY, imageWidth, imageHeight);
-				Rectangle viewableImageClip = viewClip.intersection(imageClip);
+				Rectangle imageRect = new Rectangle(imageX, imageY, imageWidth, imageHeight);
+				Rectangle viewableImageClip = viewRect.intersection(imageRect);
 				
 				if (bgColor!=null) {
 					g2.setColor(bgColor);
@@ -395,7 +395,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 							g2.drawImage(pattImg, pattX, pattY, null);
 						}
 					}
-					g2.setClip(viewClip);
+					g2.setClip(viewRect);
 				}
 				
 				g2.setColor(COLOR_AXIS);
@@ -410,7 +410,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 					if (useBetterInterpolation) {
 						BufferedImage scaledImage = betterScaling.getResult();
 						if (scaledImage != null) {
-							drawImage(g2, scaledImage, true, imageX, imageY, imageWidth, imageHeight);
+							drawImage(g2, scaledImage, true, viewRect, imageRect);
 							//g2.drawImage(scaledImage, imageX, imageY, null);
 							interpolationValue = null;
 						}
@@ -421,7 +421,7 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 				
 				if (interpolationValue!=null) {
 					g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolationValue);
-					drawImage(g2, image, false, imageX, imageY, imageWidth, imageHeight);
+					drawImage(g2, image, false, viewRect, imageRect);
 					//g2.drawImage(image, imageX, imageY, imageWidth, imageHeight, null);
 				}
 			}
@@ -446,12 +446,12 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 	{
 	}
 	
-	protected void drawImage(Graphics2D g2, BufferedImage image, boolean imageWasScaled, int imageX, int imageY, int imageWidth, int imageHeight)
+	protected void drawImage(Graphics2D g2, BufferedImage image, boolean imageWasScaled, Rectangle viewRect, Rectangle imageRect)
 	{
 		if (imageWasScaled)
-			g2.drawImage(image, imageX, imageY, null);
+			g2.drawImage(image, imageRect.x, imageRect.y, null);
 		else
-			g2.drawImage(image, imageX, imageY, imageWidth, imageHeight, null);
+			g2.drawImage(image, imageRect.x, imageRect.y, imageRect.width, imageRect.height, null);
 	}
 
 	public interface DrawExtension {
