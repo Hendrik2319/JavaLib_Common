@@ -805,10 +805,13 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private int rowHeight;
 
 		public TextBox(String... texts) {
+			this(Anchor.TopLeft, texts);
+		}
+		public TextBox(Anchor anchor, String... texts) {
 			setText(texts);
 			setPos(0,0);
 			setOffset(0, 0);
-			setAnchor(Anchor.TopLeft);
+			setAnchor(anchor);
 			setEnabled(true);
 			setColors(Color.GRAY, new Color(0xFFF9D7), Color.BLACK);
 			setPadding(5,2);
