@@ -9,8 +9,10 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.font.FontRenderContext;
 import java.awt.geom.Rectangle2D;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Vector;
 
 public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas implements MouseListener, MouseMotionListener, MouseWheelListener {
@@ -756,6 +758,192 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 				float textX2 = (float) (x2-bounds2.getX()-bounds2.getWidth ()-3);
 				float textY2 = (float) (y -bounds2.getY()-bounds2.getHeight()-3);
 				g2.drawString( str, textX2, textY2 );
+			}
+		}
+	}
+
+	public static class TextBox {
+		
+		private enum AxisPos {
+			Left, Right, Top, Bottom, Center
+		}
+		
+		public enum Anchor {
+			TopLeft    (AxisPos.Top   , AxisPos.Left  ),
+			Top        (AxisPos.Top   , AxisPos.Center),
+			TopRight   (AxisPos.Top   , AxisPos.Right ),
+			Left       (AxisPos.Center, AxisPos.Left  ),
+			Center     (AxisPos.Center, AxisPos.Center),
+			Right      (AxisPos.Center, AxisPos.Right ),
+			BottomLeft (AxisPos.Bottom, AxisPos.Left  ),
+			Bottom     (AxisPos.Bottom, AxisPos.Center),
+			BottomRight(AxisPos.Bottom, AxisPos.Right ),
+			;
+			private final AxisPos axisPosX;
+			private final AxisPos axisPosY;
+			private Anchor(AxisPos axisPosY, AxisPos axisPosX) {
+				this.axisPosX = axisPosX;
+				this.axisPosY = axisPosY;
+			}
+		}
+		
+		private String[] texts;
+		private Rectangle2D[] bounds;
+		private boolean isEnabled;
+		private int x;
+		private int y;
+		private Color borderColor;
+		private Color fillColor;
+		private Color textColor;
+		private int offsetX;
+		private int offsetY;
+		private TextBox.Anchor anchor;
+		private int paddingX;
+		private int paddingY;
+		private int textOffsetX;
+		private int textOffsetY;
+		private int rowHeight;
+
+		public TextBox(String... texts) {
+			setText(texts);
+			setPos(0,0);
+			setOffset(0, 0);
+			setAnchor(Anchor.TopLeft);
+			setEnabled(true);
+			setColors(Color.GRAY, new Color(0xFFF9D7), Color.BLACK);
+			setPadding(5,2);
+			setTextOffset(0,0);
+			setRowHeight(15);
+		}
+		
+		public void setText(String... texts)
+		{
+			//texts = new String[] {"line 1", "line2 txt txt", "line3 txt" };
+			this.texts = Objects.requireNonNull(texts);
+			for (int i=0; i<this.texts.length; i++)
+				if (this.texts[i]==null)
+					this.texts[i] = "";
+			bounds = null;
+		}
+
+		public void setPos(int x, int y) { this.x = x; this.y = y; }
+
+		public void setEnabled(boolean enabled) { this.isEnabled = enabled; }
+		public boolean isEnabled() { return isEnabled; }
+
+		public void setRowHeight(int rowHeight)
+		{
+			this.rowHeight = rowHeight;
+		}
+
+		public void setTextOffset(int textOffsetX, int textOffsetY)
+		{
+			this.textOffsetX = textOffsetX;
+			this.textOffsetY = textOffsetY;
+		}
+
+		public void setPadding(int paddingX, int paddingY)
+		{
+			this.paddingX = paddingX;
+			this.paddingY = paddingY;
+			bounds = null;
+		}
+
+		public void setOffset(int offsetX, int offsetY)
+		{
+			this.offsetX = offsetX;
+			this.offsetY = offsetY;
+		}
+
+		public void setAnchor(TextBox.Anchor anchor)
+		{
+			this.anchor = anchor;
+		}
+
+		public void setColors(Color borderColor, Color fillColor, Color textColor) {
+			this.borderColor = borderColor;
+			this.fillColor = fillColor;
+			this.textColor = textColor;
+		}
+
+		public void draw(Graphics2D g2) {
+			if (texts.length==0)
+				return;
+			
+			if (bounds == null) {
+				bounds = new Rectangle2D[texts.length];
+				Font font = g2.getFont();
+				FontRenderContext frc = g2.getFontRenderContext();
+				for (int i=0; i<texts.length; i++)
+				{
+					bounds[i] = font.getStringBounds(texts[i], frc);
+					bounds[i].setRect(
+							bounds[i].getX()-paddingX-textOffsetX,
+							bounds[i].getY()-paddingY-textOffsetY,
+							bounds[i].getWidth ()+2*paddingX,
+							bounds[i].getHeight()+2*paddingY
+						);
+				}
+			}
+			
+			if (borderColor!=null) draw(g2,0);
+			if (fillColor  !=null) draw(g2,1);
+			if (textColor  !=null) draw(g2,2);
+		}
+
+		private void draw(Graphics2D g2, int stage)
+		{
+			int totalHeight = (texts.length-1)*rowHeight + (int) Math.round( bounds[bounds.length-1].getHeight() );
+			
+			int localOffsetY = offsetY;
+			if (anchor.axisPosY==AxisPos.Bottom)
+				localOffsetY -= totalHeight;
+			else if (anchor.axisPosY==AxisPos.Center)
+				localOffsetY -= totalHeight/2;
+			
+			switch (stage)
+			{
+				case -1: break;
+				case 0: g2.setColor(borderColor); break;
+				case 1: g2.setColor(fillColor  ); break;
+				case 2: g2.setColor(textColor  ); break;
+			}
+			
+			for (int i=0; i<texts.length; i++)
+			{
+				int boxX = (int) Math.round( bounds[i].getX() );
+				int boxY = (int) Math.round( bounds[i].getY() );
+				int boxW = (int) Math.round( bounds[i].getWidth() );
+				int boxH = (int) Math.round( bounds[i].getHeight() );
+				
+				int localOffsetX = offsetX;
+				if (anchor.axisPosX==AxisPos.Right)
+					localOffsetX -= boxW;
+				else if (anchor.axisPosX==AxisPos.Center)
+					localOffsetX -= boxW/2;
+				
+				int strX = localOffsetX-boxX; boxX = localOffsetX;
+				int strY = localOffsetY-boxY; boxY = localOffsetY;
+				
+				switch (stage)
+				{
+					case -1:
+						if (borderColor!=null) { g2.setColor(borderColor); g2.drawRect(x+boxX-1, y+boxY-1, boxW+1, boxH+1); }
+						if (fillColor  !=null) { g2.setColor(fillColor  ); g2.fillRect(x+boxX, y+boxY, boxW, boxH); }
+						if (textColor  !=null) { g2.setColor(textColor  ); g2.drawString(texts[i], x+strX, y+strY); }
+						break;
+					case 0:
+						g2.drawRect(x+boxX-1, y+boxY-1, boxW+1, boxH+1);
+						break;
+					case 1:
+						g2.fillRect(x+boxX, y+boxY, boxW, boxH);
+						break;
+					case 2:
+						g2.drawString(texts[i], x+strX, y+strY);
+						break;
+				}
+				
+				localOffsetY += rowHeight;
 			}
 		}
 	}
