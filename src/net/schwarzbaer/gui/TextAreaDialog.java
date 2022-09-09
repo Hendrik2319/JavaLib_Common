@@ -16,10 +16,17 @@ import javax.swing.JTextArea;
 public class TextAreaDialog extends StandardDialog {
 	private static final long serialVersionUID = 1135036865387978283L;
 	
+	public interface AddToContextMenu {
+		void addToContextMenu(JPopupMenu contextMenu, JTextArea textArea);
+	}
+	
 	private final JTextArea textArea;
 	private boolean wasCanceled;
 
-	private TextAreaDialog(Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject, int width, int height, boolean textEditable, boolean asEditor, boolean textAreaLineWrap) {
+	private TextAreaDialog(
+			Window parent, String title, ModalityType modality, boolean repeatedUseOfDialogObject,
+			int width, int height, boolean textEditable, boolean asEditor, boolean textAreaLineWrap,
+			AddToContextMenu addToContextMenu) {
 		super(parent, title, modality, repeatedUseOfDialogObject);
 		wasCanceled = true;
 		
@@ -40,6 +47,9 @@ public class TextAreaDialog extends StandardDialog {
 			textArea.setWrapStyleWord(isChecked);
 		}) );
 		
+		if (addToContextMenu!=null)
+			addToContextMenu.addToContextMenu(textViewContextMenu, textArea);
+		
 		JScrollPane textAreaScrollPane = new JScrollPane(textArea);
 		textAreaScrollPane.setPreferredSize(new Dimension(width,height));
 		
@@ -54,14 +64,24 @@ public class TextAreaDialog extends StandardDialog {
 	}
 	
 	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, boolean nonBlocking, String text) {
+		showText(parent, title, width, height, textAreaLineWrap, nonBlocking, text, null);
+	}
+	
+	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text, AddToContextMenu addToContextMenu) {
+		showText(parent, title, width, height, textAreaLineWrap, false, text, addToContextMenu);
+	}
+	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, boolean nonBlocking, String text, AddToContextMenu addToContextMenu) {
 		ModalityType modalityType = nonBlocking ? ModalityType.MODELESS : ModalityType.APPLICATION_MODAL;
-		TextAreaDialog dlg = new TextAreaDialog(parent, title, modalityType, false, width, height, false, false, textAreaLineWrap);
+		TextAreaDialog dlg = new TextAreaDialog(parent, title, modalityType, false, width, height, false, false, textAreaLineWrap, addToContextMenu);
 		dlg.setText(text);
 		dlg.showDialog();
 	}
 	
 	public static String editText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text) {
-		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, true, true, textAreaLineWrap);
+		return editText(parent, title, width, height, textAreaLineWrap, text, null);
+	}
+	public static String editText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text, AddToContextMenu addToContextMenu) {
+		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, true, true, textAreaLineWrap, addToContextMenu);
 		dlg.setText(text);
 		dlg.wasCanceled = true;
 		dlg.showDialog();
