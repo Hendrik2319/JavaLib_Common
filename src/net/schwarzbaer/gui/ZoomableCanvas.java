@@ -14,6 +14,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.function.Supplier;
 
 public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extends Canvas implements MouseListener, MouseMotionListener, MouseWheelListener {
 	private static final long serialVersionUID = -1282219829667604150L;
@@ -99,6 +100,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	@Override public void mouseClicked(MouseEvent e) {}
 	
 	protected abstract VS createViewState();
+	
+	protected void addTextToMapScale(Supplier<String[]> textSource) { if (mapScale!=null) mapScale.addAdditionalTextSource(textSource); }
 	
 	protected void activateMapScale(Color color, String unit                       ) { activateMapScale(color, unit,          1f,         false); }
 	protected void activateMapScale(Color color, String unit, double unitScaling   ) { activateMapScale(color, unit, unitScaling,         false); }
@@ -668,6 +671,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private double unitScaling;
 		private double zoomValue;
 		private boolean showZoomValue;
+		private Supplier<String[]> additionalTextSource;
 	
 		Scale(ViewState viewState, Color scaleColor, String unit, double unitScaling, boolean showZoomValue) {
 			this.viewState = viewState;
@@ -677,8 +681,14 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			this.showZoomValue = showZoomValue;
 			scaleLength_px = minScaleLength_px;
 			scaleLength_u = 1;
+			additionalTextSource = null;
 		}
 		
+		void addAdditionalTextSource(Supplier<String[]> additionalTextSource)
+		{
+			this.additionalTextSource = additionalTextSource;
+		}
+
 		void setUnitScaling(double unitScaling) {
 			this.unitScaling = unitScaling;
 		}
@@ -752,12 +762,28 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			float textY = (float) (y2-bounds.getY()-bounds.getHeight()-3);
 			g2.drawString( str, textX, textY );
 			
+			double textBottom = y;
 			if (showZoomValue) {
 				str = String.format(Locale.ENGLISH, "%1.1f%%", zoomValue*100);
 				Rectangle2D bounds2 = getBounds(g2, str);
-				float textX2 = (float) (x2-bounds2.getX()-bounds2.getWidth ()-3);
-				float textY2 = (float) (y -bounds2.getY()-bounds2.getHeight()-3);
+				textBottom -= bounds2.getHeight();
+				float textX2 = (float) (x2-bounds2.getWidth()-bounds2.getX()-3);
+				float textY2 = (float) (textBottom           -bounds2.getY()-3);
 				g2.drawString( str, textX2, textY2 );
+			}
+			
+			if (additionalTextSource!=null)
+			{
+				String[] strings = additionalTextSource.get();
+				for (int i=strings.length-1; 0<=i; i--)
+				{
+					String str_ = strings[i];
+					Rectangle2D bounds2 = getBounds(g2, str_);
+					textBottom -= bounds2.getHeight();
+					float textX2 = (float) (x2-bounds2.getWidth()-bounds2.getX()-3);
+					float textY2 = (float) (textBottom           -bounds2.getY()-3);
+					g2.drawString( str_, textX2, textY2 );
+				}
 			}
 		}
 	}
