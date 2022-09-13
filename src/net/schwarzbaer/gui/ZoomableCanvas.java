@@ -848,13 +848,27 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		public void setText(String... texts)
 		{
 			//texts = new String[] {"line 1", "line2 txt txt", "line3 txt" };
-			this.texts = Objects.requireNonNull(texts);
-			for (int i=0; i<this.texts.length; i++)
-				if (this.texts[i]==null)
-					this.texts[i] = "";
+			this.texts = removeNulls(Objects.requireNonNull(texts));
 			bounds = null;
 		}
 
+		private static String[] removeNulls(String[] texts)
+		{
+			int count = 0;
+			for (String str : texts)
+				if (str!=null)
+					count++;
+			
+			String[] result = new String[count];
+			
+			int i=0;
+			for (String str : texts)
+				if (str!=null)
+					result[i++] = str;
+			
+			return result;
+		}
+		
 		public void setPos(int x, int y) { this.x = x; this.y = y; }
 
 		public void setEnabled(boolean enabled) { this.isEnabled = enabled; }
