@@ -44,6 +44,7 @@ import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.event.AncestorEvent;
 import javax.swing.event.AncestorListener;
@@ -131,12 +132,15 @@ public class Tables {
 
 		private void updatePrefSize()
 		{
-			int totalHeight = 0;
-			int rowCount = this.table.getRowCount();
-			for (int rowV=0; rowV<rowCount; rowV++)
-				totalHeight += this.table.getRowHeight(rowV);
-			prefHeight = totalHeight;
-			setPreferredSize(new Dimension(this.prefWidth, prefHeight));
+			SwingUtilities.invokeLater(()->{
+				int totalHeight = 0;
+				int rowCount = table.getRowCount();
+				for (int rowV=0; rowV<rowCount; rowV++)
+					totalHeight += table.getRowHeight(rowV);
+				prefHeight = totalHeight;
+				setPreferredSize(new Dimension(prefWidth, prefHeight));
+				repaint();
+			});
 		}
 
 		public void setRowLabelSource(RowLabelSource rowLabelSource)
