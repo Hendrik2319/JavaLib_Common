@@ -107,27 +107,45 @@ public class Tables {
 				};
 			}
 			
-			RowSorter<?> rowSorter = table.getRowSorter();
-			if (rowSorter!=null) rowSorter.addRowSorterListener(e -> repaint());
-			
-			TableModelListener listener = e -> updatePrefSize();
+			javax.swing.event.RowSorterListener rsListener = e -> repaint();
+			TableModelListener tmListener = e -> updatePrefSize();
 		
-			this.table.addPropertyChangeListener("model", e -> {
+			this.table.addPropertyChangeListener(e -> {
 				Object oldValue = e.getOldValue();
 				Object newValue = e.getNewValue();
-				TableModel oldTableModel = oldValue instanceof TableModel ? (TableModel) oldValue : null;
-				TableModel newTableModel = newValue instanceof TableModel ? (TableModel) newValue : null;
-				updateTableModelListenerAssignment(listener, oldTableModel, newTableModel);
+				String propertyName = e.getPropertyName();
+				if (propertyName!=null)
+					switch (propertyName)
+					{
+						case "model":
+							changeListener(oldValue, TableModel.class, model->model.removeTableModelListener(tmListener));
+							changeListener(newValue, TableModel.class, model->model.   addTableModelListener(tmListener));
+							updatePrefSize();
+							break;
+						case "sorter": //case "rowSorter":
+							changeListener(oldValue, RowSorter.class, sorter->sorter.removeRowSorterListener(rsListener));
+							changeListener(newValue, RowSorter.class, sorter->sorter.   addRowSorterListener(rsListener));
+							repaint();
+							break;
+					}
 			});
 			
-			updateTableModelListenerAssignment(listener, null, table.getModel());
+			RowSorter<?> rowSorter = table.getRowSorter();
+			if (rowSorter!=null)
+				rowSorter.addRowSorterListener(rsListener);
+			
+			TableModel tableModel = table.getModel();
+			if (tableModel!=null)
+				tableModel.addTableModelListener(tmListener);
+			updatePrefSize();
 		}
-
-		private void updateTableModelListenerAssignment(TableModelListener listener, TableModel old_, TableModel new_)
+		
+		private <CompType> void changeListener(Object value, Class<CompType> compClass, Consumer<CompType> setListener)
 		{
-			if (old_!=null) old_.removeTableModelListener(listener);
-			if (new_!=null) new_.   addTableModelListener(listener);
-			listener.tableChanged(null);
+			if (value==null) return;
+			if (!compClass.isAssignableFrom(value.getClass())) return;
+			CompType comp = compClass.cast(value);
+			setListener.accept(comp);
 		}
 
 		private void updatePrefSize()
