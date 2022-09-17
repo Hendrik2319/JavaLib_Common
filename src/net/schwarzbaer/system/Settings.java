@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -358,12 +359,17 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			}
 		}
 		
-		public void registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def)
+		public interface SaveToken
 		{
-			registerSplitPaneDividers(def, false);
+			void saveDividerLocations();
 		}
 		
-		public void registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def, boolean showDividerLoc)
+		public SaveToken registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def)
+		{
+			return registerSplitPaneDividers(def, false);
+		}
+		
+		public SaveToken registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def, boolean showDividerLoc)
 		{
 			SwingUtilities.invokeLater(()->{
 				def.splitPanes.forEach((key,pane)->{
@@ -394,18 +400,20 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 				});
 			});
 			
+			Consumer<String> saveDividerLocations = label->{
+				def.splitPanes.forEach((key,pane)->{
+					int currentValue = pane.getDividerLocation();
+					if (showDividerLoc) System.out.printf("save DividerLocation[%s,\"%s\"]  %d%n", key, label, currentValue);
+					putInt(key, currentValue);
+				});
+			};
+			
 			def.window.addWindowListener(new WindowAdapter() {
-				@Override public void windowClosing(WindowEvent e) { saveDividerLocations("Closing"); }
-				@Override public void windowClosed (WindowEvent e) { saveDividerLocations("Closed" ); }
-
-				private void saveDividerLocations(String label) {
-					def.splitPanes.forEach((key,pane)->{
-						int currentValue = pane.getDividerLocation();
-						if (showDividerLoc) System.out.printf("save DividerLocation[%s,\"%s\"]  %d%n", key, label, currentValue);
-						putInt(key, currentValue);
-					});
-				}
+				@Override public void windowClosing(WindowEvent e) { saveDividerLocations.accept("Closing"); }
+				@Override public void windowClosed (WindowEvent e) { saveDividerLocations.accept("Closed" ); }
 			});
+			
+			return ()->saveDividerLocations.accept("External");
 		}
 	}
 	
