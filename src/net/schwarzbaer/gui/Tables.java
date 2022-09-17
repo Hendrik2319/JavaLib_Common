@@ -673,7 +673,17 @@ public class Tables {
 		}
 
 		protected Comparator<Integer> getSpecialSorting(ColumnID columnID, SortOrder sortOrder) {
+			// if (columnID==ColumnID.XYZ) return createSpecialSortingComparator(ColumnClassXYZ.class, getColumn(columnID), sortOrder);
 			return null;
+		}
+		
+		protected <U extends Comparable<U>> Comparator<Integer> createSpecialSortingComparator(Class<U> classObj, int columnIndex, SortOrder sortOrder)
+		{
+			Comparator<U> valueComparator;
+			if (sortOrder==SortOrder.DESCENDING) valueComparator = Comparator.<U>nullsFirst(Comparator.<U>naturalOrder());
+			else                                 valueComparator = Comparator.<U>nullsLast (Comparator.<U>naturalOrder());
+			Function<Integer, U> keyExtractor = row -> classObj.cast(getValueAt(row,columnIndex));
+			return Comparator.<Integer,U>comparing(keyExtractor,valueComparator);
 		}
 	}
 	
