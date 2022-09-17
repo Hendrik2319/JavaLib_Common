@@ -63,37 +63,29 @@ public class Tables {
 	{
 		private static final long serialVersionUID = -787545909665602974L;
 
-		public static <TableModelType extends TableModel & DataSource> void setIn(JScrollPane contentPane, JTable table, TableModelType tableModel, int prefWidth)
+		public static RowHeaderView setIn(JScrollPane contentPane, JTable table, RowLabelSource rowLabelSource, int prefWidth)
 		{
-			contentPane.setRowHeaderView(new RowHeaderView(table, tableModel, prefWidth));
-		}
-		public static void setIn(JScrollPane contentPane, JTable table, TableModel tableModel, DataSource dataSource, int prefWidth)
-		{
-			contentPane.setRowHeaderView(new RowHeaderView(table, tableModel, dataSource, prefWidth));
+			RowHeaderView rowHeaderView = new RowHeaderView(table, rowLabelSource, prefWidth);
+			contentPane.setRowHeaderView(rowHeaderView);
+			return rowHeaderView;
 		}
 		
-		public interface DataSource
+		public interface RowLabelSource
 		{
 			String getRowLabel(int rowM);
 		}
 		
 		private final JTable table;
-		private final TableModel tableModel;
-		private final DataSource dataSource;
 		private final TableCellRenderer defaultRenderer;
+		private RowLabelSource rowLabelSource;
 		private final int prefWidth;
 		private int prefHeight;
 
-		public <TableModelType extends TableModel & DataSource> RowHeaderView(JTable table, TableModelType tableModel, int prefWidth)
+		public RowHeaderView(JTable table, RowLabelSource rowLabelSource, int prefWidth)
 		{
-			this(table, tableModel, tableModel, prefWidth);
-		}
-		public RowHeaderView(JTable table, TableModel tableModel, DataSource dataSource, int prefWidth)
-		{
-			this.table      = Objects.requireNonNull( table );
-			this.tableModel = Objects.requireNonNull( tableModel );
-			this.dataSource = Objects.requireNonNull( dataSource );
-			this.prefWidth  = prefWidth;
+			this.table          = Objects.requireNonNull( table );
+			this.rowLabelSource = rowLabelSource;
+			this.prefWidth      = prefWidth;
 			prefHeight = 0;
 			
 			JTableHeader tableHeader = this.table.getTableHeader();
@@ -117,8 +109,24 @@ public class Tables {
 			RowSorter<?> rowSorter = table.getRowSorter();
 			if (rowSorter!=null) rowSorter.addRowSorterListener(e -> repaint());
 			
-			tableModel.addTableModelListener(e -> updatePrefSize());
-			updatePrefSize();
+			TableModelListener listener = e -> updatePrefSize();
+		
+			this.table.addPropertyChangeListener("model", e -> {
+				Object oldValue = e.getOldValue();
+				Object newValue = e.getNewValue();
+				TableModel oldTableModel = oldValue instanceof TableModel ? (TableModel) oldValue : null;
+				TableModel newTableModel = newValue instanceof TableModel ? (TableModel) newValue : null;
+				updateTableModelListenerAssignment(listener, oldTableModel, newTableModel);
+			});
+			
+			updateTableModelListenerAssignment(listener, null, table.getModel());
+		}
+
+		private void updateTableModelListenerAssignment(TableModelListener listener, TableModel old_, TableModel new_)
+		{
+			if (old_!=null) old_.removeTableModelListener(listener);
+			if (new_!=null) new_.   addTableModelListener(listener);
+			listener.tableChanged(null);
 		}
 
 		private void updatePrefSize()
@@ -129,6 +137,12 @@ public class Tables {
 				totalHeight += this.table.getRowHeight(rowV);
 			prefHeight = totalHeight;
 			setPreferredSize(new Dimension(this.prefWidth, prefHeight));
+		}
+
+		public void setRowLabelSource(RowLabelSource rowLabelSource)
+		{
+			this.rowLabelSource = rowLabelSource;
+			repaint();
 		}
 
 		@Override
@@ -142,13 +156,13 @@ public class Tables {
 				g.drawRect(0, 0, prefWidth-1, prefHeight-1);
 			}
 			
-			int rowCount = tableModel.getRowCount();
+			int rowCount = table.getRowCount();
 			for (int rowV=0; rowV<rowCount; rowV++)
 			{
 				int rowM = table.convertRowIndexToModel(rowV);
-				String rowLabel = dataSource.getRowLabel(rowM);
+				String rowLabel = rowLabelSource==null ? String.format("Row %d", rowM+1) : rowLabelSource.getRowLabel(rowM);
 				int rowHeight = table.getRowHeight(rowV);
-				Component rendComp = defaultRenderer.getTableCellRendererComponent(table, rowLabel, false, false, rowV, -1);
+				Component rendComp = defaultRenderer.getTableCellRendererComponent(table, rowLabel, false, false, -1, -1);
 				rendComp.setSize(prefWidth, rowHeight);
 				rendComp.paint(g);
 				g.translate(0, rowHeight);
