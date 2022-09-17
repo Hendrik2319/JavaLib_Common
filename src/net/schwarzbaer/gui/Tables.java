@@ -519,6 +519,11 @@ public class Tables {
 			int columnIndex = getColumn( columnID );
 			if (columnIndex>=0) fireTableColumnUpdate(columnIndex);
 		}
+		
+		protected void fireTableCellUpdate(int rowIndex, ColumnID columnID) {
+			int columnIndex = getColumn( columnID );
+			if (columnIndex>=0) fireTableCellUpdate(rowIndex, columnIndex);
+		}
 
 		@Override public abstract int getRowCount();
 		public abstract Object getValueAt(int rowIndex, int columnIndex, ColumnID columnID);
