@@ -19,6 +19,7 @@ import java.util.EventObject;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Vector;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -36,6 +37,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListCellRenderer;
 import javax.swing.Popup;
@@ -48,6 +50,7 @@ import javax.swing.event.AncestorListener;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -55,6 +58,104 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
 public class Tables {
+	
+	public static class RowHeaderView extends Component
+	{
+		private static final long serialVersionUID = -787545909665602974L;
+
+		public static <TableModelType extends TableModel & DataSource> void setIn(JScrollPane contentPane, JTable table, TableModelType tableModel, int prefWidth)
+		{
+			contentPane.setRowHeaderView(new RowHeaderView(table, tableModel, prefWidth));
+		}
+		public static void setIn(JScrollPane contentPane, JTable table, TableModel tableModel, DataSource dataSource, int prefWidth)
+		{
+			contentPane.setRowHeaderView(new RowHeaderView(table, tableModel, dataSource, prefWidth));
+		}
+		
+		public interface DataSource
+		{
+			String getRowLabel(int rowM);
+		}
+		
+		private final JTable table;
+		private final TableModel tableModel;
+		private final DataSource dataSource;
+		private final TableCellRenderer defaultRenderer;
+		private final int prefWidth;
+		private int prefHeight;
+
+		public <TableModelType extends TableModel & DataSource> RowHeaderView(JTable table, TableModelType tableModel, int prefWidth)
+		{
+			this(table, tableModel, tableModel, prefWidth);
+		}
+		public RowHeaderView(JTable table, TableModel tableModel, DataSource dataSource, int prefWidth)
+		{
+			this.table      = Objects.requireNonNull( table );
+			this.tableModel = Objects.requireNonNull( tableModel );
+			this.dataSource = Objects.requireNonNull( dataSource );
+			this.prefWidth  = prefWidth;
+			prefHeight = 0;
+			
+			JTableHeader tableHeader = this.table.getTableHeader();
+			TableCellRenderer renderer = tableHeader==null ? null : tableHeader.getDefaultRenderer();
+			
+			if (renderer!=null)
+				this.defaultRenderer = renderer;
+			
+			else
+			{
+				System.err.printf("RowHeaderView: Can't get DefaultRenderer from TableHeader of given Table -> Use LabelRendererComponent%n");
+				Tables.LabelRendererComponent rendComp = new Tables.LabelRendererComponent();
+				this.defaultRenderer = (table_, value_, isSelected_, hasFocus_, row_, column_) ->
+				{
+					String str = value_==null ? "" : value_.toString();
+					rendComp.configureAsTableCellRendererComponent(table_, null, str, isSelected_, hasFocus_);
+					return rendComp;
+				};
+			}
+			
+			RowSorter<?> rowSorter = table.getRowSorter();
+			if (rowSorter!=null) rowSorter.addRowSorterListener(e -> repaint());
+			
+			tableModel.addTableModelListener(e -> updatePrefSize());
+			updatePrefSize();
+		}
+
+		private void updatePrefSize()
+		{
+			int totalHeight = 0;
+			int rowCount = this.table.getRowCount();
+			for (int rowV=0; rowV<rowCount; rowV++)
+				totalHeight += this.table.getRowHeight(rowV);
+			prefHeight = totalHeight;
+			setPreferredSize(new Dimension(this.prefWidth, prefHeight));
+		}
+
+		@Override
+		public void paint(Graphics g)
+		{
+			super.paint(g);
+			
+			if (prefHeight>1)
+			{
+				g.setColor(Color.BLACK);
+				g.drawRect(0, 0, prefWidth-1, prefHeight-1);
+			}
+			
+			int rowCount = tableModel.getRowCount();
+			for (int rowV=0; rowV<rowCount; rowV++)
+			{
+				int rowM = table.convertRowIndexToModel(rowV);
+				String rowLabel = dataSource.getRowLabel(rowM);
+				int rowHeight = table.getRowHeight(rowV);
+				Component rendComp = defaultRenderer.getTableCellRendererComponent(table, rowLabel, false, false, rowV, -1);
+				rendComp.setSize(prefWidth, rowHeight);
+				rendComp.paint(g);
+				g.translate(0, rowHeight);
+			}
+			
+		}
+	}
 	
 	public static class SimplifiedRowSorter extends RowSorter<SimplifiedTableModel<?>> {
 
