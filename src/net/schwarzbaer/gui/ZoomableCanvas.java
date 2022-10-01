@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -33,6 +35,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 
 	private boolean isEditorMode;
 	private int scrollWidth;
+
+	private boolean isFirstTimeShown;
 	
 	protected ZoomableCanvas() {
 		setPreferredSize(20,50);
@@ -57,6 +61,15 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		addMouseListener(this);
 		addMouseMotionListener(this);
 		addMouseWheelListener(this);
+		
+		isFirstTimeShown = true;
+		addComponentListener(new ComponentListener()
+		{
+			@Override public void componentShown  (ComponentEvent e) { if (isFirstTimeShown) { isFirstTimeShown=false; reset(); } }
+			@Override public void componentResized(ComponentEvent e) {}
+			@Override public void componentMoved  (ComponentEvent e) {}
+			@Override public void componentHidden (ComponentEvent e) {}
+		});
 	}
 	
 	public boolean isEditorMode() { return  isEditorMode; }
@@ -133,6 +146,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	}
 
 	public void reset() {
+		if (withDebugOutput) System.out.println("ZoomableCanvas.reset()");
 		if (viewState.reset()) {
 			updateAxes();
 			updateMapScale();

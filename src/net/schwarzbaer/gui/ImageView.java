@@ -557,6 +557,9 @@ public class ImageView extends ZoomableCanvas<ImageView.ViewState> {
 					add(chkbxBetterInterpolation);
 				}
 			}
+			
+			if (!grouped) addSeparator();
+			add(createMenuItem("Reset View",e->imageView.reset()));
 		}
 		
 		interface MenuWrapper {
