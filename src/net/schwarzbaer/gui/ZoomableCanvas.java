@@ -4,8 +4,6 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -36,7 +34,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 	private boolean isEditorMode;
 	private int scrollWidth;
 
-	private boolean isFirstTimeShown;
+	private boolean isFirstSizeChanged;
 	
 	protected ZoomableCanvas() {
 		setPreferredSize(20,50);
@@ -62,16 +60,24 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		addMouseMotionListener(this);
 		addMouseWheelListener(this);
 		
-		isFirstTimeShown = true;
-		addComponentListener(new ComponentListener()
-		{
-			@Override public void componentShown  (ComponentEvent e) { if (isFirstTimeShown) { isFirstTimeShown=false; reset(); } }
-			@Override public void componentResized(ComponentEvent e) {}
-			@Override public void componentMoved  (ComponentEvent e) {}
-			@Override public void componentHidden (ComponentEvent e) {}
-		});
+		isFirstSizeChanged = true;
 	}
 	
+	@Override
+	protected void sizeChanged(int width, int height)
+	{
+		if (withDebugOutput)
+			System.out.printf("ZoomableCanvas.sizeChanged(w:%d, h:%d, first:%s)%n", width, height, isFirstSizeChanged);
+		
+		super.sizeChanged(width, height);
+		
+		if (isFirstSizeChanged)
+		{
+			isFirstSizeChanged=false;
+			reset();
+		}
+	}
+
 	public boolean isEditorMode() { return  isEditorMode; }
 	public boolean isViewerMode() { return !isEditorMode; }
 	
