@@ -369,6 +369,26 @@ public class Settings<ValueGroup extends Enum<ValueGroup> & Settings.GroupKeys<V
 			return registerSplitPaneDividers(def, false);
 		}
 		
+		public static void setDividerLocation(JSplitPane pane, int dividerLoc, boolean showDividerLoc)
+		{
+			pane.setDividerLocation(dividerLoc);
+			if (showDividerLoc) {
+				System.out.printf("init  DividerLocation <- %d%n", dividerLoc);
+				System.out.printf("check DividerLocation -> %d%n", pane.getDividerLocation());
+			}
+			
+			SwingUtilities.invokeLater(()->{
+				if (showDividerLoc) System.out.printf("check DividerLocation 1a -> %d%n", pane.getDividerLocation());
+				if (dividerLoc!=pane.getDividerLocation()) pane.setDividerLocation(dividerLoc);
+				if (showDividerLoc) System.out.printf("check DividerLocation 1b -> %d%n", pane.getDividerLocation());
+				
+				if (showDividerLoc) 
+					SwingUtilities.invokeLater(()->{
+						System.out.printf("check DividerLocation 2  -> %d%n", pane.getDividerLocation());
+					});
+			});
+		}
+		
 		public SaveToken registerSplitPaneDividers(SplitPaneDividersDefinition<ValueKey> def, boolean showDividerLoc)
 		{
 			SwingUtilities.invokeLater(()->{
