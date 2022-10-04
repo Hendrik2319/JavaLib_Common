@@ -1739,7 +1739,7 @@ public class Tables {
 		}
 	}
 	
-	public static class TableContextMenu<RowType, TableModelType extends Tables.SimplifiedTableModel<ColumnIDType> & Tables.MinimalTableModelExtension<RowType>, ColumnIDType extends Tables.SimplifiedColumnIDInterface> extends ContextMenu
+	public static class TableContextMenu<RowType, TableModelType extends SimplifiedTableModel<ColumnIDType> & MinimalTableModelExtension<RowType>, ColumnIDType extends SimplifiedColumnIDInterface> extends ContextMenu
 	{
 		private static final long serialVersionUID = 9024827772233883664L;
 		
@@ -1749,7 +1749,7 @@ public class Tables {
 		protected final JTable table;
 		protected final TableModelType tableModel;
 		
-		TableContextMenu(JTable table, TableModelType tableModel) {
+		public TableContextMenu(JTable table, TableModelType tableModel) {
 			this.table = table;
 			this.tableModel = tableModel;
 			clickedRow = null;
@@ -1758,7 +1758,7 @@ public class Tables {
 			
 			add(new JMenuItem("Show Column Widths"))
 			.addActionListener(e->{
-				System.out.printf("Column Widths: %s%n", Tables.SimplifiedTableModel.getColumnWidthsAsString(table));
+				System.out.printf("Column Widths: %s%n", SimplifiedTableModel.getColumnWidthsAsString(table));
 			});
 			
 			addContextMenuInvokeListener((comp, x, y) -> {
