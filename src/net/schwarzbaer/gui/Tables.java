@@ -36,6 +36,7 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -1735,6 +1736,43 @@ public class Tables {
 				return dataArr[ rowIndex ];
 			}
 			return null;
+		}
+	}
+	
+	public static class TableContextMenu<RowType, TableModelType extends Tables.SimplifiedTableModel<ColumnIDType> & Tables.MinimalTableModelExtension<RowType>, ColumnIDType extends Tables.SimplifiedColumnIDInterface> extends ContextMenu
+	{
+		private static final long serialVersionUID = 9024827772233883664L;
+		
+		protected RowType clickedRow;
+		protected int clickedRowIndex;
+		protected ColumnIDType clickedColumnID;
+		protected final JTable table;
+		protected final TableModelType tableModel;
+		
+		TableContextMenu(JTable table, TableModelType tableModel) {
+			this.table = table;
+			this.tableModel = tableModel;
+			clickedRow = null;
+			clickedRowIndex = -1;
+			clickedColumnID = null;
+			
+			add(new JMenuItem("Show Column Widths"))
+			.addActionListener(e->{
+				System.out.printf("Column Widths: %s%n", Tables.SimplifiedTableModel.getColumnWidthsAsString(table));
+			});
+			
+			addContextMenuInvokeListener((comp, x, y) -> {
+				Point point = new Point(x,y);
+				int columnV = table.columnAtPoint(point);
+				int columnM = columnV<0 ? -1 : table.convertColumnIndexToModel(columnV);
+				int rowV = table.rowAtPoint(point);
+				int rowM = rowV<0 ? -1 : table.convertRowIndexToModel(rowV);
+				clickedRowIndex = rowM;
+				clickedRow = rowM<0 ? null : tableModel.getRow(rowM);
+				clickedColumnID = tableModel.getColumnID(columnM);
+			});
+			
+			addTo(table);
 		}
 	}
 }
