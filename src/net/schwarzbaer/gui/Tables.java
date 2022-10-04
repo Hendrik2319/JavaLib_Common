@@ -40,10 +40,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListCellRenderer;
+import javax.swing.ListSelectionModel;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.RowSorter;
 import javax.swing.SortOrder;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.event.AncestorEvent;
@@ -1431,4 +1433,308 @@ public class Tables {
 		}
 	}
 
+	public static class SimplifiedTablePanel<RowType, TableModelType extends SimplifiedTableModel<?> & StandardTableModelExtension<RowType>> extends JScrollPane
+	{
+		private static final long serialVersionUID = -3790528051807931731L;
+		
+		public final TableModelType tableModel;
+		public final JTable table;
+
+		public SimplifiedTablePanel(TableModelType tableModel)
+		{
+			this(tableModel, null);
+		}
+		public SimplifiedTablePanel(TableModelType tableModel, Consumer<RowType> selectedRowChanged)
+		{
+			this.tableModel = tableModel;
+			table = new JTable(this.tableModel);
+			table.setRowSorter(new SimplifiedRowSorter(this.tableModel));
+			table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+			table.setUpdateSelectionOnSort(true);
+			table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+			if (selectedRowChanged!=null)
+				table.getSelectionModel().addListSelectionListener(e->{
+					RowType row = getSelectedRow();
+					selectedRowChanged.accept(row);
+				});
+			
+			this.tableModel.setTable(table);
+			this.tableModel.setColumnWidths(table);
+			this.tableModel.setDefaultCellEditorsAndRenderers();
+			
+			setViewportView(table);
+		}
+		
+		public void setScrollPaneToPrefTableSize()
+		{
+			setScrollPaneToPrefTableSize(null, null);
+		}
+		public void setScrollPaneToPrefTableSize(Integer prefWidth, Integer prefHeight)
+		{
+			Dimension size = table.getPreferredSize();
+			if (prefWidth !=null) size.width  = prefWidth .intValue(); else size.width  += 30;
+			if (prefHeight!=null) size.height = prefHeight.intValue(); else size.height += 50;
+			setPreferredSize(size);
+		}
+
+		public RowType getSelectedRow()
+		{
+			int rowV = table.getSelectedRow();
+			int rowM = rowV<0 ? -1 : table.convertRowIndexToModel(rowV);
+			RowType row = rowM<0 ? null : tableModel.getRow(rowM);
+			return row;
+		}
+	}
+	
+	public static class GeneralizedTableCellRenderer<RowType, ColumnIDType extends Tables.SimplifiedColumnIDInterface, TableModelType extends Tables.SimplifiedTableModel<ColumnIDType> & MinimalTableModelExtension<RowType>> implements TableCellRenderer
+	{
+		public interface Colorizer<RowType,ColumnIDType> {
+			Color getBackground(int rowM, int columnM, RowType row, ColumnIDType columnID);
+			Color getForeground(int rowM, int columnM, RowType row, ColumnIDType columnID);
+			
+			public interface SimpleColorizer<RowType,ColumnIDType>
+			{
+				Color getColor(int rowM, int columnM, RowType row, ColumnIDType columnID);
+			}
+		}
+		
+		public static class BackgroundColorizer<RowType,ColumnIDType> implements Colorizer<RowType,ColumnIDType>
+		{
+			private final SimpleColorizer<RowType, ColumnIDType> source;
+			public BackgroundColorizer(SimpleColorizer<RowType,ColumnIDType> source) { this.source = Objects.requireNonNull(source); }
+			@Override public Color getBackground(int rowM, int columnM, RowType row, ColumnIDType columnID) { return source.getColor(rowM, columnM, row, columnID); }
+			@Override public Color getForeground(int rowM, int columnM, RowType row, ColumnIDType columnID) { return null; }
+		}
+		
+		public static final Color DEFAULT_COLOR_BACKGROUND_EDITABLE_CELL = new Color(0xFFFDD7);
+		
+		private final Tables.ColorRendererComponent    rendCompColor;
+		private final Tables.CheckBoxRendererComponent rendCompCheckBox;
+		private final Tables.LabelRendererComponent    rendCompLabel;
+		private final TableModelType tableModel;
+		private final Colorizer<RowType, ColumnIDType> colorizer;
+		private final Color editableCellBackground;
+		private ValueConvert<ColumnIDType> valueConvert;
+		
+		public GeneralizedTableCellRenderer(TableModelType tableModel)
+		{
+			this(tableModel, null, null);
+		}
+		public GeneralizedTableCellRenderer(TableModelType tableModel, Colorizer<RowType,ColumnIDType> colorizer)
+		{
+			this(tableModel, null, colorizer);
+		}
+		public GeneralizedTableCellRenderer(TableModelType tableModel, boolean useDefaultEditableCellBackground, Colorizer<RowType,ColumnIDType> colorizer)
+		{
+			this(tableModel, useDefaultEditableCellBackground ? DEFAULT_COLOR_BACKGROUND_EDITABLE_CELL : null, colorizer);
+		}
+		public GeneralizedTableCellRenderer(TableModelType tableModel, Color editableCellBackground, Colorizer<RowType,ColumnIDType> colorizer)
+		{
+			this.editableCellBackground = editableCellBackground;
+			this.tableModel = Objects.requireNonNull(tableModel);
+			valueConvert = null;
+			
+			this.colorizer = colorizer;
+			/*// checking usage of this class
+			this.colorizer = new Colorizer<RowType, ColumnIDType>() {
+				@Override public Color getBackground(int rowM, int columnM, RowType row, ColumnIDType columnID)
+				{
+					Color color = colorizer==null ? null : colorizer.getBackground(rowM, columnM, row, columnID);
+					return color;
+				}
+				@Override public Color getForeground(int rowM, int columnM, RowType row, ColumnIDType columnID)
+				{
+					Color color = colorizer==null ? null : colorizer.getForeground(rowM, columnM, row, columnID);
+					if (color==null) color = Color.GREEN;
+					return color;
+				}
+			};
+			*/
+			
+			rendCompCheckBox = new Tables.CheckBoxRendererComponent();
+			rendCompCheckBox.setHorizontalAlignment(SwingConstants.CENTER);
+			rendCompLabel = new Tables.LabelRendererComponent();
+			rendCompColor = new Tables.ColorRendererComponent();
+		}
+		
+		public interface ValueConvert<ColumnIDType>
+		{
+			boolean usableForColumn(int columnM, ColumnIDType columnID);
+			String convert(int rowM, int columnM, ColumnIDType columnID, Object value);
+		}
+		
+		public void setValueConvert(ValueConvert<ColumnIDType> valueConvert)
+		{
+			this.valueConvert = valueConvert;
+		}
+	
+		public boolean fitsTo(Class<?> classObj)
+		{
+			return true;
+		}
+	
+		@Override
+		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int rowV, int columnV)
+		{
+			Component rendComp;
+			int rowM = table.convertRowIndexToModel(rowV);
+			int columnM = table.convertColumnIndexToModel(columnV);
+			RowType row = rowM<0 ? null : tableModel.getRow(rowM);
+			ColumnIDType columnID = columnM<0 ? null : tableModel.getColumnID(columnM);
+			
+			boolean isCellEditable = editableCellBackground == null ? false : tableModel.isCellEditable(rowM, columnM);
+			
+			Supplier<Color> getCustomForeground = colorizer==null                    ? null : ()->                                          colorizer.getForeground(rowM, columnM, row, columnID);
+			Supplier<Color> getCustomBackground = colorizer==null && !isCellEditable ? null : ()->isCellEditable ? editableCellBackground : colorizer.getBackground(rowM, columnM, row, columnID);
+			
+			if (value instanceof Boolean)
+			{
+				boolean b = (Boolean) value;
+				rendComp = rendCompCheckBox;
+				rendCompCheckBox.configureAsTableCellRendererComponent(table, b, null, isSelected, hasFocus, getCustomForeground, getCustomBackground);
+			}
+			else if (value instanceof Color)
+			{
+				rendComp = rendCompColor;
+				rendCompColor.configureAsTableCellRendererComponent(table, value, isSelected, hasFocus, null, getCustomBackground, getCustomForeground);
+			}
+			else
+			{
+				String valueStr;
+				if (valueConvert!=null && valueConvert.usableForColumn(columnM, columnID))
+					valueStr = valueConvert.convert(rowM, columnM, columnID, value);
+				else
+					valueStr = value==null ? null : value.toString();
+				rendComp = rendCompLabel;
+				rendCompLabel.configureAsTableCellRendererComponent(table, null, valueStr, isSelected, hasFocus, getCustomBackground, getCustomForeground);
+				
+				if (value instanceof Number)
+					rendCompLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+				else
+					rendCompLabel.setHorizontalAlignment(SwingConstants.LEFT);
+			}
+				
+			return rendComp;
+		}
+	}
+
+	public interface MinimalTableModelExtension<RowType>
+	{
+		RowType getRow(int rowIndex);
+	}
+	
+	public interface StandardTableModelExtension<RowType> extends MinimalTableModelExtension<RowType>
+	{
+		void setDefaultCellEditorsAndRenderers();
+	}
+	
+	public static abstract class AbstractGetValueTableModel<ValueType, ColumnIDType extends AbstractGetValueTableModel.ColumnIDTypeInt<ValueType>>
+		extends Tables.SimplifiedTableModel<ColumnIDType>
+	{
+		public interface ColumnIDTypeInt<ValueType> extends Tables.SimplifiedColumnIDInterface
+		{
+			Function<ValueType, ?> getGetValue();
+		}
+		
+		public static <BaseValueType,SubValueType,ValueType> Function<BaseValueType,ValueType> fromSubValue(Function<BaseValueType,SubValueType> getSubValue, Function<SubValueType,ValueType> getValue)
+		{
+			return base -> {
+				SubValueType subValue = getSubValue.apply(base);
+				return subValue==null ? null : getValue.apply(subValue);
+			};
+		}
+	
+		protected AbstractGetValueTableModel(ColumnIDType[] columns)
+		{
+			super(columns);
+		}
+	
+		public abstract ValueType getRow(int rowIndex);
+	
+		@Override
+		public Object getValueAt(int rowIndex, int columnIndex, ColumnIDType columnID)
+		{
+			ValueType row = getRow(rowIndex);
+			if (row==null) return null;
+			
+			Function<ValueType, ?> getValue = columnID.getGetValue();
+			if (getValue!=null)
+				return getValue.apply(row);
+			
+			return getValueAt(rowIndex, columnIndex, columnID, row);
+		}
+	
+		protected Object getValueAt(int rowIndex, int columnIndex, ColumnIDType columnID, ValueType row)
+		{
+			throw new IllegalStateException(String.format("No GetValue specified for ColumnID \"%s\"", columnID));
+		}
+	}
+	
+	public static class SimpleGetValueTableModel<ValueType, ColumnIDType extends AbstractGetValueTableModel.ColumnIDTypeInt<ValueType>>
+		extends AbstractGetValueTableModel<ValueType, ColumnIDType>
+		implements Tables.StandardTableModelExtension<ValueType>
+	{
+		private ValueType[] dataArr;
+		private Vector<ValueType> dataVec;
+
+		public SimpleGetValueTableModel(ColumnIDType[] columns)
+		{
+			super(columns);
+			this.dataArr = null;
+			this.dataVec = null;
+		}
+
+		public SimpleGetValueTableModel(ColumnIDType[] columns, ValueType[] data)
+		{
+			super(columns);
+			this.dataArr = data;
+			this.dataVec = null;
+		}
+
+		public SimpleGetValueTableModel(ColumnIDType[] columns, Vector<ValueType> data)
+		{
+			super(columns);
+			this.dataArr = null;
+			this.dataVec = data;
+		}
+
+		public void setData(ValueType[] data)
+		{
+			this.dataArr = data;
+			this.dataVec = null;
+			fireTableUpdate(); 
+		}
+
+		public void setData(Vector<ValueType> data)
+		{
+			this.dataArr = null;
+			this.dataVec = data;
+			fireTableUpdate(); 
+		}
+
+		@Override
+		public void setDefaultCellEditorsAndRenderers() {}
+		
+		@Override
+		public int getRowCount() { return dataVec != null ? dataVec.size() : dataArr != null ? dataArr.length : 0; }
+
+		@Override
+		public ValueType getRow(int rowIndex)
+		{
+			if (rowIndex<0) return null;
+			
+			if (dataVec != null)
+			{
+				if (dataVec.size()<=rowIndex) return null;
+				return dataVec.get( rowIndex );
+			}
+			
+			if (dataArr != null)
+			{
+				if (dataArr.length<=rowIndex) return null;
+				return dataArr[ rowIndex ];
+			}
+			return null;
+		}
+	}
 }
