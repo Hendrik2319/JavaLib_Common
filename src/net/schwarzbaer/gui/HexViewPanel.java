@@ -140,7 +140,7 @@ public class HexViewPanel extends JPanel
 		return txtfld;
 	}
 	
-	void setData(byte[] bytes)
+	public void setData(byte[] bytes)
 	{
 		this.bytes = bytes;
 		setPageSize(pageSize);
@@ -263,7 +263,7 @@ public class HexViewPanel extends JPanel
 		private final Settings<?, ValueKey> settings;
 		private final ValueKey valueKey;
 	
-		PageSizeStorage(Settings<?, ValueKey> settings, ValueKey valueKey)
+		public PageSizeStorage(Settings<?, ValueKey> settings, ValueKey valueKey)
 		{
 			this.settings = settings;
 			this.valueKey = valueKey;
