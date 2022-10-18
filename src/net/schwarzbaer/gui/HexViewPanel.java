@@ -66,7 +66,7 @@ public class HexViewPanel extends JPanel
 			if (ignorePageSelectionEvent) return;
 			int index = cmbbxPages.getSelectedIndex();
 			Page page = index<0 ? null : cmbbxPages.getItemAt(index);
-			if (page != null) setPage(page.index);
+			setPage(page==null ? -1 : page.index, true);
 		});
 		
 		JPanel controlPanel = new JPanel(new GridBagLayout());
@@ -79,8 +79,8 @@ public class HexViewPanel extends JPanel
 		c.gridy = 0;
 		c.gridx = -1;
 		c.gridx++; controlPanel.add(cmbbxPages, c);
-		c.gridx++; controlPanel.add(btnPrevPage = createButton("<", false, e->{ setPage(pageIndex-1); updatePageCombobox(); }), c);
-		c.gridx++; controlPanel.add(btnNextPage = createButton(">", false, e->{ setPage(pageIndex+1); updatePageCombobox(); }), c);
+		c.gridx++; controlPanel.add(btnPrevPage = createButton("<", false, e->{ setPage(pageIndex-1, false); updatePageCombobox(); }), c);
+		c.gridx++; controlPanel.add(btnNextPage = createButton(">", false, e->{ setPage(pageIndex+1, false); updatePageCombobox(); }), c);
 		
 		if (isPageSizeEditable)
 		{
@@ -153,16 +153,20 @@ public class HexViewPanel extends JPanel
 		if (pageSizeStorage!=null) pageSizeStorage.setValue(pageSize);
 		float byteCount = bytes==null ? 0 : bytes.length;
 		pageCount = (int) Math.ceil( byteCount / (pageSize*LINE_LENGTH) );
-		pageIndex = Math.min( currentPageStart / (pageSize*LINE_LENGTH), pageCount-1);
+		pageIndex = pageIndex<0 && pageCount>0 ? 0 : Math.min( currentPageStart / (pageSize*LINE_LENGTH), pageCount-1);
 		Page[] pages = Page.createArray(pageCount);
 		cmbbxPages.setModel(new DefaultComboBoxModel<>(pages));
 		cmbbxPages.setSelectedIndex(pageIndex);
 		if (txtfldPageSize!=null) txtfldPageSize.setEnabled(true);
 	}
 	
-	private void setPage(int index)
+	private void setPage(int index, boolean wasChecked)
 	{
-		if (index < 0 || pageCount <= index) return;
+		if (index < 0 || pageCount <= index)
+		{
+			if (!wasChecked) return;
+			index = -1;
+		}
 		pageIndex = index;
 		btnPrevPage.setEnabled(0 < pageIndex);
 		btnNextPage.setEnabled(pageIndex+1 < pageCount);
@@ -180,10 +184,11 @@ public class HexViewPanel extends JPanel
 	private static final int EXTRACHARS_AT_HALF_LINE = 1;
 	private static final int CHARS_IN_LINE = 8+2 + LINE_LENGTH*CHARS_PER_BYTE+EXTRACHARS_AT_HALF_LINE + 5+LINE_LENGTH +2;
 	private static final int FIRST_BYTE_POS_IN_LINE = 8+2 + 1;
+	
 	private void rebuildPage()
 	{
 		docInterface.clear();
-		if (bytes==null) return;
+		if (bytes==null || pageIndex<0) return;
 		
 		int pageStart = pageIndex*pageSize*LINE_LENGTH;
 		for (int line=0; line<pageSize && pageStart+line*LINE_LENGTH < bytes.length; line++)
@@ -226,6 +231,8 @@ public class HexViewPanel extends JPanel
 
 	public void changeColorAtPos(int bytePos, Color foreground, Color background)
 	{
+		if (pageIndex<0) return;
+		
 		int pageStart = pageIndex*pageSize*LINE_LENGTH;
 		int pageEnd   = pageStart + pageSize*LINE_LENGTH-1;
 		
