@@ -148,12 +148,12 @@ public class HexViewPanel extends JPanel
 
 	private void setPageSize(int n)
 	{
-		int pageStart = pageIndex*pageSize*LINE_LENGTH;
+		int currentPageStart = pageIndex*pageSize*LINE_LENGTH;
 		pageSize = n;
 		if (pageSizeStorage!=null) pageSizeStorage.setValue(pageSize);
 		float byteCount = bytes==null ? 0 : bytes.length;
 		pageCount = (int) Math.ceil( byteCount / (pageSize*LINE_LENGTH) );
-		pageIndex = pageStart / (pageSize*LINE_LENGTH);
+		pageIndex = Math.min( currentPageStart / (pageSize*LINE_LENGTH), pageCount-1);
 		Page[] pages = Page.createArray(pageCount);
 		cmbbxPages.setModel(new DefaultComboBoxModel<>(pages));
 		cmbbxPages.setSelectedIndex(pageIndex);
