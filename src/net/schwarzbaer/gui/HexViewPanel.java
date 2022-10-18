@@ -2,6 +2,7 @@ package net.schwarzbaer.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionListener;
@@ -43,15 +44,15 @@ public class HexViewPanel extends JPanel
 
 	private final PageSizeStorage<?> pageSizeStorage;
 	
-	public HexViewPanel(int defaultPageSize, boolean isPageSizeEditable)
+	public HexViewPanel(int defaultPageSize, boolean isPageSizeEditable, Component... extraToolbarComponents)
 	{
-		this(defaultPageSize, isPageSizeEditable, null);
+		this(defaultPageSize, isPageSizeEditable, null, extraToolbarComponents);
 	}
-	public HexViewPanel(int defaultPageSize, PageSizeStorage<?> pageSizeStorage)
+	public HexViewPanel(int defaultPageSize, PageSizeStorage<?> pageSizeStorage, Component... extraToolbarComponents)
 	{
-		this(defaultPageSize, true, pageSizeStorage);
+		this(defaultPageSize, true, pageSizeStorage, extraToolbarComponents);
 	}
-	private HexViewPanel(int defaultPageSize, boolean isPageSizeEditable, PageSizeStorage<?> pageSizeStorage)
+	private HexViewPanel(int defaultPageSize, boolean isPageSizeEditable, PageSizeStorage<?> pageSizeStorage, Component[] extraToolbarComponents)
 	{
 		super(new BorderLayout());
 		this.pageSizeStorage = pageSizeStorage;
@@ -78,6 +79,7 @@ public class HexViewPanel extends JPanel
 		c.gridwidth = 1;
 		c.gridy = 0;
 		c.gridx = -1;
+		for (Component comp : extraToolbarComponents) { c.gridx++; controlPanel.add(comp, c); }
 		c.gridx++; controlPanel.add(cmbbxPages, c);
 		c.gridx++; controlPanel.add(btnPrevPage = createButton("<", false, e->{ setPage(pageIndex-1, false); updatePageCombobox(); }), c);
 		c.gridx++; controlPanel.add(btnNextPage = createButton(">", false, e->{ setPage(pageIndex+1, false); updatePageCombobox(); }), c);
