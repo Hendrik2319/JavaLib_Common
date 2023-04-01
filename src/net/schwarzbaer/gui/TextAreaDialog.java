@@ -71,9 +71,13 @@ public class TextAreaDialog extends StandardDialog {
 		showText(parent, title, width, height, textAreaLineWrap, false, text, addToContextMenu);
 	}
 	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, boolean nonBlocking, String text, AddToContextMenu addToContextMenu) {
+		showText(parent, title, width, height, textAreaLineWrap, nonBlocking, text, addToContextMenu, null);
+	}
+	public static void showText(Window parent, String title, int width, int height, boolean textAreaLineWrap, boolean nonBlocking, String text, AddToContextMenu addToContextMenu, Consumer<TextAreaDialog> modifyDialog) {
 		ModalityType modalityType = nonBlocking ? ModalityType.MODELESS : ModalityType.APPLICATION_MODAL;
 		TextAreaDialog dlg = new TextAreaDialog(parent, title, modalityType, false, width, height, false, false, textAreaLineWrap, addToContextMenu);
 		dlg.setText(text);
+		if (modifyDialog!=null) modifyDialog.accept(dlg);
 		dlg.showDialog();
 	}
 	
@@ -81,9 +85,13 @@ public class TextAreaDialog extends StandardDialog {
 		return editText(parent, title, width, height, textAreaLineWrap, text, null);
 	}
 	public static String editText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text, AddToContextMenu addToContextMenu) {
+		return editText(parent, title, width, height, textAreaLineWrap, text, addToContextMenu, null);
+	}
+	public static String editText(Window parent, String title, int width, int height, boolean textAreaLineWrap, String text, AddToContextMenu addToContextMenu, Consumer<TextAreaDialog> modifyDialog) {
 		TextAreaDialog dlg = new TextAreaDialog(parent, title, ModalityType.APPLICATION_MODAL, false, width, height, true, true, textAreaLineWrap, addToContextMenu);
 		dlg.setText(text);
 		dlg.wasCanceled = true;
+		if (modifyDialog!=null) modifyDialog.accept(dlg);
 		dlg.showDialog();
 		if (dlg.wasCanceled) return null;
 		return dlg.getText();
