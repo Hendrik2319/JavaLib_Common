@@ -29,7 +29,8 @@ public class ValueListOutput extends Vector<ValueListOutput.Entry> {
 	public void add(int indentLevel, String label, Double  value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Double" ); else add(indentLevel, label, "%f", value); }
 	public void add(int indentLevel, String label, Boolean value) { if (value==null) add(indentLevel, label, "<null> (%s)", "Boolean"); else add(indentLevel, label, "%s", value); }
 	public void add(int indentLevel, String label, String  value) { if (value==null) add(indentLevel, label, "<null> (%s)", "String" ); else add(indentLevel, label, "\"%s\"", value); }
-	public void add(int indentLevel, String label, boolean value, String trueStr, String falseStr) { add(indentLevel, label, "%s", value ? trueStr : falseStr); }
+	public void add(int indentLevel, String label, boolean value, String trueStr, String falseStr) {                                                                          add(indentLevel, label, "%s", value ? trueStr : falseStr); }
+	public void add(int indentLevel, String label, Boolean value, String trueStr, String falseStr) { if (value==null) add(indentLevel, label, "<null> (%s)", "Boolean"); else add(indentLevel, label, "%s", value ? trueStr : falseStr); }
 	
 	public enum StyleTarget { Label, Value, CompleteLine }
 	public void setStyle(Style style, StyleTarget target, boolean forNextEntryOnly) {
