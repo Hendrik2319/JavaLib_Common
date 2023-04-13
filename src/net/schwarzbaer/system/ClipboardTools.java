@@ -122,8 +122,6 @@ public class ClipboardTools {
 		if (toolkit==null) return null;
 		Clipboard clipboard = toolkit.getSystemClipboard();
 		if (clipboard==null) return null;
-		Transferable transferable = clipboard.getContents(null);
-		if (transferable==null) return null;
 		
 		Transferable content = null;
 		try { content = clipboard.getContents(null); }
@@ -137,12 +135,12 @@ public class ClipboardTools {
 				Object data = content.getTransferData(DataFlavor.imageFlavor);
 				if (data instanceof BufferedImage) {
 					BufferedImage image = (BufferedImage) data;
-					System.out.printf("Found BufferedImage: %d x %d%n", image.getWidth(), image.getHeight());
+					//System.out.printf("Found BufferedImage: %d x %d%n", image.getWidth(), image.getHeight());
 					return image;
 				}
 				if (data instanceof RenderedImage) {
 					RenderedImage image = (RenderedImage) data;
-					System.out.printf("Found RenderedImage: %d x %d%n", image.getWidth(), image.getHeight());
+					//System.out.printf("Found RenderedImage: %d x %d%n", image.getWidth(), image.getHeight());
 					BufferedImage buffImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
 					buffImage.createGraphics().drawRenderedImage(image, new AffineTransform());
 					return buffImage;
@@ -153,8 +151,8 @@ public class ClipboardTools {
 			} catch (IOException ex) {
 				System.err.printf("IOException while reading TransferData: \"%s\"%n", ex.getMessage());
 			}
-		} else
-			System.err.printf("Found Other Content:  %s%n", content);
+		}// else
+		//	System.err.printf("Found Other Content:  %s%n", content);
 		
 		return null;
 	}
