@@ -18,8 +18,11 @@ public class ImageViewDialog extends JDialog {
 		this(parent, image, title, width, height, null, exitOnESC);
 	}
 	public ImageViewDialog(Window parent, BufferedImage image, String title, int width, int height, ImageView.InterpolationLevel interpolationLevel, boolean exitOnESC) {
+		this(parent, image, title, width, height, interpolationLevel, exitOnESC, false);
+	}
+	public ImageViewDialog(Window parent, BufferedImage image, String title, int width, int height, ImageView.InterpolationLevel interpolationLevel, boolean exitOnESC, boolean withGroupedContexMenu) {
 		super(parent,title,ModalityType.APPLICATION_MODAL);
-		imageView = new ImageView(image,width,height,interpolationLevel);
+		imageView = new ImageView(image,width,height,interpolationLevel, withGroupedContexMenu);
 		setContentPane(imageView);
 		pack();
 		setLocationRelativeTo(parent);
@@ -39,5 +42,10 @@ public class ImageViewDialog extends JDialog {
 	public void setImage(BufferedImage image) {
 		imageView.setImage(image);
 		imageView.reset();
+	}
+	
+	public void setZoom(double zoom)
+	{
+		imageView.setZoom(zoom);
 	}
 }
