@@ -836,8 +836,8 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 		private String[] texts;
 		private Rectangle2D[] bounds;
 		private boolean isEnabled;
-		private int x;
-		private int y;
+		protected int x;
+		protected int y;
 		private Color borderColor;
 		private Color fillColor;
 		private Color textColor;
@@ -933,6 +933,21 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 			if (texts.length==0)
 				return;
 			
+			if (borderColor!=null) draw(g2,0);
+			if (fillColor  !=null) draw(g2,1);
+			if (textColor  !=null) draw(g2,2);
+		}
+
+		public void draw(Graphics2D g2, int stage)
+		{
+			switch (stage)
+			{
+				case -1: break;
+				case 0: g2.setColor(borderColor); break;
+				case 1: g2.setColor(fillColor  ); break;
+				case 2: g2.setColor(textColor  ); break;
+			}
+			
 			if (bounds == null) {
 				bounds = new Rectangle2D[texts.length];
 				Font font = g2.getFont();
@@ -949,45 +964,7 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 				}
 			}
 			
-			if (borderColor!=null) draw(g2,0);
-			if (fillColor  !=null) draw(g2,1);
-			if (textColor  !=null) draw(g2,2);
-		}
-
-		private void draw(Graphics2D g2, int stage)
-		{
-			int totalHeight = (texts.length-1)*rowHeight + (int) Math.round( bounds[bounds.length-1].getHeight() );
-			
-			int localOffsetY = offsetY;
-			if (anchor.axisPosY==AxisPos.Bottom)
-				localOffsetY -= totalHeight;
-			else if (anchor.axisPosY==AxisPos.Center)
-				localOffsetY -= totalHeight/2;
-			
-			switch (stage)
-			{
-				case -1: break;
-				case 0: g2.setColor(borderColor); break;
-				case 1: g2.setColor(fillColor  ); break;
-				case 2: g2.setColor(textColor  ); break;
-			}
-			
-			for (int i=0; i<texts.length; i++)
-			{
-				int boxX = (int) Math.round( bounds[i].getX() );
-				int boxY = (int) Math.round( bounds[i].getY() );
-				int boxW = (int) Math.round( bounds[i].getWidth() );
-				int boxH = (int) Math.round( bounds[i].getHeight() );
-				
-				int localOffsetX = offsetX;
-				if (anchor.axisPosX==AxisPos.Right)
-					localOffsetX -= boxW;
-				else if (anchor.axisPosX==AxisPos.Center)
-					localOffsetX -= boxW/2;
-				
-				int strX = localOffsetX-boxX; boxX = localOffsetX;
-				int strY = localOffsetY-boxY; boxY = localOffsetY;
-				
+			forEachRow((i,boxX,boxY,boxW,boxH,strX,strY) -> {
 				switch (stage)
 				{
 					case -1:
@@ -1005,6 +982,46 @@ public abstract class ZoomableCanvas<VS extends ZoomableCanvas.ViewState> extend
 						g2.drawString(texts[i], x+strX, y+strY);
 						break;
 				}
+				return true;
+			});
+		}
+		
+		protected interface RowAction
+		{
+			boolean perfom(int i, int boxX, int boxY, int boxW, int boxH, int strX, int strY);
+		}
+
+		protected void forEachRow(RowAction action)
+		{
+			if (bounds == null)
+				throw new IllegalStateException();
+			
+			int totalHeight = (texts.length-1)*rowHeight + (int) Math.round( bounds[bounds.length-1].getHeight() );
+			
+			int localOffsetY = offsetY;
+			if (anchor.axisPosY==AxisPos.Bottom)
+				localOffsetY -= totalHeight;
+			else if (anchor.axisPosY==AxisPos.Center)
+				localOffsetY -= totalHeight/2;
+			
+			for (int i=0; i<texts.length; i++)
+			{
+				int boxX = (int) Math.round( bounds[i].getX() );
+				int boxY = (int) Math.round( bounds[i].getY() );
+				int boxW = (int) Math.round( bounds[i].getWidth() );
+				int boxH = (int) Math.round( bounds[i].getHeight() );
+				
+				int localOffsetX = offsetX;
+				if (anchor.axisPosX==AxisPos.Right)
+					localOffsetX -= boxW;
+				else if (anchor.axisPosX==AxisPos.Center)
+					localOffsetX -= boxW/2;
+				
+				int strX = localOffsetX-boxX; boxX = localOffsetX;
+				int strY = localOffsetY-boxY; boxY = localOffsetY;
+				
+				boolean continueLoop = action.perfom(i, boxX, boxY, boxW, boxH, strX, strY);
+				if (!continueLoop) break;
 				
 				localOffsetY += rowHeight;
 			}
