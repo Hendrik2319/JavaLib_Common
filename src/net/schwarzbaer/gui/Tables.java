@@ -551,6 +551,17 @@ public class Tables {
 				if (editor!=null) table.setDefaultEditor(columnClass, editor);
 			});
 		}
+		public void setCellRenderer(ColumnID columnID, TableCellRenderer cellRenderer) {
+			TableColumn column = getTableColumn(columnID);
+			if (column==null) return;
+			column.setCellRenderer(cellRenderer);
+		}
+	
+		public void setCellEditor(ColumnID columnID, TableCellEditor cellEditor) {
+			TableColumn column = getTableColumn(columnID);
+			if (column==null) return;
+			column.setCellEditor(cellEditor);
+		}
 		
 		public void forEachColumClass(Consumer<Class<?>> action) {
 			HashSet<Class<?>> classes = new HashSet<>();
@@ -576,11 +587,24 @@ public class Tables {
 			if (columnIndex<columns.length) return columns[columnIndex];
 			return null;
 		}
-		public int getColumn( ColumnID columnID ) {
+		public int getColumn(ColumnID columnID) {
 			for (int i=0; i<columns.length; ++i)
 				if (columns[i]==columnID)
 					return i;
 			return -1;
+		}
+
+		public TableColumn getTableColumn(ColumnID columnID)
+		{
+			int colM = getColumn(columnID);
+			return colM<0 ? null : getTableColumn(colM);
+		}
+
+		public TableColumn getTableColumn(int colM)
+		{
+			int colV = colM<0 ? -1 : table.convertColumnIndexToView(colM);
+			TableColumnModel columnModel = table==null ? null :  table.getColumnModel();
+			return columnModel==null || colV<0 ? null : columnModel.getColumn(colV);
 		}
 		
 		@Override public int getColumnCount() { return columns.length; }
