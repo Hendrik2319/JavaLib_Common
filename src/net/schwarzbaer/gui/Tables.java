@@ -518,7 +518,7 @@ public class Tables {
 			fireTableColumnUpdate(columnID);
 		}
 
-		protected void fireTableColumnUpdate(ColumnID columnID) {
+		public void fireTableColumnUpdate(ColumnID columnID) {
 			int columnIndex = getColumn( columnID );
 			if (columnIndex>=0) fireTableColumnUpdate(columnIndex);
 		}
