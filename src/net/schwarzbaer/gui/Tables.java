@@ -1294,6 +1294,7 @@ public class Tables {
 		private final RendererConfigurator rendConf;
 		
 		private Color color;
+		private Color[] colorArr;
 		
 		public ColorRendererComponent() {
 			rendConf = RendererConfigurator.create(this);
@@ -1318,11 +1319,17 @@ public class Tables {
 		private void setValue(Object value, Supplier<String> getSurrogateText) {
 			setText(null);
 			
-			if (value instanceof Color) {
+			if (value instanceof Color[]) {
+				this.color = null;
+				this.colorArr = (Color[]) value;
+				
+			} else if (value instanceof Color) {
 				this.color = (Color) value;
+				this.colorArr = null;
 				
 			} else {
 				this.color = null;
+				this.colorArr = null;
 				if (getSurrogateText!=null)
 					setText(getSurrogateText.get());
 			}
@@ -1330,17 +1337,39 @@ public class Tables {
 		
 		@Override
 		protected void paintComponent(Graphics g) {
-			if (color == null)
-				super.paintComponent(g);
-			else {
+			super.paintComponent(g);
+			if (color != null || colorArr != null)
+			{
 				int width = getWidth();
 				int height = getHeight();
 				
-				g.setColor(Color.GRAY);
-				g.drawRect(2, 2, width-5, height-5);
-				g.setColor(color);
-				g.fillRect(3, 3, width-6, height-6);
+				if (color != null)
+					drawColorBlock(g, width, height, color, 0, 1);
+				
+				else if (colorArr != null)
+					for (int i=0; i<colorArr.length; i++)
+						drawColorBlock(g, width, height, colorArr[i], i, colorArr.length);
 			}
+		}
+
+		private static void drawColorBlock(Graphics g, int width, int height, Color color, int index, int count)
+		{
+			// g.setColor(Color.GRAY);
+			// g.drawRect(2, 2, width-5, height-5);
+			// g.setColor(color);
+			// g.fillRect(3, 3, width-6, height-6);
+			int spacing = 3;
+			double blockWidth_d = ((width -6) - (count-1)*spacing) / (double)count;
+			int    blockWidth   =   (int) Math.round(blockWidth_d);
+			int    blockHeight  =   height-6;
+			double blockOffsetX_d = 3 + (blockWidth_d+spacing) * index;
+			int    blockOffsetX   = (int) Math.round(blockOffsetX_d);
+			int    blockOffsetY   = 3;
+			
+			g.setColor(Color.GRAY);
+			g.drawRect(blockOffsetX-1, blockOffsetY-1, blockWidth+1, blockHeight+1);
+			g.setColor(color);
+			g.fillRect(blockOffsetX  , blockOffsetY  , blockWidth  , blockHeight  );
 		}
 
 		@Override public void revalidate() {}
