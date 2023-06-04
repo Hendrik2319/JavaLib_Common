@@ -1,18 +1,26 @@
 package net.schwarzbaer.gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.util.Vector;
 
+import javax.swing.JComponent;
+import javax.swing.border.Border;
 import javax.swing.event.MouseInputListener;
 
-public class BumpmappingSunControl extends Canvas implements MouseInputListener {
+public class BumpmappingSunControl extends JComponent implements MouseInputListener {
 	private static final long serialVersionUID = -516958122726918986L;
+	
+	private int width;
+	private int height;
 	
 	private Vector<ValueChangeListener> vcl;
 	private Vector<ActionListener> al;
@@ -28,6 +36,8 @@ public class BumpmappingSunControl extends Canvas implements MouseInputListener 
 	private String actionCommand = null;
 	
 	public BumpmappingSunControl(double x, double y, double z) {
+        width = -1;
+        height = -1;
 		alpha = Math.atan2(y,x);
 		beta = Math.atan2(z,Math.sqrt(x*x+y*y));
 		
@@ -69,9 +79,42 @@ public class BumpmappingSunControl extends Canvas implements MouseInputListener 
 	public void removeValueChangeListener(ValueChangeListener vcl) { this.vcl.remove(vcl); }
 	public void    addActionListener(ActionListener al) { this.al.   add(al); }
 	public void removeActionListener(ActionListener al) { this.al.remove(al); }
+	
+    @Override public void setBounds(int x, int y, int width, int height) {
+    	super.setBounds( x, y, width, height );
+    	this.width = width; this.height = height;
+    }
+    @Override public void setBounds(Rectangle r) {
+    	super.setBounds( r );
+    	this.width = r.width; this.height = r.height;
+    }
+    @Override public void setSize(Dimension d) {
+    	super.setSize( d );
+    	this.width = d.width; this.height = d.height;
+    }
+    @Override public void setSize(int width, int height) {
+    	super.setSize( width, height );
+    	this.width =   width; this.height =   height;
+    }
 
-	@Override
-	protected void paintCanvas(Graphics g, int xOffset, int yOffset, int width, int height) {
+    @Override protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+		int x = 0;
+		int y = 0;
+		int canvasWidth = width;
+		int canvasHeight = height;
+		Border border = getBorder();
+		if (border!=null) {
+			Insets borderInsets = border.getBorderInsets(this);
+			x = borderInsets.left;
+			y = borderInsets.top;
+			canvasWidth  -= borderInsets.left + borderInsets.right ;
+			canvasHeight -= borderInsets.top  + borderInsets.bottom;
+		}
+        paintCanvas( g, x,y, canvasWidth,canvasHeight );
+    }
+
+	private void paintCanvas(Graphics g, int xOffset, int yOffset, int width, int height) {
 		Graphics2D g2 = null;
 		if (g instanceof Graphics2D) {
 			g2 = (Graphics2D) g;
