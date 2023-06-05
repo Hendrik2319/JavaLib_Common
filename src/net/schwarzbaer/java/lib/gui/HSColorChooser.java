@@ -13,12 +13,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
@@ -32,13 +36,21 @@ import net.schwarzbaer.java.lib.gui.ColorSlider.SliderType;
 
 public final class HSColorChooser {
 	
-	public static final StandardDialog.Position PARENT_CENTER   = StandardDialog.Position.PARENT_CENTER;
-	public static final StandardDialog.Position LEFT_OF_PARENT  = StandardDialog.Position.LEFT_OF_PARENT;
-	public static final StandardDialog.Position ABOVE_PARENT    = StandardDialog.Position.ABOVE_PARENT;
-	public static final StandardDialog.Position RIGHT_OF_PARENT = StandardDialog.Position.RIGHT_OF_PARENT;
-	public static final StandardDialog.Position BELOW_PARENT    = StandardDialog.Position.BELOW_PARENT;
+	public static final Position PARENT_CENTER   = Position.PARENT_CENTER;
+	public static final Position LEFT_OF_PARENT  = Position.LEFT_OF_PARENT;
+	public static final Position ABOVE_PARENT    = Position.ABOVE_PARENT;
+	public static final Position RIGHT_OF_PARENT = Position.RIGHT_OF_PARENT;
+	public static final Position BELOW_PARENT    = Position.BELOW_PARENT;
 	
-	public static JButton createColorbutton(Color initialColor, Window dialogParent, String dialogTitle, StandardDialog.Position dialogPosition, ColorReceiver colorReceiver) {
+	public static enum Position {
+		PARENT_CENTER,
+		LEFT_OF_PARENT,
+		ABOVE_PARENT,
+		RIGHT_OF_PARENT,
+		BELOW_PARENT
+	}
+	
+	public static JButton createColorbutton(Color initialColor, Window dialogParent, String dialogTitle, Position dialogPosition, ColorReceiver colorReceiver) {
 		ColorButton button = new ColorButton(initialColor);
 		button.addActionListener(e->{
 			Color color = showDialog(dialogParent, dialogTitle, button.getColor(), dialogPosition);
@@ -50,18 +62,24 @@ public final class HSColorChooser {
 		return button;
 	}
 	
-	public static class ColorDialog extends StandardDialog {
+	public static class ColorDialog extends JDialog {
 		private static final long serialVersionUID = 8813919228546598198L;
 		
-		private MainPanel mainPanel;
+		private final MainPanel mainPanel;
+		private final Window parent;
+		private final boolean repeatedUseOfDialogObject;
 
-		public ColorDialog(Window parent, String title, Color color) {
-			this(parent, title, color, null);
+		public ColorDialog(Window parent, String title, boolean repeatedUseOfDialogObject, Color color) {
+			this(parent, title, repeatedUseOfDialogObject, color, null);
 		}
-		public ColorDialog(Window parent, String title, Color color, UserdefinedColors userdefinedColors) {
+		public ColorDialog(Window parent, String title, boolean repeatedUseOfDialogObject, Color color, UserdefinedColors userdefinedColors) {
 			super(parent, title);
+			this.parent = parent;
+			this.repeatedUseOfDialogObject = repeatedUseOfDialogObject;
 			mainPanel = new MainPanel(color, this, null, userdefinedColors);
-			createGUI(mainPanel);
+			setContentPane( mainPanel );
+			pack();
+			setPosition(Position.PARENT_CENTER);
 			setSizeAsMinSize();
 		}
 		
@@ -72,14 +90,65 @@ public final class HSColorChooser {
 		public Color getColor() {
 			return mainPanel.dlgResultColor;
 		}
+	    
+		private void setPosition(Position position) {
+			Rectangle p;
+			if (parent != null) p = parent.getBounds();
+			else                p = getGraphicsConfiguration().getBounds();
+	        Dimension d = getSize();
+	        int dist = 3;
+	        switch (position) {
+	        case LEFT_OF_PARENT:
+	            if (p.height>d.height) this.setSize(d.width, p.height);
+	            setLocation( p.x-d.width-dist, p.y );
+	            break;
+	        case RIGHT_OF_PARENT:
+	            if (p.height>d.height) this.setSize(d.width, p.height);
+	            setLocation( p.x+p.width+dist, p.y );
+	            break;
+	        case ABOVE_PARENT:
+	            if (p.width>d.width) this.setSize(p.width, d.height);
+	            setLocation( p.x, p.y-d.height-dist );
+	            break;
+	        case BELOW_PARENT:
+	            if (p.width>d.width) this.setSize(p.width, d.height);
+	            setLocation( p.x, p.y+p.height+dist );
+	            break;
+	        case PARENT_CENTER:
+	        default:
+	            setLocation(
+	                    (p.width -d.width )/2+p.x,
+	                    (p.height-d.height)/2+p.y
+	                );
+	        }
+		}
+		
+	    private void setSizeAsMinSize() {
+	        Dimension d = getSize();
+	        setMinimumSize(d);
+	    }
+	    
+	    public void showDialog(Position position) {
+	    	if (position!=null) setPosition(position);
+	        setVisible( true );
+	    }
+
+	    public void showDialog() {
+	    	showDialog(null);
+	    }
+
+	    public void closeDialog() {
+	        setVisible( false );
+	        if (!repeatedUseOfDialogObject) dispose();
+	    }
 	}
 	
-	public static Color showDialog(Window parent, String title, Color color, StandardDialog.Position position) {
+	public static Color showDialog(Window parent, String title, Color color, Position position) {
 		return showDialog(parent, title, color, null, position);
 	}
 	
-	public static Color showDialog(Window parent, String title, Color color, UserdefinedColors userdefinedColors, StandardDialog.Position position) {
-		ColorDialog dlgFenster = new ColorDialog(parent, title, color, userdefinedColors);
+	public static Color showDialog(Window parent, String title, Color color, UserdefinedColors userdefinedColors, Position position) {
+		ColorDialog dlgFenster = new ColorDialog(parent, title, false, color, userdefinedColors);
 		dlgFenster.showDialog(position);
 		return dlgFenster.getColor();
 	}
@@ -103,10 +172,17 @@ public final class HSColorChooser {
 		}
 	}
 
+	private static enum ActionCommands {
+		other,
+		SetDual2RG, SetDual2GB, SetDual2RB,
+		SetDual2HS, SetDual2SB, SetDual2HB,
+		Ok, Cancel, ResetColor, SetUserColor, ReadUserColor,
+	}
+
 	public static class MainPanel extends JPanel implements ActionListener, ColorChangeListener {
 		private static final long serialVersionUID = 1065328530214691959L;
 		
-		private final Disabler<ActionCommands> disabler;
+		private final Disabler disabler;
 		private final JLabel oldColorField;
 		private final JLabel colForegrField;
 		private final JLabel colBackgrField;
@@ -129,15 +205,15 @@ public final class HSColorChooser {
 		private final ColorToggleButton[] userColorButtons; 
 		
 		private final ColorReceiver colorReceiver;
-		private final StandardDialog dialog;
+		private final ColorDialog dialog;
 		
-		private MainPanel(Color color, StandardDialog dlgFenster, ColorReceiver colorReceiver, UserdefinedColors userdefinedColors) {
+		private MainPanel(Color color, ColorDialog dlgFenster, ColorReceiver colorReceiver, UserdefinedColors userdefinedColors) {
 			super(new BorderLayout(3,3));
 			this.dialog = dlgFenster;
 			this.colorReceiver = colorReceiver;
 			this.userdefinedColors = userdefinedColors != null ? userdefinedColors : new UserdefinedColors();
 			
-			disabler = new Disabler<ActionCommands>();
+			disabler = new Disabler();
 			disabler.setCareFor(ActionCommands.values());
 			
 			JPanel buttonPanel = new JPanel(new GridLayout(1,0,3,3));
@@ -270,13 +346,6 @@ public final class HSColorChooser {
 			colBackgrField .setBackground(isEnabled()?currentColor:null);
 			colBackgrFieldW.setBackground(isEnabled()?currentColor:null);
 			colBackgrFieldW.setForeground(isEnabled()?Color.WHITE:null);
-		}
-		
-		private static enum ActionCommands {
-			other,
-			SetDual2RG, SetDual2GB, SetDual2RB,
-			SetDual2HS, SetDual2SB, SetDual2HB,
-			Ok, Cancel, ResetColor, SetUserColor, ReadUserColor,
 		}
 		
 		private JButton createButton( String title, ActionCommands ac) {
@@ -521,5 +590,46 @@ public final class HSColorChooser {
 		@Override public void setBounds(Rectangle r                        ) { icon.setMastersSize(r.width, r.height); super.setBounds(r                  ); }
 		@Override public void setSize  (Dimension d                        ) { icon.setMastersSize(d.width, d.height); super.setSize  (d                  ); }
 		@Override public void setSize  (              int width, int height) { icon.setMastersSize(  width,   height); super.setSize  (      width, height); }
+	}
+	
+	private static class Disabler {
+		
+		private HashMap<ActionCommands, Vector<JComponent>> map;
+
+		public Disabler() {
+			map = new HashMap<ActionCommands,Vector<JComponent>>();
+		}
+		
+		public void setCareFor(ActionCommands actionCommand) {
+			map.put(actionCommand,new Vector<JComponent>());
+		}
+
+		public void setCareFor(ActionCommands[] values) {
+			for (ActionCommands ac:values) setCareFor(ac);
+		}
+
+		public void addAll(ActionCommands actionCommand, JComponent... comps) {
+			for (JComponent comp:comps)
+				add(actionCommand,comp);
+		}
+
+		public JComponent add(ActionCommands actionCommand, JComponent comp) {
+			Vector<JComponent> list = map.get(actionCommand);
+			if (list==null) throw new UnsupportedOperationException("Disabler: Can't add components for unregistered ActionCommand "+actionCommand+". Please register it with disabler.setCareFor.");
+			list.add(comp);
+			return comp;
+		}
+
+		public void setEnableAll(boolean enabled) {
+			for (ActionCommands key:map.keySet())
+				setEnable(key, enabled);
+		}
+
+		public void setEnable(ActionCommands actionCommand, boolean enabled) {
+			Vector<JComponent> list = map.get(actionCommand);
+			if (list==null) throw new UnsupportedOperationException("Disabler: Can't use method setEnable on ActionCommand "+actionCommand+".");
+			for (JComponent c:list)
+				c.setEnabled(enabled);
+		}
 	}
 }

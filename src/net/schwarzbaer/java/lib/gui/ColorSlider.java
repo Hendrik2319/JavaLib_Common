@@ -1,17 +1,25 @@
 package net.schwarzbaer.java.lib.gui;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
-public class ColorSlider extends Canvas implements MouseListener, MouseMotionListener {
+import javax.swing.JComponent;
+import javax.swing.border.Border;
+
+public class ColorSlider extends JComponent implements MouseListener, MouseMotionListener {
 	private static final long serialVersionUID = 6525911479150907865L;
 	
 	private   final ColorChangeListener colorChangeListener;
 	protected final SliderType type;
 	protected final ColorSliderModel model;
+	private   int width;
+	private   int height;
 	
 	public ColorSlider(SliderType type, Colorizer colorizer, float f, ColorChangeListener colorChangeListener ) {
 		this(type, new SimpleColorSliderModel(f, colorizer), colorChangeListener);
@@ -22,10 +30,12 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 		this.colorChangeListener = colorChangeListener;
 		this.type = type;
 		this.model = model;
+        this.width = -1;
+        this.height = -1;
 		switch (type) {
-		case VERTICAL  : setPreferredSize(20, 128); break;
-		case HORIZONTAL: setPreferredSize(128, 20); break;
-		case DUAL      : setPreferredSize(128, 128); break;
+		case VERTICAL  : setPreferredSize(new Dimension( 20, 128 )); break;
+		case HORIZONTAL: setPreferredSize(new Dimension( 128, 20 )); break;
+		case DUAL      : setPreferredSize(new Dimension( 128, 128 )); break;
 		}
 		this.addMouseListener(this);
 		this.addMouseMotionListener(this);
@@ -34,8 +44,24 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	public void setValue( float f ) { model.setValue(f); repaint(); }
 	public void setValue( float fH, float fV ) { model.setValue(fH, fV); repaint(); }
 	
-	@Override
-	protected void paintCanvas(Graphics g, int x, int y, int width, int height) {
+    @Override protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+		int x = 0;
+		int y = 0;
+		int canvasWidth = width;
+		int canvasHeight = height;
+		Border border = getBorder();
+		if (border!=null) {
+			Insets borderInsets = border.getBorderInsets(this);
+			x = borderInsets.left;
+			y = borderInsets.top;
+			canvasWidth  -= borderInsets.left+borderInsets.right ;
+			canvasHeight -= borderInsets.top +borderInsets.bottom;
+		}
+        paintCanvas( g, x,y, canvasWidth,canvasHeight );
+    }
+	
+	private void paintCanvas(Graphics g, int x, int y, int width, int height) {
 		switch (type) {
 		case VERTICAL  : paintV(g,x,y,width,height); break;
 		case HORIZONTAL: paintH(g,x,y,width,height); break;
@@ -131,6 +157,22 @@ public class ColorSlider extends Canvas implements MouseListener, MouseMotionLis
 	@Override public void mousePressed (MouseEvent e) { if (isEnabled()) userChangedValue(e.getX(),e.getY()); }
 	@Override public void mouseReleased(MouseEvent e) { if (isEnabled()) userChangedValue(e.getX(),e.getY()); }
 
+    @Override public void setBounds(int x, int y, int width, int height) {
+    	super.setBounds( x, y, width, height );
+    	this.width = width; this.height = height;
+    }
+    @Override public void setBounds(Rectangle r) {
+    	super.setBounds( r );
+    	this.width = r.width; this.height = r.height;
+    }
+    @Override public void setSize(Dimension d) {
+    	super.setSize( d );
+    	this.width = d.width; this.height = d.height;
+    }
+    @Override public void setSize(int width, int height) {
+    	super.setSize( width, height );
+    	this.width =   width; this.height =   height;
+    }
 
 	public static interface ColorChangeListener {
 		public void colorChanged( Color color, float f );
